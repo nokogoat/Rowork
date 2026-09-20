@@ -134,6 +134,16 @@ Your code is now synced. Edit a `.ts` file, the compiler rebuilds, Rojo pushes
 the change into Studio. Press **Play** to run it: the Output window shows
 `[MyGame] ExampleService started.` if you kept the examples.
 
+## Add things to your game
+
+```bash
+rowork make          # pick what to create from a list, then answer a few questions
+```
+
+Try **Tool**: name it, choose how long between two uses, and every player
+receives it when they spawn. You then write what it does in the generated
+component. See [Commands](commands.md#rowork-maketool-name).
+
 ## What next
 
 - [Project structure](project-structure.md): where your code goes.

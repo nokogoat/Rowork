@@ -1,6 +1,5 @@
 import { resolve } from "node:path";
 
-import * as prompts from "@clack/prompts";
 import pc from "picocolors";
 
 import { RoworkError } from "../cli/errors.js";
@@ -9,23 +8,15 @@ import { assertValidProjectName, toPascalCase } from "../core/naming.js";
 import { resolveTarget, scaffoldProject } from "../core/scaffold.js";
 import { isVinegarInstalled, needsStudioSetup, setupStudio } from "../core/studio.js";
 import { defineCommand } from "../plugins/api.js";
+import { answered, isInteractive, prompts } from "../ui/prompt.js";
 import { printNextSteps } from "./next-steps.js";
-
-/** Ends the wizard cleanly on Ctrl+C or Escape instead of throwing a stack trace. */
-function answered<T>(value: T): Exclude<T, symbol> {
-	if (prompts.isCancel(value)) {
-		prompts.cancel("Cancelled, nothing was created.");
-		process.exit(0);
-	}
-	return value as Exclude<T, symbol>;
-}
 
 export const startCommand = defineCommand({
 	name: "start",
 	description: "Guided setup: answer a few questions and get a ready-to-run project.",
 	options: [{ flags: "--path <dir>", description: "parent directory to create the project in" }],
 	async run(context) {
-		if (!process.stdin.isTTY || !process.stdout.isTTY) {
+		if (!isInteractive()) {
 			throw new RoworkError("`rowork start` is interactive and needs a terminal.", {
 				hint: "In scripts and CI use `rowork init <name>` with its flags instead.",
 			});

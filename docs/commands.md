@@ -30,9 +30,10 @@ pointing you to `rowork init` instead.
 | --- | --- |
 | `--path <dir>` | parent directory to create the project in (skips that question) |
 
-## `rowork init <name>`
+## `rowork init [name]`
 
-Creates a project without asking anything.
+Creates a project without asking anything. With no name in a terminal, it starts
+the guided version, `rowork start`.
 
 ```bash
 rowork init MyGame
@@ -86,7 +87,36 @@ run inside a Rowork project. Details in [How `rowork dev` works](dev-command.md)
 | `--no-sourcemap` | skip the sourcemap watcher |
 | `--port <port>` | port for the Rojo server (default 34872) |
 
-## `rowork make:service <name>`
+## Guided commands
+
+Every command that needs input has a **guided version**: run it with no
+arguments in a terminal and it asks its own questions, with sensible defaults.
+Arguments and flags exist for scripts and CI. Without a terminal, a guided
+command refuses and prints its scripted form.
+
+| Guided | What it asks |
+| --- | --- |
+| `rowork start` (or `rowork init` alone) | project name, place, examples, git, npm, toolchain |
+| `rowork make` | what to create, from a list, then that command's own questions |
+| `rowork make:tool` | name, seconds between uses, droppable, given at spawn |
+| `rowork make:component` | name, server or client, tag |
+| `rowork make:service`, `make:controller` | name |
+
+## `rowork make`
+
+Shows everything you can create and asks what you want:
+
+```
+What do you want to create?
+> Tool        something a player holds and uses: pickaxe, sword, torch
+  Service     server-side logic: data, rules, spawning
+  Controller  client-side logic: input, camera, effects
+  Component   behaviour attached to tagged objects: doors, pickups
+```
+
+It then runs the guided version of your choice. Must run inside a project.
+
+## `rowork make:service [name]`
 
 Creates a Flamework service: a server-side singleton, created and injected by
 Flamework.
@@ -107,12 +137,12 @@ added if missing. It must start with a letter.
 Written to `paths.services` from [`rowork.json`](configuration.md). Without
 `--force`, an existing file is never overwritten.
 
-## `rowork make:controller <name>`
+## `rowork make:controller [name]`
 
 Same as `make:service`, for the client side: `CameraController` in
 `paths.controllers` (default `src/client/controllers`).
 
-## `rowork make:component <name>`
+## `rowork make:component [name]`
 
 Creates a Flamework component: behaviour attached automatically to every
 instance carrying a CollectionService tag.
@@ -142,44 +172,53 @@ generating a second component does not add the line twice. If the entry file
 does not look the way Rowork generated it, nothing is edited and Rowork prints
 the line to add yourself.
 
-## `rowork make:tool <name>`
+## `rowork make:tool [name]`
 
 Creates a whole tool (a Roblox `Tool` a player holds) as one consistent unit,
-instead of a single class.
+and delivers it to players for you. **Run it with no name for the guided
+version**: it asks the name, the seconds between two uses, whether players can
+drop it, and whether every player gets it when they spawn.
 
 ```bash
-rowork make:tool Pickaxe
+rowork make:tool                                  # guided
+rowork make:tool Pickaxe                          # defaults, no questions
+rowork make:tool Torch --cooldown 2 --droppable --no-give-on-spawn
 ```
+
+| Option | Effect |
+| --- | --- |
+| `--cooldown <seconds>` | seconds between two uses (default 0.5) |
+| `--droppable` | the player can drop it |
+| `--no-give-on-spawn` | do not give it to players automatically |
+| `-f, --force` | overwrite the tool's own files if they exist |
 
 | File | Role |
 | --- | --- |
-| `src/shared/tools/PickaxeTool.ts` | the tool's config: name, tag, cooldown, `canBeDropped` |
-| `src/server/components/PickaxeToolComponent.ts` | server behaviour: listens to `Activated`, enforces the cooldown, calls `activate(player)` |
-| `src/shared/tools/ToolDefinition.ts` | the config type, **created once** |
-| `src/server/services/ToolService.ts` | `give(player, definition)`, **created once** |
+| `src/shared/tools/PickaxeTool.ts` | the tool's settings: name, tag, cooldown, droppable, given at spawn |
+| `src/server/components/PickaxeToolComponent.ts` | what it does: `activate(player)`, cooldown already handled |
+| `src/shared/tools/ToolDefinition.ts` | the settings type, **created once** |
+| `src/shared/tools/index.ts` | the list of all tools, **rewritten every time**, do not edit |
+| `src/server/services/ToolService.ts` | builds the `Tool` and hands it out, **created once** |
 
-`ToolService.give` builds the `Tool` instance (with a placeholder `Handle` you
-replace with your model), sets the tag from the config so Flamework attaches the
-component, and puts it in the player's backpack:
+**You write nothing to hand the tool out.** Every tool set to be given at spawn
+reaches each player when they spawn. Your gameplay goes in
+`PickaxeToolComponent.activate(player)`; to change a setting, edit
+`PickaxeTool.ts`.
+
+For a tool given at another moment (a shop, a reward), turn off "give at spawn"
+and call `give` from any service:
 
 ```ts
-@Service()
-export class LoadoutService implements OnStart {
-  constructor(private readonly tools: ToolService) {}
-
-  onStart(): void {
-    Players.PlayerAdded.Connect((player) =>
-      player.CharacterAdded.Connect(() => this.tools.give(player, PickaxeTool)));
-  }
-}
+constructor(private readonly tools: ToolService) {}
+// later, when the player buys it:
+this.tools.give(player, PickaxeTool);
 ```
 
-Your gameplay goes in `PickaxeToolComponent.activate(player)`. The name is
-normalised: `pickaxe`, `Pickaxe` and `PickaxeTool` are the same tool. The
-component directory is registered in `runtime.server.ts`, as for
-`make:component`. `-f, --force` overwrites the tool's own files, never the shared
-`ToolDefinition.ts` and `ToolService.ts`, which are shared by every tool and
-may hold your edits.
+The `Tool` instance is built in code with a placeholder `Handle` that you replace
+with your own model. The name is normalised: `pickaxe`, `Pickaxe` and
+`PickaxeTool` are the same tool. The components directory is registered in
+`runtime.server.ts`. `ToolDefinition.ts` and `ToolService.ts` are shared by every
+tool and may hold your edits, so they are never overwritten, even with `--force`.
 
 ## `rowork studio` and `rowork studio:setup` (Linux)
 

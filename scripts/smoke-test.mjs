@@ -148,11 +148,25 @@ try {
 	const serviceFile = join(bareProject, "src", "server", "services", "ToolService.ts");
 	writeFileSync(serviceFile, "// edited by the user\n" + readFileSync(serviceFile, "utf8"));
 	check(makeRun("make:tool", "PickaxeTool").status === 1, "make:tool overwrote an existing tool");
-	check(makeRun("make:tool", "Shovel").status === 0, "a second make:tool failed");
+	check(makeRun("make:tool", "Shovel", "--cooldown", "2", "--droppable", "--no-give-on-spawn").status === 0, "a second make:tool failed");
+	const shovel = readFileSync(join(bareProject, "src", "shared", "tools", "ShovelTool.ts"), "utf8");
+	check(shovel.includes("cooldown: 2,") && shovel.includes("canBeDropped: true") && shovel.includes("giveOnSpawn: false"), "make:tool ignored its settings flags");
+	const registry = readFileSync(join(bareProject, "src", "shared", "tools", "index.ts"), "utf8");
+	check(registry.includes("PickaxeTool") && registry.includes("ShovelTool"), "the tool registry does not list every tool");
+	check(makeRun("make:tool", "Bad", "--cooldown", "soon").status === 1, "an invalid --cooldown was accepted");
 	check(
 		readFileSync(serviceFile, "utf8").startsWith("// edited by the user"),
 		"a second make:tool overwrote the shared ToolService",
 	);
+
+	// Guided versions need a terminal: without one they refuse and show the scripted form.
+	for (const command of ["make", "make:tool", "make:service", "make:controller", "make:component"]) {
+		const guided = makeRun(command);
+		check(guided.status === 1, `\`rowork ${command}\` without a TTY exited with ${guided.status}`);
+		check(/terminal/.test(guided.stderr), `\`rowork ${command}\` without a TTY did not explain why`);
+	}
+	const bareInit = spawnSync(process.execPath, [cli, "init"], { encoding: "utf8" });
+	check(bareInit.status === 1, `\`rowork init\` without a name or a TTY exited with ${bareInit.status}`);
 
 	// `rowork start` is interactive: without a terminal it must refuse and point to `init`.
 	const wizard = spawnSync(process.execPath, [cli, "start"], { encoding: "utf8", stdio: "pipe" });

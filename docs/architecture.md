@@ -18,6 +18,8 @@ src/
     init.ts              non-interactive creation
     dev.ts               orchestration entry
     make.ts              make:service, make:controller, make:component
+    make-tool.ts         make:tool (settings, component, delivery)
+    make-menu.ts         make: the list of everything that can be created
     studio.ts            studio, studio:setup (Linux)
     next-steps.ts        shared closing message
   core/
@@ -39,6 +41,7 @@ src/
     loader.ts            the three plugin sources
   templates/engine.ts    renders template directories
   ui/logger.ts           leveled logger, stderr only
+  ui/prompt.ts           guided-flow helpers: terminal check, cancel handling
 templates/init/          files copied into a new project
 templates/make/          one template per make:* command (make:tool uses four)
 scripts/                 smoke, orphan and integration tests
@@ -76,6 +79,17 @@ TypeScript is derived from what roblox-ts pins.
 
 **Tool lookup does not run the tool.** `toolchain.ts` scans PATH (with PATHEXT
 on Windows) so a check costs nothing and cannot have side effects.
+
+**Every input command has a guided version** (see CLAUDE.md, rule 5). A command
+that takes a name treats it as optional: given, it runs scripted; missing, it
+asks in a terminal or refuses with the scripted form otherwise. `rowork make` runs
+the chosen command with empty arguments, so it always lands in the guided path.
+Cancelling (Ctrl+C) exits cleanly before anything is written.
+
+**The tool registry is rebuilt, not patched.** `src/shared/tools/index.ts` is
+regenerated from the `*Tool.ts` files present, so it cannot drift and needs no
+fragile text insertion. `ToolService` reads it to hand out tools at spawn, which
+is why users never write delivery code.
 
 **Generators register what they generate.** Flamework silently ignores classes
 in directories not passed to `addPaths`. `ensureFlameworkPath` inserts the line

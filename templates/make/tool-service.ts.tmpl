@@ -1,17 +1,26 @@
-import { Service } from "@flamework/core";
+import { OnStart, Service } from "@flamework/core";
 import type { ToolDefinition } from "{{ definitionImport }}";
+import { TOOLS } from "{{ registryImport }}";
 
+const Players = game.GetService("Players");
 const CollectionService = game.GetService("CollectionService");
 
 /**
- * Hands tools to players. Created once by `rowork make:tool`.
+ * Creates and hands out tools. Created once by `rowork make:tool`.
  *
- *   constructor(private readonly tools: ToolService) {}
- *   this.tools.give(player, PickaxeTool);
+ * Every tool whose settings say `giveOnSpawn: true` reaches each player when
+ * they spawn, so there is nothing to write for the usual case. To give a tool
+ * at another moment (a shop, a reward), inject this service and call
+ * `give(player, PickaxeTool)`.
  */
 @Service()
-export class ToolService {
-	/** Builds the tool, tags it so its component attaches, and puts it in the backpack. */
+export class ToolService implements OnStart {
+	onStart(): void {
+		for (const player of Players.GetPlayers()) this.watch(player);
+		Players.PlayerAdded.Connect((player) => this.watch(player));
+	}
+
+	/** Puts the tool in the player's backpack and returns it. */
 	give(player: Player, definition: ToolDefinition): Tool {
 		const backpack = player.FindFirstChildOfClass("Backpack");
 		if (backpack === undefined) error(`${player.Name} has no Backpack yet`);
@@ -30,5 +39,16 @@ export class ToolService {
 		CollectionService.AddTag(tool, definition.tag);
 		tool.Parent = backpack;
 		return tool;
+	}
+
+	private watch(player: Player): void {
+		const giveSpawnTools = (): void => {
+			for (const definition of TOOLS) {
+				if (definition.giveOnSpawn) this.give(player, definition);
+			}
+		};
+
+		if (player.Character !== undefined) giveSpawnTools();
+		player.CharacterAdded.Connect(giveSpawnTools);
 	}
 }

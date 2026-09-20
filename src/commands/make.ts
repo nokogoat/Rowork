@@ -9,13 +9,21 @@ import {
 	type CommandDefinition,
 	type RoworkConfig,
 } from "../plugins/api.js";
+import { answered, prompts, requireInteractive } from "../ui/prompt.js";
 
-type Side = "server" | "client";
+export type Side = "server" | "client";
 
-const NAME_ARGUMENT = { name: "name", description: "name of the class, e.g. Inventory" };
+const NAME_ARGUMENT = {
+	name: "name",
+	description: "name of the class, e.g. Inventory (omit it for the guided version)",
+	required: false,
+};
 const FORCE_OPTION = { flags: "-f, --force", description: "overwrite the file if it exists" };
 
-function requireProject(context: CommandContext, command: string): { root: string; config: RoworkConfig } {
+export function requireProject(
+	context: CommandContext,
+	command: string,
+): { root: string; config: RoworkConfig } {
 	if (context.projectRoot === undefined || context.config === undefined) {
 		throw new RoworkError(`\`rowork ${command}\` must run inside a Rowork project.`, {
 			hint: "No usable rowork.json found here or in any parent directory. Create a project with `rowork start`.",
@@ -24,12 +32,33 @@ function requireProject(context: CommandContext, command: string): { root: strin
 	return { root: context.projectRoot, config: context.config };
 }
 
-function requireName(context: CommandContext, command: string): string {
-	const name = context.args["name"];
-	if (typeof name !== "string") {
-		throw new RoworkError("Missing name.", { hint: `Usage: rowork ${command} <name>` });
+/** Validates a name typed in a prompt, using the same rules as the command line. */
+export function validateName(value: string | undefined): string | undefined {
+	try {
+		toClassBase((value ?? "").trim());
+		return undefined;
+	} catch (error) {
+		return error instanceof RoworkError ? error.message : String(error);
 	}
-	return name;
+}
+
+/**
+ * The name from the command line, or, in a terminal with none given, from a
+ * question. `undefined` guided means the caller should also ask its other
+ * questions.
+ */
+export async function nameOrAsk(
+	context: CommandContext,
+	command: string,
+	message: string,
+	placeholder: string,
+): Promise<{ name: string; guided: boolean }> {
+	const given = context.args["name"];
+	if (typeof given === "string") return { name: given, guided: false };
+
+	requireInteractive(command, `rowork ${command} <name>`);
+	const name = answered(await prompts.text({ message, placeholder, validate: validateName })).trim();
+	return { name, guided: true };
 }
 
 /**
@@ -39,6 +68,7 @@ function requireName(context: CommandContext, command: string): string {
 function generate(options: {
 	context: CommandContext;
 	command: string;
+	name: string;
 	kind: string;
 	suffix: string;
 	template: string;
@@ -48,7 +78,7 @@ function generate(options: {
 }): void {
 	const { context } = options;
 	const { root, config } = requireProject(context, options.command);
-	const base = toClassBase(requireName(context, options.command));
+	const base = toClassBase(options.name);
 	const className = withSuffix(base, options.suffix);
 	const directory = options.directory(config);
 
@@ -73,10 +103,13 @@ export const makeServiceCommand: CommandDefinition = defineCommand({
 	description: "Create a Flamework service (server-side singleton).",
 	arguments: [NAME_ARGUMENT],
 	options: [FORCE_OPTION],
-	run(context) {
+	async run(context) {
+		requireProject(context, "make:service");
+		const { name } = await nameOrAsk(context, "make:service", "What is the service called?", "Inventory");
 		generate({
 			context,
 			command: "make:service",
+			name,
 			kind: "service",
 			suffix: "Service",
 			template: "service",
@@ -91,10 +124,13 @@ export const makeControllerCommand: CommandDefinition = defineCommand({
 	description: "Create a Flamework controller (client-side singleton).",
 	arguments: [NAME_ARGUMENT],
 	options: [FORCE_OPTION],
-	run(context) {
+	async run(context) {
+		requireProject(context, "make:controller");
+		const { name } = await nameOrAsk(context, "make:controller", "What is the controller called?", "Camera");
 		generate({
 			context,
 			command: "make:controller",
+			name,
 			kind: "controller",
 			suffix: "Controller",
 			template: "controller",
@@ -109,33 +145,66 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 	description: "Create a Flamework component (behaviour attached to tagged instances).",
 	arguments: [NAME_ARGUMENT],
 	options: [
-		{ flags: "--side <side>", description: "server or client", defaultValue: "server" },
+		{ flags: "--side <side>", description: "server (default) or client" },
 		{ flags: "--tag <tag>", description: "CollectionService tag (default: the name)" },
 		FORCE_OPTION,
 	],
-	run(context) {
-		const side = context.options["side"];
+	async run(context) {
+		requireProject(context, "make:component");
+		const { name, guided } = await nameOrAsk(
+			context,
+			"make:component",
+			"What is the component called?",
+			"Door",
+		);
+
+		let side: unknown = context.options["side"] ?? "server";
+		let tag: unknown = context.options["tag"];
+
+		if (guided) {
+			side = answered(
+				await prompts.select({
+					message: "Where does it run?",
+					options: [
+						{ value: "server", label: "Server", hint: "game rules, data, anything players must not cheat" },
+						{ value: "client", label: "Client", hint: "visuals, input, UI" },
+					],
+					initialValue: "server",
+				}),
+			);
+			tag = answered(
+				await prompts.text({
+					message: "Which tag makes it attach to an instance?",
+					placeholder: toClassBase(name),
+					defaultValue: toClassBase(name),
+					validate: (value) =>
+						/^[A-Za-z0-9_.-]*$/.test(value ?? "") ? undefined : "Letters, digits, _ - . only.",
+				}),
+			);
+		}
+
 		if (side !== "server" && side !== "client") {
 			throw new RoworkError(`Unknown side \`${String(side)}\`.`, {
 				hint: "Use --side server or --side client.",
 			});
 		}
-
-		const tag = context.options["tag"];
 		if (typeof tag === "string" && !/^[A-Za-z0-9_.-]+$/.test(tag)) {
 			throw new RoworkError(`\`${tag}\` is not a valid tag.`, {
 				hint: "Use letters, digits, `_`, `-` or `.`.",
 			});
 		}
+
+		const chosenSide: Side = side;
 		generate({
 			context,
 			command: "make:component",
+			name,
 			kind: "component",
 			suffix: "Component",
 			template: "component",
-			side,
-			directory: (config) => `${config.paths.source}/${side}/components`,
-			extraVariables: (base) => ({ tag: typeof tag === "string" ? tag : base }),
+			side: chosenSide,
+			directory: (config) => `${config.paths.source}/${chosenSide}/components`,
+			extraVariables: (base) => ({ tag: typeof tag === "string" && tag !== "" ? tag : base }),
 		});
 	},
 });
