@@ -5,7 +5,8 @@ import { RoworkError } from "../cli/errors.js";
 import type { Logger } from "../plugins/api.js";
 import { renderTree, templatesRoot } from "../templates/engine.js";
 import { syncAgentDocs } from "./agent-docs.js";
-import { CONFIG_FILENAME, defaultConfig } from "./config.js";
+import { CONFIG_FILENAME, defaultConfig, loadConfig } from "./config.js";
+import { installModulesByName } from "./modules.js";
 import { run as runBinary } from "./exec.js";
 import { installRokit } from "./rokit-installer.js";
 import { findExecutable } from "./toolchain.js";
@@ -37,6 +38,8 @@ export interface ScaffoldOptions {
 	/** Directory that will contain the project directory. */
 	parent: string;
 	install: boolean;
+	/** Include the linter. On by default: a linter nobody has to go and find is one that gets used. */
+	lint: boolean;
 	rokit: boolean;
 	/** Download and install Rokit itself when it is not on the machine. */
 	installRokit: boolean;
@@ -53,6 +56,8 @@ export interface ScaffoldResult {
 	displayName: string;
 	installed: boolean;
 	toolchainReady: boolean;
+	/** The linter was wanted but needs npm, which was skipped: `rowork add lint` later. */
+	lintPending: boolean;
 }
 
 /**
@@ -168,6 +173,25 @@ export async function scaffoldProject(
 		await runBinary("npm", ["install", ...RUNTIME_DEPENDENCIES], { cwd: target });
 	}
 
+	// The linter is part of a new project, not something to remember to add. It is
+	// a module that installs npm packages, so it needs the install step.
+	if (options.install && options.lint) {
+		logger.step("adding the linter (ESLint with the official roblox-ts rules)");
+		await installModulesByName(
+			{
+				args: {},
+				options: {},
+				cwd: target,
+				projectRoot: target,
+				config: loadConfig(target),
+				logger,
+				roworkVersion: options.roworkVersion,
+			},
+			target,
+			["lint"],
+		);
+	}
+
 	let toolchainReady = false;
 	if (options.rokit) {
 		try {
@@ -192,5 +216,5 @@ export async function scaffoldProject(
 		}
 	}
 
-	return { target, displayName, installed: options.install, toolchainReady };
+	return { target, displayName, installed: options.install, toolchainReady, lintPending: options.lint && !options.install };
 }

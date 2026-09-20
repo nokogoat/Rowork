@@ -127,9 +127,9 @@ try {
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
 	}
 
-	// The linter, then linting everything Rowork generated: generated code must pass it.
-	const lintAdded = run(process.execPath, [cli, "add:lint"], project);
-	check(lintAdded.status === 0, `\`rowork add:lint\` failed\n${lintAdded.output}`);
+	// The linter comes with every new project: nobody has to go and add it.
+	check(existsSync(join(project, "eslint.config.mjs")), "a new project does not include the linter");
+	check(JSON.parse(readFileSync(join(project, "rowork.json"), "utf8")).modules?.includes("lint"), "the linter is not recorded in rowork.json");
 
 	console.log("compiling...");
 	const compile = run(process.execPath, [join(project, "node_modules", "roblox-ts", "out", "CLI", "cli.js")], project);

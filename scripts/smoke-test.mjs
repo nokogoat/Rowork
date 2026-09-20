@@ -341,6 +341,14 @@ try {
 	const lintInfo = JSON.parse(spawnSync(process.execPath, [cli, "info", "--json"], { cwd: lintProject, encoding: "utf8" }).stdout);
 	check(lintInfo.commands.find((c) => c.name === "add:lint")?.guided === false, "add:lint should not be marked guided: it asks nothing");
 
+	// The linter is part of every new project that installs npm packages; --no-install and --no-lint skip it.
+	for (const [label, flags, expectLint] of [["LintDefault", ["--no-install"], false], ["LintOff", ["--no-lint", "--no-install"], false]]) {
+		const made = spawnSync(process.execPath, [cli, "init", label, "--path", workspace, "--no-rokit", "--no-git", ...flags], { encoding: "utf8" });
+		check(made.status === 0, `init ${flags.join(" ")} failed\n${made.stderr}`);
+		check(existsSync(join(workspace, label, "eslint.config.mjs")) === expectLint, `${label}: the linter should ${expectLint ? "" : "not "}be there`);
+	}
+	check(/rowork add lint/.test(spawnSync(process.execPath, [cli, "init", "LintHint", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" }).stderr), "init --no-install did not say the linter is left for later");
+
 	// Without the module it points to the fix.
 	const bareModules = join(workspace, "NoModules");
 	spawnSync(process.execPath, [cli, "init", "NoModules", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });

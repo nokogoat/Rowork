@@ -115,7 +115,6 @@ if (!reportOnly && failures.length === 0) {
 			["add:player-data", "--field", "coins:number=0", "--field", "level:number=1"],
 			["add:leaderstats", "--stat", "coins", "--stat", "level"],
 			["add:networking", "--event", "buyItem:server(itemId: string)", "--event", "bought:client(itemId: string)"],
-			["add:lint"],
 			["make:service", "Ledger"],
 			["make:component", "Door", "--side", "client"],
 		]) {

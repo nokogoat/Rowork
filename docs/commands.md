@@ -68,6 +68,7 @@ kebab-case form.
 | `--install-rokit` | download and install Rokit if it is missing |
 | `--no-git` | skip `git init` |
 | `--no-examples` | skip the example service and controller |
+| `--no-lint` | skip the linter (ESLint with the roblox-ts rules), which is included by default |
 | `-f, --force` | write into a directory that is not empty |
 
 Without `--force`, Rowork refuses a target directory that already contains

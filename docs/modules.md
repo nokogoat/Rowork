@@ -187,7 +187,9 @@ functions (`Networking.createFunction`); add them by hand when you need them.
 
 ### `lint`: catch roblox-ts mistakes early
 
-Adds [ESLint](https://eslint.org) with the **official roblox-ts rules**
+**Included in every new project** (`rowork start` and `rowork init` install it, as long as
+npm packages are installed; `rowork init --no-lint` skips it). Use `rowork add:lint` in a
+project created before, or after `--no-install`. It adds [ESLint](https://eslint.org) with the **official roblox-ts rules**
 ([`eslint-plugin-roblox-ts`](https://github.com/roblox-ts/eslint-plugin-roblox-ts)).
 roblox-ts turns TypeScript into Luau, and Luau cannot do everything TypeScript can, so
 some code compiles in your editor and then misbehaves in the game. The rules catch it

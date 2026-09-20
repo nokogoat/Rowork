@@ -31,8 +31,9 @@ Rowork advances sprint by sprint.
 - **Modules that wire themselves together**, in either order: the first
   integration sends player data to the client.
 
-- **A linter and a choice of features in `rowork start`.** `rowork add:lint` (ESLint with
-  the official roblox-ts rules), and `start` installs the features you tick.
+- **A linter in every new project, and a choice of features in `rowork start`.** ESLint
+  with the official roblox-ts rules comes by default (`rowork add:lint` for older
+  projects), and `start` installs the features you tick.
 
 ## Next
 
