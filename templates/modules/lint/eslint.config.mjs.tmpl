@@ -1,0 +1,17 @@
+import roblox from "eslint-plugin-roblox-ts";
+
+/**
+ * ESLint with the official roblox-ts rules.
+ *
+ * roblox-ts turns TypeScript into Luau, and Luau cannot do everything
+ * TypeScript can. These rules catch what the compiler would reject, or worse,
+ * accept and get wrong at runtime: `any`, `null` (Luau has `nil`, use
+ * `undefined`), unsupported operators, and so on. Run it with `npm run lint`.
+ *
+ * To turn a rule off or change its level, add an entry after the recommended set:
+ *   { rules: { "roblox-ts/no-any": "warn" } }
+ */
+export default [
+	{ ignores: ["out/**", "include/**", "node_modules/**"] },
+	roblox.configs.recommended,
+];

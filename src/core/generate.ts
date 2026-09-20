@@ -60,7 +60,10 @@ export function generateFile(options: GenerateOptions): string | undefined {
 		});
 	}
 
-	const source = readFileSync(join(templatesRoot(), options.templateRoot ?? "make", `${options.template}.ts.tmpl`), "utf8");
+	// `name.ts.tmpl` by default; a template that is not TypeScript carries its own
+	// extension in its name (`eslint.config.mjs` is stored as `eslint.config.mjs.tmpl`).
+	const base = join(templatesRoot(), options.templateRoot ?? "make", options.template);
+	const source = readFileSync(existsSync(`${base}.ts.tmpl`) ? `${base}.ts.tmpl` : `${base}.tmpl`, "utf8");
 	mkdirSync(directory, { recursive: true });
 	writeFileSync(target, renderString(source, options.variables), "utf8");
 	return shown;

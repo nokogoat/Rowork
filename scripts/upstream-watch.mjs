@@ -34,6 +34,8 @@ const NPM_PACKAGES = [
 	"@flamework/components",
 	"@flamework/networking",
 	"@rbxts/lapis",
+	"eslint",
+	"eslint-plugin-roblox-ts",
 	"@rbxts/t",
 ];
 
@@ -113,6 +115,7 @@ if (!reportOnly && failures.length === 0) {
 			["add:player-data", "--field", "coins:number=0", "--field", "level:number=1"],
 			["add:leaderstats", "--stat", "coins", "--stat", "level"],
 			["add:networking", "--event", "buyItem:server(itemId: string)", "--event", "bought:client(itemId: string)"],
+			["add:lint"],
 			["make:service", "Ledger"],
 			["make:component", "Door", "--side", "client"],
 		]) {
@@ -123,6 +126,9 @@ if (!reportOnly && failures.length === 0) {
 		console.log("compiling...");
 		const build = run("npm", ["run", "build"], { cwd: project, env });
 		if (build.status !== 0 || /error TS/.test(build.output)) throw new Error(`the generated project no longer compiles:\n${build.output}`);
+
+		const lint = run("npm", ["run", "lint"], { cwd: project, env });
+		if (lint.status !== 0) throw new Error(`the latest ESLint or roblox-ts plugin rejects the code Rowork generates:\n${lint.output}`);
 
 		// Point at the latest Rojo and build a place file with it.
 		const rokitToml = join(project, "rokit.toml");

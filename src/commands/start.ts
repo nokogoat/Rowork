@@ -7,6 +7,8 @@ import { findExecutable } from "../core/toolchain.js";
 import { assertValidProjectName, toPascalCase } from "../core/naming.js";
 import { resolveTarget, scaffoldProject } from "../core/scaffold.js";
 import { isVinegarInstalled, needsStudioSetup, setupStudio } from "../core/studio.js";
+import { installModulesByName } from "../core/modules.js";
+import { coreModules } from "../modules/index.js";
 import { defineCommand } from "../plugins/api.js";
 import { answered, isInteractive, prompts } from "../ui/prompt.js";
 import { printNextSteps } from "./next-steps.js";
@@ -79,6 +81,19 @@ export const startCommand = defineCommand({
 			}),
 		);
 
+		// Ready-made features, chosen up front. They install npm packages, so they need npm.
+		let features: string[] = [];
+		if (install) {
+			features = answered(
+				await prompts.multiselect({
+					message: "Which ready-made features do you want from the start? (space to tick, enter to confirm. You can add more later with `rowork add`)",
+					options: coreModules.map((module) => ({ value: module.name, label: module.title, hint: module.description })),
+					initialValues: ["lint"],
+					required: false,
+				}),
+			);
+		}
+
 		const rokitFound = findExecutable("rokit", context.cwd) !== undefined;
 		let rokit = true;
 		let installRokit = false;
@@ -119,6 +134,7 @@ export const startCommand = defineCommand({
 				`Examples   ${examples ? "yes" : "no"}`,
 				`Git        ${git ? "yes" : "no"}`,
 				`npm        ${install ? "install" : "skip"}`,
+				`Features   ${features.length > 0 ? features.join(", ") : install ? "none" : "skipped (needs npm)"}`,
 				...(studio ? ["Studio     install Vinegar"] : []),
 				`Rokit      ${installRokit ? "install Rokit, then the toolchain" : rokit ? "install the toolchain" : "skip"}`,
 			].join("\n"),
@@ -145,6 +161,11 @@ export const startCommand = defineCommand({
 			},
 			context.logger,
 		);
+
+		if (features.length > 0 && result.installed) {
+			prompts.log.step("Adding features");
+			await installModulesByName(context, result.target, features);
+		}
 
 		if (studio) {
 			try {

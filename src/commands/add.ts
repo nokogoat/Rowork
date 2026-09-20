@@ -10,7 +10,7 @@ import { requireProject } from "./make.js";
 export function moduleCommand(definition: ModuleDefinition): CommandDefinition {
 	return defineCommand({
 		name: `add:${definition.name}`,
-		guided: true,
+		guided: (definition.options ?? []).length > 0,
 		description: `Add the ${definition.title} module: ${definition.description}`,
 		options: [
 			...(definition.options ?? []),
@@ -25,11 +25,13 @@ export function moduleCommand(definition: ModuleDefinition): CommandDefinition {
 			const scripted = Object.keys(context.options).some(
 				(key) => key !== "install" && context.options[key] !== undefined,
 			);
-			if (!scripted) {
+			// A module with nothing to ask (the linter) runs anywhere, terminal or not.
+			const asksQuestions = (definition.options ?? []).length > 0;
+			if (!scripted && asksQuestions) {
 				requireInteractive(`add:${definition.name}`, `rowork add:${definition.name} <options> (see --help)`);
 			}
 
-			await installModule(context, definition, root, !scripted);
+			await installModule(context, definition, root, !scripted && asksQuestions);
 		},
 	});
 }
@@ -53,7 +55,9 @@ export const addCommand = defineCommand({
 					hint: `Available: ${coreModules.map((candidate) => candidate.name).join(", ")}.${close.length > 0 ? ` Did you mean ${close.join(", ")}?` : ""}`,
 				});
 			}
-			requireInteractive(`add ${module.name}`, `rowork add:${module.name} <options> (see --help)`);
+			if ((module.options ?? []).length > 0) {
+				requireInteractive(`add ${module.name}`, `rowork add:${module.name} <options> (see --help)`);
+			}
 			await moduleCommand(module).run({ ...context, args: {}, options: {} });
 			return;
 		}

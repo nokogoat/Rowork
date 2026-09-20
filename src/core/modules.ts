@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { RoworkError } from "../cli/errors.js";
+import { coreModules } from "../modules/index.js";
 import { coreIntegrations } from "../modules/integrations.js";
 import type { ModuleDefinition, ModulePlan } from "../modules/types.js";
 import type { CommandContext, Logger, RoworkConfig } from "../plugins/api.js";
@@ -149,6 +150,34 @@ function writePlan(
 			logger.step(`registered ${entry.directory} in runtime.${entry.side}.ts`);
 		}
 	}
+
+	addScripts(logger, root, plan.scripts);
+}
+
+/** Adds npm scripts to package.json. A script the user already has is left exactly as it is. */
+function addScripts(logger: Logger, root: string, scripts: Record<string, string> | undefined): void {
+	if (scripts === undefined) return;
+	const file = join(root, "package.json");
+	if (!existsSync(file)) return;
+
+	const source = readFileSync(file, "utf8");
+	const manifest = JSON.parse(source) as { scripts?: Record<string, string> };
+	const existing = manifest.scripts ?? {};
+
+	const added: string[] = [];
+	for (const [name, command] of Object.entries(scripts)) {
+		if (existing[name] === undefined) {
+			existing[name] = command;
+			added.push(name);
+		} else if (existing[name] !== command) {
+			logger.warn(`package.json already has a \`${name}\` script: kept as it is.`);
+		}
+	}
+	if (added.length === 0) return;
+
+	manifest.scripts = existing;
+	writeFileSync(file, `${JSON.stringify(manifest, undefined, /^\t/m.test(source) ? "\t" : 2)}\n`, "utf8");
+	logger.step(`package.json: added ${added.map((name) => `\`npm run ${name}\``).join(", ")}`);
 }
 
 function recordIntegration(projectRoot: string, name: string): void {
@@ -205,4 +234,31 @@ export async function applyPendingIntegrations(
 		}
 	}
 	return applied;
+}
+
+/**
+ * Installs several modules in dependency order, for `rowork start`.
+ *
+ * A module that needs another one brings it along. One failing does not stop
+ * the others: the project already exists and is usable, so it is reported and
+ * can be retried with `rowork add`.
+ */
+export async function installModulesByName(context: CommandContext, root: string, names: string[]): Promise<string[]> {
+	const wanted = new Set(names);
+	for (const module of coreModules) {
+		if (wanted.has(module.name)) for (const required of module.requires ?? []) wanted.add(required);
+	}
+
+	const done: string[] = [];
+	for (const module of coreModules) {
+		if (!wanted.has(module.name)) continue;
+		try {
+			await installModule({ ...context, projectRoot: root, config: loadConfig(root), options: {} }, module, root, false);
+			done.push(module.name);
+		} catch (error) {
+			context.logger.warn(`Could not add ${module.title}: ${error instanceof Error ? error.message : String(error)}`);
+			context.logger.info(`Retry later with \`rowork add ${module.name}\`.`);
+		}
+	}
+	return done;
 }

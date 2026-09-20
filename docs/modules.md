@@ -185,6 +185,34 @@ number): void;` to `ClientToServerEvents` or `ServerToClientEvents`.
 Only events are generated. Flamework Networking also has request/response
 functions (`Networking.createFunction`); add them by hand when you need them.
 
+### `lint`: catch roblox-ts mistakes early
+
+Adds [ESLint](https://eslint.org) with the **official roblox-ts rules**
+([`eslint-plugin-roblox-ts`](https://github.com/roblox-ts/eslint-plugin-roblox-ts)).
+roblox-ts turns TypeScript into Luau, and Luau cannot do everything TypeScript can, so
+some code compiles in your editor and then misbehaves in the game. The rules catch it
+first: `any` (not supported), `null` (Luau has `nil`, use `undefined`), and code Luau
+cannot express.
+
+```bash
+rowork add:lint
+npm run lint         # check everything in src/
+npm run lint:fix     # fix what can be fixed automatically
+```
+
+It asks no question, so it also runs in a script.
+
+| File / change | Role |
+| --- | --- |
+| `eslint.config.mjs` | the ESLint settings: the recommended roblox-ts rules, and what to ignore (`out`, `include`). Change a rule here |
+| `package.json` | gains a `lint` and a `lint:fix` script. A script you already have with that name is left exactly as it is |
+
+Everything Rowork generates passes this linter (a test runs it on a generated project),
+so a new project starts clean and any complaint is about your own code.
+
+**Node version.** ESLint 10 needs Node 20.19 or newer, 22.13 or newer, or 24. On an older
+Node the command stops before changing anything and tells you to update.
+
 ## Modules working together
 
 Some modules are more useful together, and the code that joins them is exactly the

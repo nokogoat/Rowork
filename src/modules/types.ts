@@ -15,6 +15,8 @@ export interface ModulePlan {
 	files: ModuleFile[];
 	/** Flamework directories the module's classes live in, to be registered. */
 	register: { side: "server" | "client"; directory: string }[];
+	/** npm scripts to add to package.json. One that already exists is never overwritten. */
+	scripts?: Record<string, string>;
 	/** Short lines printed after installation: what was added, what to do next. */
 	notes: string[];
 }

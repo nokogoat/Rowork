@@ -33,7 +33,8 @@ meets a `rowork.json`, so commands work from any subfolder.
 ## `rowork start`
 
 Guided project setup. Asks a few questions, shows a summary, then creates the
-project. See [Getting started](getting-started.md#the-guided-way) for the
+project, **and installs the ready-made features you tick** (see
+[Modules](modules.md)). See [Getting started](getting-started.md#the-guided-way) for the
 questions.
 
 It needs an interactive terminal and refuses to run in a script or a pipe,

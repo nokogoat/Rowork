@@ -127,6 +127,10 @@ try {
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
 	}
 
+	// The linter, then linting everything Rowork generated: generated code must pass it.
+	const lintAdded = run(process.execPath, [cli, "add:lint"], project);
+	check(lintAdded.status === 0, `\`rowork add:lint\` failed\n${lintAdded.output}`);
+
 	console.log("compiling...");
 	const compile = run(process.execPath, [join(project, "node_modules", "roblox-ts", "out", "CLI", "cli.js")], project);
 
@@ -149,6 +153,9 @@ try {
 	} else {
 		check(false, "no flamework.build was produced");
 	}
+
+	const linted = run("npm", ["run", "lint"], project);
+	check(linted.status === 0 && !/error/.test(linted.output.replace(/^npm .*$/gm, "")), `the code Rowork generated does not pass its own linter:\n${linted.output}`);
 
 	// Leaving Rowork must leave a project that still builds with the plain tools.
 	const eject = run(process.execPath, [cli, "eject", "--yes"], project);

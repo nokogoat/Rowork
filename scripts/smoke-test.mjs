@@ -324,6 +324,23 @@ try {
 	check(vault.status === 0 && vaultSource.includes("KillsService") && vaultSource.includes("PlayerDataService"), `make:service --uses did not inject the values\n${vault.stderr}`);
 	check(statAt("make:service", "attic", "--uses", "nope").status === 1 && !existsSync(join(servicesDir, "AtticService.ts")), "make:service --uses an unknown value still wrote the service");
 
+	// The linter: no questions, so it runs without a terminal; scripts are added, never overwritten.
+	const lintProject = join(workspace, "LintGame");
+	spawnSync(process.execPath, [cli, "init", "LintGame", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
+	const lintManifestPath = join(lintProject, "package.json");
+	const lintManifest = JSON.parse(readFileSync(lintManifestPath, "utf8"));
+	lintManifest.scripts["lint:fix"] = "my own fixer";
+	writeFileSync(lintManifestPath, JSON.stringify(lintManifest, undefined, 2));
+	const lintRun = spawnSync(process.execPath, [cli, "add:lint", "--no-install"], { cwd: lintProject, encoding: "utf8" });
+	check(lintRun.status === 0, `add:lint failed without a terminal\n${lintRun.stderr}`);
+	check(existsSync(join(lintProject, "eslint.config.mjs")) && readFileSync(join(lintProject, "eslint.config.mjs"), "utf8").includes("roblox.configs.recommended"), "add:lint did not write the ESLint config");
+	const lintScripts = JSON.parse(readFileSync(lintManifestPath, "utf8")).scripts;
+	check(lintScripts.lint === "eslint src", "add:lint did not add the lint script");
+	check(lintScripts["lint:fix"] === "my own fixer", "add:lint overwrote a script the user already had");
+	check(JSON.parse(readFileSync(join(lintProject, "rowork.json"), "utf8")).modules?.includes("lint"), "the linter is not recorded in rowork.json");
+	const lintInfo = JSON.parse(spawnSync(process.execPath, [cli, "info", "--json"], { cwd: lintProject, encoding: "utf8" }).stdout);
+	check(lintInfo.commands.find((c) => c.name === "add:lint")?.guided === false, "add:lint should not be marked guided: it asks nothing");
+
 	// Without the module it points to the fix.
 	const bareModules = join(workspace, "NoModules");
 	spawnSync(process.execPath, [cli, "init", "NoModules", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
