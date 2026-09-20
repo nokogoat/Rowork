@@ -1,3 +1,4 @@
+import { RoworkError } from "../cli/errors.js";
 import { coreModules } from "../modules/index.js";
 import type { ModuleDefinition } from "../modules/types.js";
 import { installModule, installedModules } from "../core/modules.js";
@@ -36,9 +37,27 @@ export function moduleCommand(definition: ModuleDefinition): CommandDefinition {
 export const addCommand = defineCommand({
 	name: "add",
 	guided: true,
+	arguments: [{ name: "module", description: "the feature to add, e.g. player-data (omit it to choose from a list)", required: false }],
 	description: "Add a ready-made feature (a working pack of files) to your game, chosen from a list.",
 	async run(context) {
 		requireProject(context, "add");
+
+		// `rowork add player-data`: the guided version of that module, no list.
+		const named = context.args["module"];
+		if (typeof named === "string") {
+			const wanted = named.replace(/^add:/, "");
+			const module = coreModules.find((candidate) => candidate.name === wanted);
+			if (module === undefined) {
+				const close = coreModules.filter((candidate) => candidate.name.startsWith(wanted.slice(0, 3))).map((candidate) => candidate.name);
+				throw new RoworkError(`There is no feature called \`${wanted}\`.`, {
+					hint: `Available: ${coreModules.map((candidate) => candidate.name).join(", ")}.${close.length > 0 ? ` Did you mean ${close.join(", ")}?` : ""}`,
+				});
+			}
+			requireInteractive(`add ${module.name}`, `rowork add:${module.name} <options> (see --help)`);
+			await moduleCommand(module).run({ ...context, args: {}, options: {} });
+			return;
+		}
+
 		requireInteractive("add", "rowork add:<module> (run `rowork --help` to list them)");
 
 		const installed = installedModules(context);

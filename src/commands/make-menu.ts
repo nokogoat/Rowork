@@ -1,6 +1,7 @@
 import { defineCommand, type CommandDefinition } from "../plugins/api.js";
 import { answered, prompts, requireInteractive } from "../ui/prompt.js";
-import { makeToolCommand } from "./make-tool.js";
+import { makeEventCommand } from "./make-event.js";
+import { makeStatCommand } from "./make-stat.js";
 import { makeComponentCommand, makeControllerCommand, makeServiceCommand, requireProject } from "./make.js";
 
 interface Choice {
@@ -11,7 +12,8 @@ interface Choice {
 
 /** Everything `rowork make` can create, in the order most people need it. */
 const CHOICES: Choice[] = [
-	{ command: makeToolCommand, label: "Tool", hint: "something a player holds and uses: pickaxe, sword, torch" },
+	{ command: makeStatCommand, label: "Saved value", hint: "kills, coins, level: added to the player data everywhere it must be" },
+	{ command: makeEventCommand, label: "Message", hint: "a typed message between client and server (needs the networking module)" },
 	{ command: makeServiceCommand, label: "Service", hint: "server-side logic: data, rules, spawning" },
 	{ command: makeControllerCommand, label: "Controller", hint: "client-side logic: input, camera, effects" },
 	{ command: makeComponentCommand, label: "Component", hint: "behaviour attached to tagged objects: doors, pickups" },
@@ -23,7 +25,7 @@ export const makeCommand = defineCommand({
 	description: "Create a file in the right place and connect it where it is needed (choose from a list).",
 	async run(context) {
 		requireProject(context, "make");
-		requireInteractive("make", "rowork make:tool <name>, make:service <name>, make:controller <name> or make:component <name>");
+		requireInteractive("make", "rowork make:service <name>, make:controller <name>, make:component <name>, make:stat <name> or make:event <name>");
 
 		prompts.intro("rowork make");
 		const chosen = answered(

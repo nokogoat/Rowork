@@ -20,7 +20,7 @@ const COMMON_FIELDS: Field[] = [
 
 const IDENTIFIER = /^[a-z][A-Za-z0-9]*$/;
 
-function defaultFor(type: FieldType, raw: string | undefined): string {
+export function defaultFor(type: FieldType, raw: string | undefined): string {
 	if (type === "number") {
 		const value = raw === undefined || raw === "" ? 0 : Number(raw);
 		if (!Number.isFinite(value)) throw new RoworkError(`\`${String(raw)}\` is not a number.`);

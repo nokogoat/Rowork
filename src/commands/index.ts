@@ -10,7 +10,8 @@ import { ejectCommand } from "./eject.js";
 import { devLogsCommand, devStopCommand } from "./dev-background.js";
 import { initCommand } from "./init.js";
 import { makeCommand } from "./make-menu.js";
-import { makeToolCommand } from "./make-tool.js";
+import { makeEventCommand } from "./make-event.js";
+import { makeStatCommand } from "./make-stat.js";
 import { makeComponentCommand, makeControllerCommand, makeServiceCommand } from "./make.js";
 import { startCommand } from "./start.js";
 import { studioCommand, studioSetupCommand } from "./studio.js";
@@ -30,7 +31,8 @@ export const coreCommands: CommandDefinition[] = [
 	makeServiceCommand,
 	makeControllerCommand,
 	makeComponentCommand,
-	makeToolCommand,
+	makeStatCommand,
+	makeEventCommand,
 	studioCommand,
 	studioSetupCommand,
 	consoleCommand,

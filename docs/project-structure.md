@@ -45,7 +45,8 @@ With `--no-examples` the example files are omitted and each directory keeps a
 | server-side logic (data, rules, anti-cheat) | `src/server/services/` (`rowork make:service`) |
 | client-side logic (input, camera, UI) | `src/client/controllers/` (`rowork make:controller`) |
 | behaviour attached to tagged instances | `src/<side>/components/` (`rowork make:component`) |
-| a tool players hold: settings, behaviour | `src/shared/tools/`, `src/server/components/` (`rowork make:tool`) |
+| a saved value (kills, coins) | `src/shared/data/PlayerData.ts` (`rowork make:stat`) |
+| a client/server message | `src/shared/networking.ts` (`rowork make:event`) |
 | types, constants, helpers used by both | `src/shared/` |
 
 ## How code reaches Studio

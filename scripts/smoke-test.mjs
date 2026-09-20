@@ -139,29 +139,7 @@ try {
 	check(makeRun("make:component", "Door", "--side", "nowhere").status === 1, "an invalid --side was accepted");
 	check(makeRun("make:component", "Door", "--tag", 'a"b', "--force").status === 1, "an unsafe --tag was accepted");
 
-	// make:tool writes config + component, plus shared infrastructure created once.
-	check(makeRun("make:tool", "pickaxe").status === 0, "make:tool failed");
-	for (const file of [
-		join("src", "shared", "tools", "ToolDefinition.ts"),
-		join("src", "shared", "tools", "PickaxeTool.ts"),
-		join("src", "server", "components", "PickaxeToolComponent.ts"),
-		join("src", "server", "services", "ToolService.ts"),
-	]) {
-		check(existsSync(join(bareProject, file)), `make:tool did not create ${file}`);
-	}
-	const serviceFile = join(bareProject, "src", "server", "services", "ToolService.ts");
-	writeFileSync(serviceFile, "// edited by the user\n" + readFileSync(serviceFile, "utf8"));
-	check(makeRun("make:tool", "PickaxeTool").status === 1, "make:tool overwrote an existing tool");
-	check(makeRun("make:tool", "Shovel", "--cooldown", "2", "--droppable", "--no-give-on-spawn").status === 0, "a second make:tool failed");
-	const shovel = readFileSync(join(bareProject, "src", "shared", "tools", "ShovelTool.ts"), "utf8");
-	check(shovel.includes("cooldown: 2,") && shovel.includes("canBeDropped: true") && shovel.includes("giveOnSpawn: false"), "make:tool ignored its settings flags");
-	const registry = readFileSync(join(bareProject, "src", "shared", "tools", "index.ts"), "utf8");
-	check(registry.includes("PickaxeTool") && registry.includes("ShovelTool"), "the tool registry does not list every tool");
-	check(makeRun("make:tool", "Bad", "--cooldown", "soon").status === 1, "an invalid --cooldown was accepted");
-	check(
-		readFileSync(serviceFile, "utf8").startsWith("// edited by the user"),
-		"a second make:tool overwrote the shared ToolService",
-	);
+
 
 	// Modules: files written, recorded in rowork.json, never added twice, all-or-nothing.
 	check(makeRun("add:player-data").status === 1, "add:player-data without a TTY or options did not refuse");
@@ -295,6 +273,41 @@ try {
 	check(networking.includes("itemBought(itemId: string): void;"), "networking.ts lacks the server-to-client event");
 	check(existsSync(join(bareProject, "src", "server", "network.ts")) && existsSync(join(bareProject, "src", "client", "network.ts")), "networking did not create both network.ts files");
 
+	// make:stat: a saved value is added to the player data, the leaderboard and a service, all or nothing.
+	const statAt = (...a) => spawnSync(process.execPath, [cli, ...a], { cwd: bareProject, encoding: "utf8" });
+	const dataFile = join(bareProject, "src", "shared", "data", "PlayerData.ts");
+	// bareProject has player-data (coins, nickname), leaderstats (coins) and networking by now.
+	const statOk = statAt("make:stat", "kills", "--type", "number", "--default", "0");
+	check(statOk.status === 0, `make:stat failed\n${statOk.stderr}`);
+	const dataAfter = readFileSync(dataFile, "utf8");
+	check(dataAfter.includes("kills: number;") && dataAfter.includes("kills: 0,"), "make:stat did not add the value to PlayerData in both places");
+	check(existsSync(join(bareProject, "src", "server", "services", "KillsService.ts")), "make:stat did not create the helper service for a number");
+	check(readFileSync(leaderstatsFile, "utf8").includes('"kills"'), "make:stat did not add a number to the leaderboard");
+	const beforeRefusals = readFileSync(dataFile, "utf8") + readFileSync(leaderstatsFile, "utf8");
+	check(statAt("make:stat", "kills").status === 1, "make:stat added the same value twice");
+	check(statAt("make:stat", "deaths", "--type", "date").status === 1, "make:stat accepted an unknown type");
+	check(readFileSync(dataFile, "utf8") + readFileSync(leaderstatsFile, "utf8") === beforeRefusals, "a refused make:stat changed a file");
+	check(statAt("make:stat", "title", "--type", "string", "--default", "Rookie").status === 0 && !existsSync(join(bareProject, "src", "server", "services", "TitleService.ts")), "a text stat should not get a service or a leaderboard entry by default");
+	// A file the user restructured is never edited, and nothing else is written either.
+	const restructured = readFileSync(dataFile, "utf8").replace("export interface PlayerData {", "export type PlayerData = {");
+	writeFileSync(dataFile, restructured);
+	check(statAt("make:stat", "assists").status === 1 && readFileSync(dataFile, "utf8") === restructured && !existsSync(join(bareProject, "src", "server", "services", "AssistsService.ts")), "make:stat edited a restructured file or wrote a service anyway");
+	writeFileSync(dataFile, dataAfter);
+
+	// make:event: a typed message added to the networking file, duplicates refused in either direction.
+	const networkFile = join(bareProject, "src", "shared", "networking.ts");
+	const eventOk = statAt("make:event", "cast spell", "--to", "server", "--args", "spellId: string");
+	check(eventOk.status === 0 && readFileSync(networkFile, "utf8").includes("castSpell(spellId: string): void;"), `make:event did not add the message\n${eventOk.stderr}`);
+	const networkBefore = readFileSync(networkFile, "utf8");
+	check(statAt("make:event", "castSpell", "--to", "client").status === 1, "make:event accepted a name already used in the other direction");
+	check(statAt("make:event", "bad", "--args", "x: number); evil(").status === 1, "make:event accepted an unsafe argument list");
+	check(readFileSync(networkFile, "utf8") === networkBefore, "a refused make:event changed the networking file");
+	// Without the module it points to the fix.
+	const bareModules = join(workspace, "NoModules");
+	spawnSync(process.execPath, [cli, "init", "NoModules", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
+	const noStat = spawnSync(process.execPath, [cli, "make:stat", "kills"], { cwd: bareModules, encoding: "utf8" });
+	check(noStat.status === 1, "make:stat ran in a project without player-data");
+
 	// Integrations: two modules that work together are wired when the second arrives, in either order.
 	const wireFiles = ["src/shared/data/dataEvents.ts", "src/server/services/DataReplicationService.ts", "src/client/controllers/PlayerDataController.ts"];
 	const wired = {};
@@ -327,7 +340,7 @@ try {
 	check(clashAt("wire").status === 1, "wire did not report the integration it could not apply");
 
 	// Guided versions need a terminal: without one they refuse and show the scripted form.
-	for (const command of ["make", "make:tool", "make:service", "make:controller", "make:component", "console"]) {
+	for (const command of ["make", "make:stat", "make:event", "make:service", "make:controller", "make:component", "console"]) {
 		const guided = makeRun(command);
 		check(guided.status === 1, `\`rowork ${command}\` without a TTY exited with ${guided.status}`);
 		check(/terminal/.test(guided.stderr), `\`rowork ${command}\` without a TTY did not explain why`);

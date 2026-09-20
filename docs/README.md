@@ -22,7 +22,8 @@ Flamework, Rojo and a pinned toolchain, behind one command.
 ## Status
 
 Rowork is in early development (v0.0.x). Today: `start`, `init`, `dev`, `make:service`,
-`make:controller`, `make:component`, `make:tool`, `studio` and `studio:setup`.
+`make:controller`, `make:component`, `make:stat`, `make:event`, `studio` and
+`studio:setup`.
 Everything else in the roadmap, notably `eject` and the other domain generators, is **not implemented yet**, and these pages say so wherever it
 matters. The plugin API is at v1 and may still change before a stable release.
 

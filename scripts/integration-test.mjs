@@ -85,7 +85,6 @@ try {
 		["make:controller", "Camera"],
 		["make:component", "Door", "--side", "client", "--tag", "Openable"],
 		["make:component", "Spawner"],
-		["make:tool", "Pickaxe"],
 	]) {
 		const made = run(process.execPath, [cli, ...args], project);
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
@@ -116,6 +115,15 @@ try {
 	check(existsSync(join(project, "node_modules", "@flamework", "networking")), "@flamework/networking was not installed");
 	const stats = run(process.execPath, [cli, "add:leaderstats", "--stat", "coins", "--stat", "level"], project);
 	check(stats.status === 0, `\`rowork add:leaderstats\` failed\n${stats.output}`);
+	for (const args of [
+		["make:stat", "kills", "--type", "number", "--default", "0"],
+		["make:stat", "nickname", "--type", "string", "--default", "Guest"],
+		["make:event", "cast spell", "--to", "server", "--args", "spellId: string"],
+		["make:event", "spellCast", "--to", "client", "--args", "spellId: string, caster: number"],
+	]) {
+		const made = run(process.execPath, [cli, ...args], project);
+		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
+	}
 
 	console.log("compiling...");
 	const compile = run(process.execPath, [join(project, "node_modules", "roblox-ts", "out", "CLI", "cli.js")], project);
@@ -133,7 +141,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PickaxeToolComponent", "ToolService", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {

@@ -141,7 +141,8 @@ command refuses and prints its scripted form.
 | --- | --- |
 | `rowork start` (or `rowork init` alone) | project name, place, examples, git, npm, toolchain |
 | `rowork make` | what to create, from a list, then that command's own questions |
-| `rowork make:tool` | name, seconds between uses, droppable, given at spawn |
+| `rowork make:stat` | the value, its kind, its starting value, leaderboard, service |
+| `rowork make:event` | the message, who sends it, what it carries |
 | `rowork make:component` | name, server or client, tag |
 | `rowork make:service`, `make:controller` | name |
 | `rowork add` | which module, then that module's own questions |
@@ -153,10 +154,11 @@ Shows everything you can create and asks what you want:
 
 ```
 What do you want to create?
-> Tool        something a player holds and uses: pickaxe, sword, torch
-  Service     server-side logic: data, rules, spawning
-  Controller  client-side logic: input, camera, effects
-  Component   behaviour attached to tagged objects: doors, pickups
+> Saved value  kills, coins, level: added to the player data everywhere it must be
+  Message      a typed message between client and server
+  Service      server-side logic: data, rules, spawning
+  Controller   client-side logic: input, camera, effects
+  Component    behaviour attached to tagged objects: doors, pickups
 ```
 
 It then runs the guided version of your choice. Must run inside a project.
@@ -217,53 +219,73 @@ generating a second component does not add the line twice. If the entry file
 does not look the way Rowork generated it, nothing is edited and Rowork prints
 the line to add yourself.
 
-## `rowork make:tool [name]`
+## `rowork make:stat [name]`
 
-Creates a whole tool (a Roblox `Tool` a player holds) as one consistent unit,
-and delivers it to players for you. **Run it with no name for the guided
-version**: it asks the name, the seconds between two uses, whether players can
-drop it, and whether every player gets it when they spawn.
+Adds a value to save for every player (kills, coins, a best score...) **in every place
+it must be**, so you cannot forget one. This is the classic bug: you build a system,
+test for twenty minutes, and find out the value was never saved because it was missing
+from the data schema.
 
 ```bash
-rowork make:tool                                  # guided
-rowork make:tool Pickaxe                          # defaults, no questions
-rowork make:tool Torch --cooldown 2 --droppable --no-give-on-spawn
+rowork make:stat kills                                   # a number, starting at 0
+rowork make:stat kills --type number --default 0
+rowork make:stat nickname --type string --default Guest
+rowork make:stat                                         # guided: asks each step
 ```
+
+It needs the [`player-data`](modules.md#player-data-save-each-players-progress) module.
 
 | Option | Effect |
 | --- | --- |
-| `--cooldown <seconds>` | seconds between two uses (default 0.5) |
-| `--droppable` | the player can drop it |
-| `--no-give-on-spawn` | do not give it to players automatically |
-| `-f, --force` | overwrite the tool's own files if they exist |
+| `--type <type>` | `number` (default), `string` or `boolean` |
+| `--default <value>` | starting value for a new player |
+| `--leaderboard` / `--no-leaderboard` | show it in the leaderboard (needs `leaderstats`). On by default for numbers |
+| `--service` / `--no-service` | create a small service to use it. On by default for numbers |
 
-| File | Role |
-| --- | --- |
-| `src/shared/tools/PickaxeTool.ts` | the tool's settings: name, tag, cooldown, droppable, given at spawn |
-| `src/server/components/PickaxeToolComponent.ts` | what it does: `activate(player)`, cooldown already handled |
-| `src/shared/tools/ToolDefinition.ts` | the settings type, **created once** |
-| `src/shared/tools/index.ts` | the list of all tools, **rewritten every time**, do not edit |
-| `src/server/services/ToolService.ts` | builds the `Tool` and hands it out, **created once** |
+**What it changes**
 
-**You write nothing to hand the tool out.** Every tool set to be given at spawn
-reaches each player when they spawn. Your gameplay goes in
-`PickaxeToolComponent.activate(player)`; to change a setting, edit
-`PickaxeTool.ts`.
-
-For a tool given at another moment (a shop, a reward), turn off "give at spawn"
-and call `give` from any service:
+- `src/shared/data/PlayerData.ts`: the value is added to the `PlayerData` interface
+  **and** to `DEFAULT_PLAYER_DATA`. Players who already have a save get the starting
+  value the next time they join.
+- `src/server/services/LeaderstatsService.ts`: added to the `SHOWN` list, if the
+  leaderstats module is installed and it is a number.
+- `src/server/services/KillsService.ts` (a new file, named after the value): for a
+  number, `get(player)`, `set(player, value)` and `add(player, amount = 1)`.
 
 ```ts
-constructor(private readonly tools: ToolService) {}
-// later, when the player buys it:
-this.tools.give(player, PickaxeTool);
+constructor(private readonly kills: KillsService) {}
+this.kills.add(player);          // on a kill
 ```
 
-The `Tool` instance is built in code with a placeholder `Handle` that you replace
-with your own model. The name is normalised: `pickaxe`, `Pickaxe` and
-`PickaxeTool` are the same tool. The components directory is registered in
-`runtime.server.ts`. `ToolDefinition.ts` and `ToolService.ts` are shared by every
-tool and may hold your edits, so they are never overwritten, even with `--force`.
+**Safe by construction.** These are files you own, so every edit is worked out in
+memory first, and nothing is written unless all of them succeed. If you have
+restructured `PlayerData.ts` so Rowork no longer recognises it, it says so and touches
+nothing (no service is created either); add the line by hand. A value that already
+exists is refused.
+
+## `rowork make:event [name]`
+
+Adds a typed message between client and server to the networking file, where it
+belongs, so you never edit the interfaces by hand.
+
+```bash
+rowork make:event buyItem --to server --args "itemId: string, amount: number"
+rowork make:event itemBought --to client --args "itemId: string"
+rowork make:event                                        # guided
+```
+
+It needs the [`networking`](modules.md#networking-messages-between-client-and-server-with-types)
+module.
+
+| Option | Effect |
+| --- | --- |
+| `--to <side>` | who receives it: `server` (the client sends it, default) or `client` (the server sends it) |
+| `--args <list>` | what it carries, as `name: type` separated by commas |
+
+The line is added to `ClientToServerEvents` or `ServerToClientEvents` in
+`src/shared/networking.ts`, and Rowork prints how to listen to it and how to send it.
+A name already used in either direction is refused (both would collide in `Events`),
+and the argument list is validated because it is written into code.
 
 ## `rowork console`
 
@@ -271,13 +293,13 @@ An interactive Rowork prompt, so you type commands without retyping `rowork`:
 
 ```
 Zomblood > make
-Zomblood > make:tool
+Zomblood > make:stat
 Zomblood > dev
 Zomblood > help
 Zomblood > exit
 ```
 
-- **Everything works as usual**: type `make:tool`, `dev --port 34873`, or even
+- **Everything works as usual**: type `make:stat`, `dev --port 34873`, or even
   `rowork make:service Ledger` (the leading `rowork` is optional).
 - **`help`** lists every command with its description; add `--help` to one
   command for its options.
@@ -299,7 +321,8 @@ is and what each one does.
 
 ```bash
 rowork add                         # guided: pick from a list
-rowork add:player-data             # guided version of one module
+rowork add player-data             # guided version of one module, by name
+rowork add:player-data             # the same module, with its own options
 rowork add:player-data --field coins:number=0 --no-install
 rowork add:leaderstats --stat coins   # needs player-data first
 ```

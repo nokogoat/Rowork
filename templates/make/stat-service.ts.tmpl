@@ -1,0 +1,26 @@
+import { Service } from "@flamework/core";
+import { PlayerDataService } from "./PlayerDataService";
+
+/**
+ * Reads and changes the `{{ name }}` value that is saved for each player.
+ * The value itself lives in PlayerData (it was added there for you), so it is
+ * saved and loaded with everything else: nothing more to wire.
+ */
+@Service()
+export class {{ className }} {
+	constructor(private readonly playerData: PlayerDataService) {}
+
+	/** The player's `{{ name }}`, or undefined while their data is still loading. */
+	get(player: Player): {{ type }} | undefined {
+		const data = this.playerData.get(player);
+		return data === undefined ? undefined : data.{{ name }};
+	}
+
+	/** Sets the player's `{{ name }}`. */
+	set(player: Player, value: {{ type }}): void {
+		this.playerData.update(player, (data) => {
+			data.{{ name }} = value;
+			return data;
+		});
+	}
+{{ extra }}}

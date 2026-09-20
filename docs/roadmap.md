@@ -36,12 +36,10 @@ Rowork advances sprint by sprint.
 - **More modules.** Only chores almost every game redoes: player settings, notifications. Each new module
   must pass that test; genre-specific features do not belong in the core.
 
-- **Sprint 4: domain scaffolding.** `make:tool` is done (a config, a server
-  component and a shared service, generated together). Still to do: `make:npc`, `make:shop`,
-  `make:screen`, `make:profile`. This is the point of Rowork: Flamework provides
-  `service`, `controller` and `component`; Rowork adds the layer above, where a
-  *tool* is a `Tool` instance plus a component, a config entry and a server
-  handler, generated together and kept consistent.
+- **Sprint 4: extending packs.** `make:stat` and `make:event` add a value or a message
+  where it must be (`make:tool` was removed from the core: it was a pack, and specific to
+  one kind of game). Next: `rowork add <name>` (done), linting, a UI module (React-Roblox)
+  and the Wally bridge, see the backlog in `CLAUDE.md`.
 - **Sprint 5: public plugin API and Wally.** Stabilise the contract and port
   Wally support as the first official plugin, outside the core.
 - **Error prioritisation.** In `dev`, surface compiler and Flamework diagnostics

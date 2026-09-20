@@ -18,7 +18,8 @@ src/
     init.ts              non-interactive creation
     dev.ts               orchestration entry
     make.ts              make:service, make:controller, make:component
-    make-tool.ts         make:tool (settings, component, delivery)
+    make-stat.ts         make:stat (a saved value, in every place it must be)
+    make-event.ts        make:event (a typed message in the networking file)
     make-menu.ts         make: the list of everything that can be created
     console.ts           console: interactive prompt (each line is a child process)
     dev-background.ts    dev:stop and dev:logs
@@ -32,6 +33,7 @@ src/
     toolchain.ts         tool lookup on PATH, install advice
     exec.ts              run an external tool to completion
     generate.ts          write generated files, register Flamework paths
+    schema-edit.ts       careful text edits to files the user owns (PlayerData, networking)
     modules.ts           install a module and apply integrations: checks first, writes last
     background.ts        dev in the background: detached spawn, pid file, stop
     versions.ts          latest versions (Rojo, npm), rokit.toml pin, offline fallback
@@ -50,7 +52,7 @@ src/
   ui/prompt.ts           guided-flow helpers: terminal check, cancel handling
 templates/init/          files copied into a new project
 src/modules/            module definitions (types.ts, one file per module)
-templates/make/          one template per make:* command (make:tool uses four)
+templates/make/          one template per make:* command
 templates/modules/       the files each module copies into a project
 templates/integrations/  the glue generated when several modules are installed
 scripts/                 smoke, orphan and integration tests
@@ -134,10 +136,15 @@ task's process tree itself (the same path as Ctrl+C); on Windows `taskkill /T`
 takes the tree. `rowork -d dev` is rewritten to `rowork dev -d` before parsing,
 since Commander would read a `-d` before the command as a global option.
 
-**The tool registry is rebuilt, not patched.** `src/shared/tools/index.ts` is
-regenerated from the `*Tool.ts` files present, so it cannot drift and needs no
-fragile text insertion. `ToolService` reads it to hand out tools at spawn, which
-is why users never write delivery code.
+**Editing files the user owns: compute everything, then write.** `make:stat` and
+`make:event` extend a file a module generated earlier, which the user may since have
+changed. `schema-edit.ts` works on the text, matches braces instead of guessing lines,
+and throws when the file no longer has the expected shape rather than editing a guess.
+The command computes every new file content in memory first (the data file, the
+leaderboard list, the helper service) and writes them only if all succeeded, so a
+refusal leaves the project exactly as it was. A duplicate is refused before anything
+happens: a name used in either direction of the networking file would collide in
+`Events`.
 
 **Generators register what they generate.** Flamework silently ignores classes
 in directories not passed to `addPaths`. `ensureFlameworkPath` inserts the line

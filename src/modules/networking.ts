@@ -39,7 +39,7 @@ function splitParameters(text: string): string[] {
 }
 
 /** Why a parameter list is not valid, or undefined when it is. */
-function parameterProblem(text: string): string | undefined {
+export function parameterProblem(text: string): string | undefined {
 	const trimmed = text.trim();
 	if (trimmed === "") return undefined;
 	if (!SAFE_PARAMETERS.test(trimmed)) return "Only plain TypeScript types: letters, digits and : , < > [ ] | ?";
@@ -51,7 +51,7 @@ function parameterProblem(text: string): string | undefined {
 	return undefined;
 }
 
-function checkParameters(parameters: string): string {
+export function checkParameters(parameters: string): string {
 	const problem = parameterProblem(parameters);
 	if (problem !== undefined) {
 		throw new RoworkError(`Invalid arguments \`${parameters.trim()}\`.`, { hint: problem });

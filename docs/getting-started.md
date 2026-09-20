@@ -158,6 +158,11 @@ creates an almost empty service, controller or component where it belongs and
 connects it for you, so you only write what makes your game yours. See
 [make or add?](commands.md#make-or-add).
 
+`make` also extends what an `add` installed, so nothing is forgotten. After
+`rowork add:player-data`, `rowork make:stat kills` saves a `kills` value for every
+player: it is added to the data schema, the leaderboard and a small service in one
+go. After `rowork add:networking`, `rowork make:event buyItem` adds a typed message.
+
 Tired of typing `rowork` each time? `rowork console` opens a prompt where you
 just type `make`, `dev`, `studio`...
 
