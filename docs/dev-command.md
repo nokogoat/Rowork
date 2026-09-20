@@ -35,6 +35,12 @@ Rowork sets `FORCE_COLOR` to keep compiler diagnostics readable. The project's
 
 Only then are the three tasks started.
 
+## Port check
+
+If the Rojo port (34872 by default, or `--port`) is already taken, `rowork dev`
+says so and starts nothing, instead of letting Rojo crash and take the compiler
+down with it. The cause is usually a previous `rowork dev` that is still running.
+
 ## How it stops
 
 Two rules:
@@ -43,7 +49,8 @@ Two rules:
   server that keeps serving stale code after the compiler crashed looks healthy
   and is not. Rowork prints which task stopped and replays its last 12 lines,
   since the real cause has usually scrolled past by then.
-- **Nothing outlives the command.** On Ctrl+C, on a crash of the CLI itself and
+- **Nothing outlives the command.** On Ctrl+C, when the terminal is closed
+  (SIGHUP), on a crash of the CLI itself and
   on a task failure, the whole process tree of each task is killed, not just the
   direct child. Tools launched through npm shims spawn a grandchild that does the
   real work, and killing only the shim leaves it running, holding your Rojo

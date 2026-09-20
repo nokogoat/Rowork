@@ -41,6 +41,20 @@ printed above that message: fix them and run `rowork dev` again.
 No `rowork.json` was found in the current directory or any parent. `cd` into
 your project, or pass `--cwd <dir>`.
 
+## `Port 34872 is already in use`
+
+Another `rowork dev`, or a Rojo, is still running, typically in a terminal you
+closed without pressing Ctrl+C. Rowork checks this before starting anything.
+
+- Find what holds the port: `ss -ltnp | grep 34872` (Linux),
+  `lsof -i :34872` (macOS), `netstat -ano | findstr :34872` (Windows).
+- Stop it, or use another port: `rowork dev --port 34873`. Studio's Rojo plugin
+  must then connect to that port.
+
+Since 0.0.1 closing the terminal stops the tasks too (Rowork handles SIGHUP), so
+this mostly comes from a `rowork dev` started by an older build, or from a process
+killed with SIGKILL, which no program can intercept.
+
 ## A task stopped and everything shut down
 
 That is intended: see [How `rowork dev` works](dev-command.md#how-it-stops). Read

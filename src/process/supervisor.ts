@@ -169,8 +169,14 @@ export class Supervisor {
 			void this.shutdown(0);
 		};
 
-		process.once("SIGINT", onSignal);
-		process.once("SIGTERM", onSignal);
+		// SIGHUP is what closing the terminal window sends. Without it the CLI
+		// dies on the spot, its "exit" handler never runs, and the tasks (each in
+		// a process group of their own) carry on with nobody to stop them,
+		// still holding the Rojo port. SIGBREAK is the Windows equivalent of
+		// Ctrl+Break and closing the console.
+		for (const signal of ["SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"] as const) {
+			process.once(signal, onSignal);
+		}
 
 		// Last resort: if the CLI itself throws, detached children would survive.
 		process.once("exit", () => {

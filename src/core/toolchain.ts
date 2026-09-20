@@ -1,4 +1,5 @@
 import { accessSync, constants, statSync } from "node:fs";
+import { createServer } from "node:net";
 import { delimiter, join } from "node:path";
 
 import { rokitBinDirectory } from "./rokit-installer.js";
@@ -95,4 +96,14 @@ export function installAdvice(missing: readonly ToolRequirement[]): string {
 /** PATH string with the project's own binaries first, the way npm scripts see it. */
 export function pathWithLocalBinaries(projectRoot: string): string {
 	return searchPath(projectRoot).join(delimiter);
+}
+
+/** True when nothing is listening on the local port, checked by trying to take it. */
+export function isPortFree(port: number): Promise<boolean> {
+	return new Promise((resolve) => {
+		const server = createServer();
+		server.once("error", () => resolve(false));
+		server.once("listening", () => server.close(() => resolve(true)));
+		server.listen(port, "127.0.0.1");
+	});
 }

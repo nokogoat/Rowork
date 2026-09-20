@@ -6,7 +6,7 @@ import pc from "picocolors";
 import { RoworkError } from "../cli/errors.js";
 import { resolveProjectPath } from "../core/config.js";
 import { run as runBinary } from "../core/exec.js";
-import { findMissing, pathWithLocalBinaries, installAdvice, type ToolRequirement } from "../core/toolchain.js";
+import { findMissing, isPortFree, pathWithLocalBinaries, installAdvice, type ToolRequirement } from "../core/toolchain.js";
 import { defineCommand, type CommandContext } from "../plugins/api.js";
 import { Supervisor, type TaskDefinition } from "../process/supervisor.js";
 
@@ -80,6 +80,28 @@ export const devCommand = defineCommand({
 				`Missing tool${missing.length > 1 ? "s" : ""}: ${missing.map((tool) => tool.command).join(", ")}.`,
 				{ hint: installAdvice(missing) },
 			);
+		}
+
+		// Rojo's own report of a busy port is a 15-line "Rojo crashed" that also
+		// takes the compiler down. The usual cause is a previous `rowork dev` that
+		// is still running, so say so, before anything starts.
+		if (context.options["rojo"] !== false) {
+			const rawPort = context.options["port"];
+			const port = typeof rawPort === "string" ? Number(rawPort) : 34872;
+			if (!Number.isInteger(port) || port < 1 || port > 65535) {
+				throw new RoworkError(`\`${String(rawPort)}\` is not a valid port.`, {
+					hint: "Use a number between 1 and 65535, e.g. --port 34873",
+				});
+			}
+			if (!(await isPortFree(port))) {
+				throw new RoworkError(`Port ${port} is already in use.`, {
+					hint: [
+						"Another `rowork dev` (or Rojo) is probably still running, for example in a terminal you closed.",
+						`Find it: ${process.platform === "win32" ? `netstat -ano | findstr :${port}` : `ss -ltnp | grep ${port}   (or: lsof -i :${port})`}`,
+						`Or use another port: rowork dev --port ${port + 1}`,
+					].join("\n      "),
+				});
+			}
 		}
 
 		await ensureInitialBuild(context, projectRoot, config.paths.out);
