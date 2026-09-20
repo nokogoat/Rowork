@@ -9,6 +9,8 @@ Rowork advances sprint by sprint.
 - **Sprint 2: `rowork dev`.** Multi-process orchestration, prefixed logs, clean
   shutdown, first-build handling, up-front tool check.
 - **Guided setup.** `rowork start`, and automatic Rokit installation.
+- **Linux support for Studio.** `studio` and `studio:setup` run Studio through Vinegar
+  and place the Rojo plugin.
 - **Sprint 3: Flamework generators.** `make:service`, `make:controller`,
   `make:component`, with automatic registration in the runtime entry files.
 

@@ -91,6 +91,29 @@ Leave it running. Press **Ctrl+C** to stop everything.
 
 ## Connect Roblox Studio
 
+### On Linux
+
+Roblox does not publish Studio for Linux. Rowork uses
+[Vinegar](https://github.com/vinegarhq/vinegar), a Flatpak that runs the real
+Studio through Wine. `rowork start` offers to set it up; or by hand:
+
+```bash
+rowork studio:setup   # installs Vinegar (Flatpak, current user only)
+rowork studio         # launches Studio; the first run downloads it and asks you to sign in
+```
+
+Sign in, then close Studio and run `rowork studio:setup` once more: the Rojo
+plugin can only be placed after Studio has been launched once, because that is
+when Vinegar creates its Wine prefix. `rojo plugin install` does not work on
+Linux (Rojo answers "platform not supported"), so Rowork downloads `Rojo.rbxm`
+itself, matching the Rojo version pinned in `rokit.toml`.
+
+You need Flatpak (`sudo pacman -S flatpak`, `sudo apt install flatpak`, ...).
+To *play* a published game on Linux, see [Sober](https://sober.vinegarhq.org/);
+it is separate from Studio and Rowork does not manage it.
+
+### On Windows and macOS
+
 Rojo works through a plugin inside Studio. Install it once:
 
 ```bash

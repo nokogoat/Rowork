@@ -3,6 +3,7 @@ import { devCommand } from "./dev.js";
 import { initCommand } from "./init.js";
 import { makeComponentCommand, makeControllerCommand, makeServiceCommand } from "./make.js";
 import { startCommand } from "./start.js";
+import { studioCommand, studioSetupCommand } from "./studio.js";
 
 /**
  * Core commands, listed explicitly rather than discovered by glob: the compiler
@@ -16,4 +17,6 @@ export const coreCommands: CommandDefinition[] = [
 	makeServiceCommand,
 	makeControllerCommand,
 	makeComponentCommand,
+	studioCommand,
+	studioSetupCommand,
 ];

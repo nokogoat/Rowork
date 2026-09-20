@@ -18,6 +18,7 @@ src/
     init.ts              non-interactive creation
     dev.ts               orchestration entry
     make.ts              make:service, make:controller, make:component
+    studio.ts            studio, studio:setup (Linux)
     next-steps.ts        shared closing message
   core/
     config.ts            rowork.json: find, load, validate
@@ -26,6 +27,8 @@ src/
     toolchain.ts         tool lookup on PATH, install advice
     exec.ts              run an external tool to completion
     generate.ts          write generated files, register Flamework paths
+    github-release.ts    fetch a release, download an asset, verify its checksum
+    studio.ts            Studio on Linux: Vinegar, Rojo plugin placement
     naming.ts            project name validation and case conversion
   process/
     supervisor.ts        runs long-lived tasks side by side

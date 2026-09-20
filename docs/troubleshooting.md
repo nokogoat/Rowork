@@ -73,6 +73,24 @@ It is interactive. In a script, a pipe or CI, use `rowork init <name>`.
 - Same port in the plugin and in the terminal (default 34872)?
 - Install the plugin once with `rojo plugin install`, then restart Studio.
 
+## Linux: Roblox Studio
+
+Studio has no Linux build; see [Getting started](getting-started.md#on-linux).
+
+- **`Vinegar ... is not installed`**: run `rowork studio:setup`.
+- **`Flatpak is not installed`**: install it with your package manager first.
+- **`Studio has not been launched yet`**: run `rowork studio`, sign in, close
+  Studio, then `rowork studio:setup` again. The Wine prefix that holds
+  the plugins folder is created by that first launch.
+- **The Rojo plugin does not show up**: restart Studio after `studio:setup`.
+  Its version must match the Rojo in `rokit.toml`.
+- **`rojo plugin install` says "platform not supported"**: expected on Linux, use
+  `rowork studio:setup` instead.
+- **Studio looks blank or crashes**: the graphics renderer matters. Vinegar
+  defaults to Vulkan; open its Settings (app menu, or
+  `flatpak run org.vinegarhq.Vinegar manage`) and try another one. See also
+  <https://github.com/vinegarhq/vinegar>.
+
 ## Windows
 
 - Rowork is built and tested on Windows in CI (build, smoke test and the orphan-process test).

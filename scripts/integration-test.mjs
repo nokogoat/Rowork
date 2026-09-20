@@ -14,7 +14,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import spawn from "cross-spawn";
 
@@ -89,6 +89,22 @@ try {
 		const made = run(process.execPath, [cli, ...args], project);
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
 	}
+
+	// The Rojo plugin download and placement, against the real GitHub release,
+	// in a fake Wine prefix (the real one only exists after Studio's first launch).
+	const studio = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "studio.js")).href);
+	const { logger } = await import(pathToFileURL(join(repositoryRoot, "dist", "ui", "logger.js")).href);
+	const fakeData = join(workspace, "vinegar-data");
+	const robloxData = join(fakeData, "prefixes", "studio", "drive_c", "users", "tester", "AppData", "Local", "Roblox");
+	mkdirSync(robloxData, { recursive: true });
+	mkdirSync(join(fakeData, "prefixes", "studio", "drive_c", "users", "Public"), { recursive: true });
+
+	const found = studio.findStudioDataDirectories(fakeData);
+	check(found.length === 1 && found[0] === robloxData, `Studio data directories: ${JSON.stringify(found)}`);
+	await studio.installRojoPlugin(found, project, logger);
+	const plugin = join(robloxData, "Plugins", "Rojo.rbxm");
+	check(existsSync(plugin), "the Rojo plugin was not written");
+	check(existsSync(plugin) && readFileSync(plugin).subarray(0, 8).toString() === "<roblox!", "Rojo.rbxm is not a Roblox model file");
 
 	console.log("compiling...");
 	const compile = run(process.execPath, [join(project, "node_modules", "roblox-ts", "out", "CLI", "cli.js")], project);

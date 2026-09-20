@@ -142,6 +142,32 @@ generating a second component does not add the line twice. If the entry file
 does not look the way Rowork generated it, nothing is edited and Rowork prints
 the line to add yourself.
 
+## `rowork studio` and `rowork studio:setup` (Linux)
+
+Roblox Studio has no Linux build. These commands run it through
+[Vinegar](https://github.com/vinegarhq/vinegar), a Flatpak that runs the real
+Studio under Wine. On Windows and macOS they exit with a message: install Studio
+normally there.
+
+`rowork studio:setup` installs Vinegar for the current user only (no root, nothing
+outside your home), adds the Flathub remote for that user if missing, then
+installs the Rojo plugin into Studio. `rojo plugin install` is unsupported on
+Linux, so Rowork downloads the release's `Rojo.rbxm` matching the version
+pinned in `rokit.toml` (latest outside a project). The plugin can only be placed
+once Studio has been launched once, since that creates the Wine prefix: the
+command says so and you re-run it after the first launch.
+
+| Option | Effect |
+| --- | --- |
+| `--no-plugin` | install Vinegar only |
+
+**Checksums.** GitHub publishes SHA-256 digests for recent release assets only.
+Older Rojo releases such as 7.4.4 have none: Rowork still downloads `Rojo.rbxm`
+from the official repository over HTTPS, and warns that it could not be
+verified. Rokit, an executable, is stricter: it is refused without a checksum.
+
+`rowork studio` launches Studio and returns immediately.
+
 ## Not implemented yet
 
 These are planned (see the [roadmap](roadmap.md)) and do **not** exist:

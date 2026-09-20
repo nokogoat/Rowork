@@ -7,6 +7,7 @@ import { RoworkError } from "../cli/errors.js";
 import { findExecutable } from "../core/toolchain.js";
 import { assertValidProjectName, toPascalCase } from "../core/naming.js";
 import { resolveTarget, scaffoldProject } from "../core/scaffold.js";
+import { isVinegarInstalled, needsStudioSetup, setupStudio } from "../core/studio.js";
 import { defineCommand } from "../plugins/api.js";
 import { printNextSteps } from "./next-steps.js";
 
@@ -107,6 +108,18 @@ export const startCommand = defineCommand({
 			rokit = installRokit;
 		}
 
+		// Studio has no Linux build: offer Vinegar, which runs the real one.
+		const studio =
+			needsStudioSetup() && !isVinegarInstalled()
+				? answered(
+						await prompts.confirm({
+							message:
+								"Roblox Studio has no Linux version. Install Vinegar, which runs it through Wine? (Flatpak, current user only)",
+							initialValue: true,
+						}),
+					)
+				: false;
+
 		prompts.note(
 			[
 				`Name       ${toPascalCase(name)}`,
@@ -114,6 +127,7 @@ export const startCommand = defineCommand({
 				`Examples   ${examples ? "yes" : "no"}`,
 				`Git        ${git ? "yes" : "no"}`,
 				`npm        ${install ? "install" : "skip"}`,
+				...(studio ? ["Studio     install Vinegar"] : []),
 				`Rokit      ${installRokit ? "install Rokit, then the toolchain" : rokit ? "install the toolchain" : "skip"}`,
 			].join("\n"),
 			"Summary",
@@ -139,6 +153,16 @@ export const startCommand = defineCommand({
 			},
 			context.logger,
 		);
+
+		if (studio) {
+			try {
+				await setupStudio({ logger: context.logger, projectRoot: result.target, plugin: true });
+			} catch (error) {
+				// The project is already created: a Studio problem must not undo that.
+				context.logger.warn(`Studio setup did not finish: ${error instanceof Error ? error.message : String(error)}`);
+				context.logger.info("Retry with `rowork studio:setup`.");
+			}
+		}
 
 		printNextSteps(context.logger, name, result);
 		prompts.outro("Happy building.");
