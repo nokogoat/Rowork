@@ -8,8 +8,8 @@
  * hits it. This script is what notices first.
  *
  * What it does:
- *   1. Reports the latest version of every upstream tool, and whether the Rojo
- *      version pinned in the project template has fallen behind.
+ *   1. Reports the latest version of every upstream tool, and whether the
+ *      offline-fallback Rojo version in Rowork has fallen behind.
  *   2. Creates a real project (real npm install, real Rokit), adds every module,
  *      and compiles it with the real compiler.
  *   3. Points the project at the latest Rojo and runs a real `rojo build`, which
@@ -58,9 +58,10 @@ function latestNpm(name) {
 	return result.stdout.trim();
 }
 
+/** The one Rojo version Rowork writes down itself: the offline fallback in versions.ts. */
 function pinnedRojo() {
-	const toml = readFileSync(join(repositoryRoot, "templates", "init", "rokit.toml.tmpl"), "utf8");
-	return /rojo-rbx\/rojo@([^"]+)"/.exec(toml)?.[1];
+	const source = readFileSync(join(repositoryRoot, "src", "core", "versions.ts"), "utf8");
+	return /FALLBACK_ROJO_VERSION = "([^"]+)"/.exec(source)?.[1];
 }
 
 function run(command, args, options = {}) {
@@ -77,7 +78,7 @@ try {
 	latestRojo = await latestRelease("rojo-rbx/rojo");
 	const pinned = pinnedRojo();
 	const behind = pinned !== undefined && pinned !== latestRojo;
-	report.push(`| Rojo | ${latestRojo} | template pins ${pinned}${behind ? " (**behind**)" : ""} |`);
+	report.push(`| Rojo | ${latestRojo} | offline fallback is ${pinned}${behind ? " (**behind**, update it in src/core/versions.ts)" : ""} |`);
 	const latestRokit = await latestRelease("rojo-rbx/rokit");
 	report.push(`| Rokit | ${latestRokit} | always installed at its latest |`);
 } catch (error) {

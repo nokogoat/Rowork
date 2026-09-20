@@ -137,6 +137,13 @@ Your code is now synced. Edit a `.ts` file, the compiler rebuilds, Rojo pushes
 the change into Studio. Press **Play** to run it: the Output window shows
 `[MyGame] ExampleService started.` if you kept the examples.
 
+## Keep it current
+
+```bash
+rowork update --dry-run   # what is behind
+rowork update             # move to the latest Rojo, packages and Studio plugin
+```
+
 ## Add things to your game
 
 ```bash

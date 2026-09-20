@@ -18,7 +18,8 @@ const HEADERS = { "User-Agent": "rowork" };
 export async function getRelease(repository: string, tag?: string): Promise<Release> {
 	const path = tag === undefined ? "latest" : `tags/${tag}`;
 	const url = `https://api.github.com/repos/${repository}/releases/${path}`;
-	const response = await fetch(url, { headers: HEADERS });
+	// A stalled connection must not hang the CLI: the API answers in well under a second.
+	const response = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(20_000) });
 	if (!response.ok) throw new Error(`${url} answered ${response.status}`);
 	return (await response.json()) as Release;
 }

@@ -9,6 +9,7 @@ import { CONFIG_FILENAME, defaultConfig } from "./config.js";
 import { run as runBinary } from "./exec.js";
 import { installRokit } from "./rokit-installer.js";
 import { findExecutable } from "./toolchain.js";
+import { FALLBACK_ROJO_VERSION, latestRojoVersion } from "./versions.js";
 import { assertValidProjectName, toKebabCase, toPascalCase } from "./naming.js";
 
 /** Compiler and type packages. Versions are resolved by npm, never hardcoded. */
@@ -63,7 +64,7 @@ export interface ScaffoldResult {
  * differ. Deriving it from roblox-ts keeps the guarantee that Rowork hardcodes
  * no versions while still producing a coherent install.
  */
-function pinnedTypescriptVersion(projectRoot: string): string | undefined {
+export function pinnedTypescriptVersion(projectRoot: string): string | undefined {
 	try {
 		const manifest = JSON.parse(
 			readFileSync(join(projectRoot, "node_modules", "roblox-ts", "package.json"), "utf8"),
@@ -101,8 +102,17 @@ export async function scaffoldProject(
 	logger.info(`Creating ${displayName} in ${target}`);
 	mkdirSync(target, { recursive: true });
 
+	// Like the npm packages, Rojo is created at its newest version: nothing here
+	// is a version Rowork wrote down, unless GitHub cannot be reached.
+	let rojoVersion = await latestRojoVersion();
+	if (rojoVersion === undefined) {
+		rojoVersion = FALLBACK_ROJO_VERSION;
+		logger.warn(`Could not look up the latest Rojo, using ${rojoVersion}. \`rowork update\` moves to the newest later.`);
+	}
+
 	logger.step("scaffolding project structure");
 	renderTree(join(templatesRoot(), "init"), target, {
+		rojoVersion,
 		name: displayName,
 		packageName: toKebabCase(options.name),
 		roworkVersion: options.roworkVersion,

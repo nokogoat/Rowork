@@ -233,6 +233,40 @@ try {
 	check(JSON.parse(outside.stdout).project === null, "info --json outside a project should give project: null");
 	check(agentsRun("eject", "--yes", "--no-install").status === 0 && readFileSync(agentsPath, "utf8").includes("Keep shop prices.") && !readFileSync(agentsPath, "utf8").includes("rowork:begin"), "eject did not remove only the generated block of AGENTS.md");
 
+	// Rojo is created at its newest version, not a number written in Rowork; update moves an old pin.
+	const updateProject = join(workspace, "UpdateGame");
+	spawnSync(process.execPath, [cli, "init", "UpdateGame", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
+	const rokitPath = join(updateProject, "rokit.toml");
+	const createdPin = /rojo@([0-9.]+)/.exec(readFileSync(rokitPath, "utf8"))?.[1];
+	check(createdPin !== undefined && !readFileSync(rokitPath, "utf8").includes("{{"), "init did not write a Rojo version into rokit.toml");
+	writeFileSync(rokitPath, readFileSync(rokitPath, "utf8").replace(/rojo@[0-9.]+/, "rojo@7.0.0"));
+	// A throwaway home and a bare PATH: no Rokit is found, so nothing is downloaded.
+	const isolated = { ...process.env, PATH: dirname(process.execPath), HOME: workspace, USERPROFILE: workspace };
+	const updateRun = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: updateProject, encoding: "utf8", env: isolated });
+	const preview = updateRun("update", "--dry-run", "--no-npm");
+	check(preview.status === 0 && /7\.0\.0 -> /.test(preview.stderr.replace(/\x1b\[[0-9;]*m/g, "")), `update --dry-run did not report the old Rojo\n${preview.stderr}`);
+	check(readFileSync(rokitPath, "utf8").includes("rojo@7.0.0"), "update --dry-run changed rokit.toml");
+	check(updateRun("update", "--no-npm").status === 1, "update ran without confirmation and without a terminal");
+	// All or nothing: if Rokit cannot install the new Rojo, the pin must go back,
+	// otherwise `rowork dev` is left pointing at a Rojo that is not there.
+	const fakeBin = join(workspace, "fake-bin");
+	mkdirSync(fakeBin);
+	writeFileSync(join(fakeBin, "rokit"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+	writeFileSync(join(fakeBin, "rokit.cmd"), "@echo off\r\nexit /b 1\r\n");
+	const failing = spawnSync(process.execPath, [cli, "update", "--yes", "--no-npm", "--no-build"], {
+		cwd: updateProject,
+		encoding: "utf8",
+		env: { ...isolated, PATH: `${fakeBin}${process.platform === "win32" ? ";" : ":"}${dirname(process.execPath)}` },
+	});
+	check(failing.status === 1, `a failed Rojo install did not give a non-zero exit (got ${failing.status})`);
+	check(readFileSync(rokitPath, "utf8").includes("rojo@7.0.0"), "update left a Rojo pin it could not install");
+	check(/kept 7\.0\.0/.test(failing.stderr.replace(/\x1b\[[0-9;]*m/g, "")), "update did not say it kept the old Rojo");
+
+	check(updateRun("update", "--yes", "--no-npm", "--no-build").status === 0, "update --yes failed");
+	const movedPin = /rojo@([0-9.]+)/.exec(readFileSync(rokitPath, "utf8"))?.[1];
+	check(movedPin !== undefined && movedPin !== "7.0.0", "update did not move the old Rojo pin");
+	check(updateRun("update", "--no-npm").status === 0 && /up to date/.test(updateRun("update", "--no-npm").stderr), "a second update did not say everything is up to date");
+
 	// A dev script the user wrote is theirs: eject must keep it.
 	const ownProject = join(workspace, "OwnScriptGame");
 	spawnSync(process.execPath, [cli, "init", "OwnScriptGame", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });

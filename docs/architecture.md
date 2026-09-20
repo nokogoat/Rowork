@@ -34,6 +34,7 @@ src/
     generate.ts          write generated files, register Flamework paths
     modules.ts           install a module: checks first, writes last
     background.ts        dev in the background: detached spawn, pid file, stop
+    versions.ts          latest versions (Rojo, npm), rokit.toml pin, offline fallback
     github-release.ts    fetch a release, download an asset, verify its checksum
     studio.ts            Studio on Linux: Vinegar, Rojo plugin placement
     naming.ts            project name validation and case conversion

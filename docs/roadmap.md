@@ -23,11 +23,14 @@ Rowork advances sprint by sprint.
 - **Made for humans and AIs.** A generated `AGENTS.md` kept current by `rowork
   add`, and `rowork info --json` (see [Rowork and AI](ai.md)).
 
+- **Always the latest.** New projects start at the latest of everything, and
+  `rowork update` brings existing ones up to date, including the Studio plugin.
+- **A weekly upstream check** replays the real flow against the latest versions
+  and opens an issue if it breaks.
+
 ## Next
 
 - **Modules that wire themselves together**, in either order of installation.
-- **A weekly upstream check** that replays the integration tests against the latest
-  Rojo, roblox-ts, Flamework, Lapis and Rokit.
 - **More modules.** Only chores almost every game redoes: player settings, notifications. Each new module
   must pass that test; genre-specific features do not belong in the core.
 

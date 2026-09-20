@@ -47,6 +47,15 @@ directory: it never touches your own `~/.rokit` or shell profile.
 - **Public-safe history.** No tokens, keys, cookies or personal paths in any
   commit: the history is public once the repository is.
 
+## Staying current
+
+Rowork writes down no tool version, except an offline fallback for Rojo in
+`src/core/versions.ts`. A weekly job (`.github/workflows/upstream-watch.yml`) replays
+the real flow against the newest upstream releases and opens an issue labelled
+`upstream-watch` if it fails. You can run its quick part yourself:
+`node scripts/upstream-watch.mjs --report-only`. When it reports the fallback as
+behind, update `FALLBACK_ROJO_VERSION`.
+
 ## Adding a command
 
 1. Create `src/commands/<name>.ts` exporting a `defineCommand({...})`.

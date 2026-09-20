@@ -325,6 +325,45 @@ One thing to check: Rowork also looked in `~/.rokit/bin` on its own. A plain npm
 script only sees your PATH, so `rojo` must be on it. `eject` warns you when it
 is not.
 
+## `rowork update`
+
+Moves an existing project to the latest tools. New projects already start at the
+latest: `rowork init` resolves the newest Rojo from GitHub and lets npm resolve
+the newest of every package, so there is no version written in Rowork itself
+(except an offline fallback for Rojo, used only when GitHub cannot be reached).
+`update` brings an older project up to that level.
+
+```bash
+rowork update --dry-run   # what is behind: "current -> latest", nothing changed
+rowork update             # asks for confirmation
+rowork update --yes       # for scripts
+```
+
+| Option | Effect |
+| --- | --- |
+| `--dry-run` | list the updates and change nothing |
+| `--yes` | do not ask for confirmation |
+| `--no-npm` | leave the npm packages alone (Rojo and the plugin only) |
+| `--no-build` | do not compile afterwards |
+
+**What it updates**
+
+- **Rojo:** the version in `rokit.toml`, then `rokit install` to fetch it.
+- **The Rojo plugin in Studio**, which must match the Rojo server. On Linux
+  Rowork places the matching `Rojo.rbxm` in Studio's Wine prefix (see
+  [`studio:setup`](#rowork-studio-and-rowork-studiosetup-linux)); elsewhere it runs
+  `rojo plugin install`. Restart Studio afterwards. If the toolbar shows two Rojo
+  buttons, an older copy is still installed (for example from the Creator Store):
+  remove it in *Plugins > Manage Plugins*.
+- **npm packages:** every dependency, to its latest release. TypeScript is the
+  exception: roblox-ts pins one exact version and patches it, so it is set from
+  roblox-ts again after the update.
+
+It then compiles the project to check the result. If a newer package broke it,
+Rowork says so and tells you how to go back: `git diff package.json` shows what
+moved, and `git checkout package.json package-lock.json && npm install` reverts it.
+Commit before updating so that is always possible.
+
 ## `rowork info`
 
 Shows the project, what is installed and what can be added. With `--json` it prints
