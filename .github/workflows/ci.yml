@@ -44,22 +44,49 @@ jobs:
       - name: Verify no process survives rowork dev
         run: npm run test:orphan
 
+  # Scaffolds a project, installs its real dependencies and compiles it.
+  #
+  # The matrix above runs with --no-install, so it proves files are written but
+  # never that the result compiles. A generated tsconfig missing a typeRoots
+  # entry passed the whole suite and still produced a project that failed on its
+  # very first import. This job needs the network and takes a minute, so it runs
+  # once rather than across the matrix.
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Install and compile a generated project
+        run: npm run test:integration
+
   # Single stable context for branch protection to require.
   #
-  # Requiring the matrix jobs directly would pin their generated names
+  # Requiring the other jobs directly would pin their generated names
   # ("build (ubuntu-latest, node 22)") into the repository ruleset: changing an
   # OS or a Node version would then leave protection waiting forever on a check
-  # that no longer runs, blocking every pull request. This job depends on the
-  # whole matrix and exposes one name that never changes.
+  # that no longer runs, blocking every pull request. This job depends on them
+  # all and exposes one name that never changes.
   ci-success:
     name: ci-success
     if: always()
-    needs: build
+    needs: [build, integration]
     runs-on: ubuntu-latest
     steps:
-      - name: Verify every matrix job succeeded
-        if: needs.build.result != 'success'
+      - name: Verify every job succeeded
+        if: needs.build.result != 'success' || needs.integration.result != 'success'
         run: |
-          echo "matrix result: ${{ needs.build.result }}"
+          echo "build: ${{ needs.build.result }}"
+          echo "integration: ${{ needs.integration.result }}"
           exit 1
-      - run: echo "All matrix jobs passed."
+      - run: echo "All jobs passed."

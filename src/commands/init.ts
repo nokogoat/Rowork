@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import pc from "picocolors";
@@ -10,16 +10,38 @@ import { assertValidProjectName, toKebabCase, toPascalCase } from "../core/namin
 import { defineCommand } from "../plugins/api.js";
 import { renderTree, templatesRoot } from "../templates/engine.js";
 
-/** Types and build tooling. Versions are resolved by npm, never hardcoded. */
-const DEV_DEPENDENCIES = [
-	"typescript",
+/** Compiler and type packages. Versions are resolved by npm, never hardcoded. */
+const COMPILER_DEPENDENCIES = [
 	"roblox-ts",
 	"@rbxts/types",
 	"@rbxts/compiler-types",
 	"rbxts-transformer-flamework",
 ];
 
-const DEPENDENCIES = ["@flamework/core", "@flamework/components"];
+const RUNTIME_DEPENDENCIES = ["@flamework/core", "@flamework/components"];
+
+/**
+ * Reads the exact TypeScript version roblox-ts pins.
+ *
+ * roblox-ts depends on one exact TypeScript version and patches it. Installing
+ * `typescript` on its own pulls whatever is newest, which is almost never that
+ * version: Flamework then warns on every single compile that the versions
+ * differ. Deriving it from roblox-ts keeps the guarantee that Rowork hardcodes
+ * no versions while still producing a coherent install.
+ */
+function pinnedTypescriptVersion(projectRoot: string): string | undefined {
+	try {
+		const manifest = JSON.parse(
+			readFileSync(join(projectRoot, "node_modules", "roblox-ts", "package.json"), "utf8"),
+		) as { dependencies?: Record<string, string> };
+
+		const range = manifest.dependencies?.["typescript"];
+		// roblox-ts writes an exact pin such as "=5.5.3".
+		return range === undefined ? undefined : range.replace(/^=/, "");
+	} catch {
+		return undefined;
+	}
+}
 
 export const initCommand = defineCommand({
 	name: "init",
@@ -28,6 +50,7 @@ export const initCommand = defineCommand({
 	options: [
 		{ flags: "--path <dir>", description: "parent directory to create the project in" },
 		{ flags: "--no-install", description: "skip installing npm dependencies" },
+		{ flags: "--no-rokit", description: "skip installing the pinned Roblox toolchain" },
 		{ flags: "--no-git", description: "skip git repository initialisation" },
 		{ flags: "-f, --force", description: "allow a target directory that is not empty" },
 	],
@@ -81,11 +104,41 @@ export const initCommand = defineCommand({
 			}
 		}
 
-		if (context.options["install"] !== false) {
+		const installed = context.options["install"] !== false;
+		if (installed) {
 			context.logger.step("installing dependencies (npm)");
 			context.logger.blank();
-			await runBinary("npm", ["install", "--save-dev", ...DEV_DEPENDENCIES], { cwd: target });
-			await runBinary("npm", ["install", ...DEPENDENCIES], { cwd: target });
+
+			await runBinary("npm", ["install", "--save-dev", ...COMPILER_DEPENDENCIES], { cwd: target });
+
+			const typescript = pinnedTypescriptVersion(target);
+			if (typescript === undefined) {
+				context.logger.warn(
+					"Could not read the TypeScript version roblox-ts pins, installing the latest instead. Expect a version warning on compile.",
+				);
+				await runBinary("npm", ["install", "--save-dev", "typescript"], { cwd: target });
+			} else {
+				context.logger.step(`pinning typescript@${typescript} to match roblox-ts`);
+				await runBinary("npm", ["install", "--save-dev", `typescript@${typescript}`], {
+					cwd: target,
+				});
+			}
+
+			await runBinary("npm", ["install", ...RUNTIME_DEPENDENCIES], { cwd: target });
+		}
+
+		const toolchain = context.options["rokit"] !== false;
+		let toolchainReady = false;
+		if (toolchain) {
+			context.logger.step("installing the pinned Roblox toolchain (rokit)");
+			try {
+				await runBinary("rokit", ["install"], { cwd: target });
+				toolchainReady = true;
+			} catch {
+				context.logger.warn(
+					"rokit install did not succeed. Install Rokit from https://github.com/rojo-rbx/rokit, then run `rokit install` in the project.",
+				);
+			}
 		}
 
 		context.logger.blank();
@@ -93,10 +146,9 @@ export const initCommand = defineCommand({
 		context.logger.blank();
 		context.logger.info("Next steps:");
 		context.logger.info(`  cd ${rawName}`);
-		if (context.options["install"] === false) context.logger.info("  npm install");
-		context.logger.info("  rokit install        # install Rojo at the pinned version");
-		context.logger.info("  npm run watch        # compile TypeScript continuously");
-		context.logger.info("  rojo serve           # then connect the Rojo plugin in Studio");
+		if (!installed) context.logger.info("  npm install");
+		if (!toolchainReady) context.logger.info("  rokit install");
+		context.logger.info(`  ${pc.bold("rowork dev")}`);
 		context.logger.blank();
 	},
 });

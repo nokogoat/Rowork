@@ -38,7 +38,8 @@
     "test": "npm run build && npm run test:smoke && npm run test:orphan",
     "prepublishOnly": "npm run test",
     "rowork": "node bin/rowork.js",
-    "test:orphan": "node scripts/dev-orphan-test.mjs"
+    "test:orphan": "node scripts/dev-orphan-test.mjs",
+    "test:integration": "node scripts/integration-test.mjs"
   },
   "keywords": [
     "roblox",

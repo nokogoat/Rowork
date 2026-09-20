@@ -38,9 +38,8 @@ npm install -g rowork
 ## Getting started
 
 ```bash
-rowork init MyGame
+rowork init MyGame   # scaffolds, installs npm deps and the pinned toolchain
 cd MyGame
-rokit install        # install Rojo at the pinned version
 rowork dev           # compiler, Rojo server and sourcemap watcher, together
 ```
 
