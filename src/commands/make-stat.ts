@@ -9,7 +9,9 @@ import { installModule } from "../core/modules.js";
 import { playerDataModule } from "../modules/player-data.js";
 import { defineCommand } from "../plugins/api.js";
 import { defaultFor, toFieldName } from "../modules/player-data.js";
+import { listEvents } from "../core/project-index.js";
 import { answered, prompts, requireInteractive } from "../ui/prompt.js";
+import { askEventLink, createEventHandler, resolveEvent } from "./links.js";
 import { requireProject } from "./make.js";
 
 const ADD_METHOD = `
@@ -36,6 +38,7 @@ export const makeStatCommand = defineCommand({
 		{ flags: "--no-leaderboard", description: "do not show it in the leaderboard" },
 		{ flags: "--service", description: "create the helper service (default for numbers)" },
 		{ flags: "--no-service", description: "do not create the helper service" },
+		{ flags: "--link <event>", description: "an existing event from the client that changes it, handled on the server" },
 	],
 	async run(context) {
 		const { root, config } = requireProject(context, "make:stat");
@@ -61,6 +64,7 @@ export const makeStatCommand = defineCommand({
 			context.options[option] === undefined ? fallback : context.options[option] === true;
 		let leaderboard = false;
 		let service = false;
+		let linkTyped: string | undefined = typeof context.options["link"] === "string" ? context.options["link"] : undefined;
 
 		if (typeof given === "string") {
 			rawName = given;
@@ -106,6 +110,8 @@ export const makeStatCommand = defineCommand({
 			service = answered(
 				await prompts.confirm({ message: "Create a small service to read and change it (get, set, add)?", initialValue: type === "number" }),
 			);
+			// "Link it to...?": an existing event from the client that should change this value.
+			linkTyped = await askEventLink(root, config, "Should an existing event from the client change it? Type the event name.");
 		}
 
 		const name = toFieldName(rawName);
@@ -116,6 +122,20 @@ export const makeStatCommand = defineCommand({
 		}
 		const defaultValue = defaultFor(type, rawDefault);
 		const className = `${name.charAt(0).toUpperCase()}${name.slice(1)}Service`;
+
+		// A link is checked before anything is written.
+		const linkEvent = linkTyped === undefined ? undefined : resolveEvent(listEvents(root, config), linkTyped);
+		const linkNow = (): void => {
+			if (linkEvent === undefined) return;
+			const handler = createEventHandler({ root, config, event: { name: linkEvent.name }, stat: { name, type } });
+			context.logger.step(`${handler.path}: runs on the server when \`${linkEvent.name}\` arrives, linked to \`${name}\``);
+			context.logger.info("It decides the amount on the server: do not use a number the client sent.");
+		};
+		if (linkEvent !== undefined && existsAt(root, join(config.paths.services, `${linkEvent.name.charAt(0).toUpperCase()}${linkEvent.name.slice(1)}Handler.ts`))) {
+			throw new RoworkError(`A handler for \`${linkEvent.name}\` already exists.`, {
+				hint: "An event is handled in one place. Open that file to change what it does.",
+			});
+		}
 
 		const createService = (): void => {
 			const written = generateFile({
@@ -148,6 +168,7 @@ export const makeStatCommand = defineCommand({
 				false,
 			);
 			if (service) createService();
+			linkNow();
 			return;
 		}
 
@@ -182,6 +203,7 @@ export const makeStatCommand = defineCommand({
 			context.logger.step(`${config.paths.services}/LeaderstatsService.ts: added to the leaderboard`);
 		}
 		if (service) createService();
+		linkNow();
 
 		context.logger.success(`Saved \`${name}\` for every player.`);
 		context.logger.blank();

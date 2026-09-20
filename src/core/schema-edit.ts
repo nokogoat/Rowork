@@ -19,7 +19,7 @@ interface Block {
 }
 
 /** Finds `{ ... }` after `opening`, matching nested braces. */
-function findBlock(source: string, opening: RegExp): Block | undefined {
+export function findBlock(source: string, opening: RegExp): Block | undefined {
 	const match = opening.exec(source);
 	if (match === null) return undefined;
 

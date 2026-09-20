@@ -244,6 +244,7 @@ does both (`rowork add:player-data --field kills:number=0`).
 | `--default <value>` | starting value for a new player |
 | `--leaderboard` / `--no-leaderboard` | show it in the leaderboard (needs `leaderstats`). On by default for numbers |
 | `--service` / `--no-service` | create a small service to use it. On by default for numbers |
+| `--link <event>` | an existing event from the client that changes it; a handler is created on the server |
 
 **What it changes**
 
@@ -266,6 +267,30 @@ restructured `PlayerData.ts` so Rowork no longer recognises it, it says so and t
 nothing (no service is created either); add the line by hand. A value that already
 exists is refused.
 
+## Linking things: "link it to...?"
+
+The guided `make:` commands ask whether to **link what you are creating to something that
+already exists**, the way `make:entity` does in Symfony. Type its name, or leave the answer
+empty for no link. What exists is read from your files (the saved values from
+`PlayerData.ts`, the events from `networking.ts`) and printed in the question.
+
+| You create | It asks | What Rowork generates |
+| --- | --- | --- |
+| an **event** (from the client) | which saved value the server changes | a handler on the server, wired to that value |
+| a **stat** | which existing event from the client changes it | the same handler |
+| a **service** | which saved values it uses | those values injected in its constructor, with a comment on how to use each |
+
+In a script, the same links are `--link <value>` on `make:event`, `--link <event>` on
+`make:stat` and `--uses <values>` on `make:service`. A link is checked before anything is
+written: an unknown name, or an event that already has a handler, stops the command and
+changes nothing.
+
+**The server decides, never the client.** The handler Rowork generates changes the value
+by an amount fixed on the server (`add(player, 1)`), and its comments say why: everything
+a client sends can be forged, so a player could send any amount and give themselves
+anything. Do not replace that with a number taken from the event. Check who may do it, how
+often, and at what cost, in the `TODO` the file leaves you.
+
 ## `rowork make:event [name]`
 
 Adds a typed message between client and server to the networking file, where it
@@ -286,6 +311,7 @@ does both (`rowork add:networking --event "buyItem:server()"`).
 | --- | --- |
 | `--to <side>` | who receives it: `server` (the client sends it, default) or `client` (the server sends it) |
 | `--args <list>` | what it carries, as `name: type` separated by commas |
+| `--link <value>` | a saved value the server changes when it receives this (only for `--to server`) |
 
 The line is added to `ClientToServerEvents` or `ServerToClientEvents` in
 `src/shared/networking.ts`, and Rowork prints how to listen to it and how to send it.

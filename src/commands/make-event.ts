@@ -8,7 +8,11 @@ import { toFieldName } from "../modules/player-data.js";
 import { installModule } from "../core/modules.js";
 import { networkingModule } from "../modules/networking.js";
 import { defineCommand } from "../plugins/api.js";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { listStats, pascal } from "../core/project-index.js";
 import { answered, prompts, requireInteractive } from "../ui/prompt.js";
+import { askStatLink, createEventHandler, resolveStats } from "./links.js";
 import { requireProject } from "./make.js";
 
 const IDENTIFIER = /^[a-z][A-Za-z0-9]*$/;
@@ -21,6 +25,7 @@ export const makeEventCommand = defineCommand({
 	options: [
 		{ flags: "--to <side>", description: "who receives it: server (default) or client" },
 		{ flags: "--args <list>", description: 'what it carries, e.g. "itemId: string, amount: number"' },
+		{ flags: "--link <value>", description: "a saved value the server changes when it receives this (a client event only)" },
 	],
 	async run(context) {
 		const { root, config } = requireProject(context, "make:event");
@@ -37,6 +42,7 @@ export const makeEventCommand = defineCommand({
 		let rawName: string;
 		let side: "server" | "client" = "server";
 		let parameters = "";
+		let linkTyped: string | undefined;
 
 		if (typeof given === "string") {
 			rawName = given;
@@ -48,6 +54,7 @@ export const makeEventCommand = defineCommand({
 				side = to;
 			}
 			parameters = checkParameters(typeof context.options["args"] === "string" ? context.options["args"] : "");
+			if (typeof context.options["link"] === "string") linkTyped = context.options["link"];
 		} else {
 			requireInteractive("make:event", 'rowork make:event <name> --to server --args "itemId: string"');
 			rawName = answered(
@@ -74,12 +81,37 @@ export const makeEventCommand = defineCommand({
 					validate: (value) => parameterProblem(value ?? ""),
 				}),
 			).trim();
+			// "Link it to...?" only makes sense for what the client sends: that is what the server reacts to.
+			if (side === "server") {
+				linkTyped = await askStatLink(root, config, "Should the server change a saved value when it receives this? Type its name.", true);
+			}
 		}
 
 		const name = toFieldName(rawName);
 		if (!IDENTIFIER.test(name)) {
 			throw new RoworkError(`\`${rawName}\` cannot be used as a name.`, { hint: "Use letters and digits, starting with a letter." });
 		}
+
+		// A link is checked before anything is written.
+		let linkStat: ReturnType<typeof resolveStats>[number] | undefined;
+		if (linkTyped !== undefined) {
+			if (side !== "server") {
+				throw new RoworkError("A link only applies to an event the client sends.", {
+					hint: "The server reacts to events from the client. Use --to server, or drop --link.",
+				});
+			}
+			linkStat = resolveStats(listStats(root, config), linkTyped, "then link it")[0];
+			const handlerFile = join(config.paths.services, `${pascal(name)}Handler.ts`);
+			if (existsSync(join(root, handlerFile))) {
+				throw new RoworkError(`${handlerFile} already exists.`, { hint: "Pick another name for the event." });
+			}
+		}
+		const linkNow = (): void => {
+			if (linkStat === undefined) return;
+			const handler = createEventHandler({ root, config, event: { name }, stat: linkStat });
+			context.logger.step(`${handler.path}: runs on the server when \`${name}\` arrives, linked to \`${linkStat.name}\``);
+			context.logger.info("It decides the amount on the server: do not use a number the client sent.");
+		};
 
 		// Guided and typed networking is not installed: offer to install it, starting with this event.
 		if (missingModule) {
@@ -99,6 +131,7 @@ export const makeEventCommand = defineCommand({
 				root,
 				false,
 			);
+			linkNow();
 			return;
 		}
 
@@ -113,7 +146,8 @@ export const makeEventCommand = defineCommand({
 
 		writeFileSync(path, addEventToNetworking(source, file, side, { name, parameters }), "utf8");
 		context.logger.step(`${file}: added ${name}(${parameters})`);
-		context.logger.success(`Message \`${name}\` added (${side === "server" ? "client to server" : "server to client"}).`);
+		linkNow();
+		context.logger.success(`Event \`${name}\` added (${side === "server" ? "client to server" : "server to client"}).`);
 		context.logger.blank();
 		const args = parameters === "" ? "" : "...";
 		if (side === "server") {

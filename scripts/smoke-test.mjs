@@ -302,6 +302,28 @@ try {
 	check(statAt("make:event", "castSpell", "--to", "client").status === 1, "make:event accepted a name already used in the other direction");
 	check(statAt("make:event", "bad", "--args", "x: number); evil(").status === 1, "make:event accepted an unsafe argument list");
 	check(readFileSync(networkFile, "utf8") === networkBefore, "a refused make:event changed the networking file");
+	// Links: "link it to..." generates the glue, and the server decides the amount, never the client.
+	const servicesDir = join(bareProject, "src", "server", "services");
+	const linked = statAt("make:event", "openGate", "--to", "server", "--link", "kills");
+	check(linked.status === 0, `make:event --link failed\n${linked.stderr}`);
+	const handlerPath = join(servicesDir, "OpenGateHandler.ts");
+	const handler = existsSync(handlerPath) ? readFileSync(handlerPath, "utf8") : "";
+	check(handler.includes("Events.openGate.connect") && handler.includes("this.kills.add(player, 1)"), "the linked handler does not react to the event and change the value");
+	check(/decided HERE/.test(handler) && /forged/.test(handler), "the generated handler does not warn that client data cannot be trusted");
+	check(!/amount|args\./.test(handler.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "")), "the handler reads something the client sent");
+	const dataBeforeLinks = readFileSync(dataFile, "utf8");
+	const networkBeforeLinks = readFileSync(networkFile, "utf8");
+	check(statAt("make:event", "ghost", "--link", "nope").status === 1 && readFileSync(networkFile, "utf8") === networkBeforeLinks, "make:event --link with an unknown value still wrote the event");
+	check(statAt("make:event", "notice", "--to", "client", "--link", "kills").status === 1, "a link was accepted on an event the server sends");
+	check(statAt("make:stat", "rank2", "--link", "openGate").status === 1 && readFileSync(dataFile, "utf8") === dataBeforeLinks, "make:stat linked to an event that already has a handler, or changed the data");
+	check(statAt("make:stat", "rank3", "--link", "nothing").status === 1 && !readFileSync(dataFile, "utf8").includes("rank3"), "make:stat linked to an unknown event and still wrote");
+	const fromStat = statAt("make:stat", "rank", "--link", "castSpell");
+	check(fromStat.status === 0 && existsSync(join(servicesDir, "CastSpellHandler.ts")), `make:stat --link did not create the handler\n${fromStat.stderr}`);
+	const vault = statAt("make:service", "vault", "--uses", "kills,coins");
+	const vaultSource = existsSync(join(servicesDir, "VaultService.ts")) ? readFileSync(join(servicesDir, "VaultService.ts"), "utf8") : "";
+	check(vault.status === 0 && vaultSource.includes("KillsService") && vaultSource.includes("PlayerDataService"), `make:service --uses did not inject the values\n${vault.stderr}`);
+	check(statAt("make:service", "attic", "--uses", "nope").status === 1 && !existsSync(join(servicesDir, "AtticService.ts")), "make:service --uses an unknown value still wrote the service");
+
 	// Without the module it points to the fix.
 	const bareModules = join(workspace, "NoModules");
 	spawnSync(process.execPath, [cli, "init", "NoModules", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });

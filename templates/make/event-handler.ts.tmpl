@@ -1,0 +1,22 @@
+import { OnStart, Service } from "@flamework/core";
+import { Events } from "{{ networkImport }}";
+{{ imports }}
+
+/**
+ * Runs on the server each time a player's client sends `{{ event }}`.
+ *
+ * Everything a client sends can be forged: a player can send any value, whenever
+ * they like, as often as they like. So decide HERE what happens and by how much,
+ * and never copy something you received into saved data.
+ */
+@Service()
+export class {{ className }} implements OnStart {
+	constructor({{ ctor }}) {}
+
+	onStart(): void {
+		Events.{{ event }}.connect((player) => {
+			// TODO: check that this player may do this now (cooldown, cost, distance...).
+{{ body }}
+		});
+	}
+}

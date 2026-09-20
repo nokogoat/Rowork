@@ -20,6 +20,7 @@ src/
     make.ts              make:service, make:controller, make:component
     make-stat.ts         make:stat (a saved value, in every place it must be)
     make-event.ts        make:event (a typed message in the networking file)
+    links.ts             "link it to...?": prompts, and the generated handler and injections
     make-menu.ts         make: the list of everything that can be created
     console.ts           console: interactive prompt (each line is a child process)
     dev-background.ts    dev:stop and dev:logs
@@ -34,6 +35,7 @@ src/
     exec.ts              run an external tool to completion
     generate.ts          write generated files, register Flamework paths
     schema-edit.ts       careful text edits to files the user owns (PlayerData, networking)
+    project-index.ts     what exists in the project, read from the files (stats, events)
     modules.ts           install a module and apply integrations: checks first, writes last
     background.ts        dev in the background: detached spawn, pid file, stop
     versions.ts          latest versions (Rojo, npm), rokit.toml pin, offline fallback
@@ -145,6 +147,14 @@ leaderboard list, the helper service) and writes them only if all succeeded, so 
 refusal leaves the project exactly as it was. A duplicate is refused before anything
 happens: a name used in either direction of the networking file would collide in
 `Events`.
+
+**Links are read from the files, not from a registry.** The lists offered by "link it to...?"
+come from `project-index.ts`, which parses `PlayerData.ts` and `networking.ts`. There is
+nothing Rowork keeps in sync: whatever is in those files, even after the user edited them, is
+what can be linked, and a file that cannot be read gives an empty list rather than an error.
+The handler it generates fixes the amount on the server on purpose (see the security note in
+[commands](commands.md#linking-things-link-it-to)): a generator must never turn an argument
+sent by a client into saved data.
 
 **Generators register what they generate.** Flamework silently ignores classes
 in directories not passed to `addPaths`. `ensureFlameworkPath` inserts the line

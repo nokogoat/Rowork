@@ -120,6 +120,8 @@ try {
 		["make:stat", "nickname", "--type", "string", "--default", "Guest"],
 		["make:event", "cast spell", "--to", "server", "--args", "spellId: string"],
 		["make:event", "spellCast", "--to", "client", "--args", "spellId: string, caster: number"],
+		["make:event", "openChest", "--to", "server", "--link", "kills"],
+		["make:service", "vault", "--uses", "kills,coins"],
 	]) {
 		const made = run(process.execPath, [cli, ...args], project);
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
@@ -141,7 +143,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService", "OpenChestHandler", "VaultService"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {

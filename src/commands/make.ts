@@ -9,7 +9,9 @@ import {
 	type CommandDefinition,
 	type RoworkConfig,
 } from "../plugins/api.js";
+import { listStats } from "../core/project-index.js";
 import { answered, prompts, requireInteractive } from "../ui/prompt.js";
+import { askStatLink, resolveStats, serviceMembers } from "./links.js";
 
 export type Side = "server" | "client";
 
@@ -103,10 +105,24 @@ export const makeServiceCommand: CommandDefinition = defineCommand({
 	guided: true,
 	description: "Create a service file (server logic) in the right place and register it with Flamework.",
 	arguments: [NAME_ARGUMENT],
-	options: [FORCE_OPTION],
+	options: [
+		{ flags: "--uses <values>", description: "saved values it uses, comma separated (e.g. kills,coins): injected for you" },
+		FORCE_OPTION,
+	],
 	async run(context) {
-		requireProject(context, "make:service");
-		const { name } = await nameOrAsk(context, "make:service", "What is the service called?", "Inventory");
+		const { root, config } = requireProject(context, "make:service");
+		const { name, guided } = await nameOrAsk(context, "make:service", "What is the service called?", "Inventory");
+
+		// "Link it to...?": the saved values this service works with, injected for you.
+		const typed =
+			typeof context.options["uses"] === "string"
+				? context.options["uses"]
+				: guided
+					? await askStatLink(root, config, "Does it use saved values? Type their names, separated by commas.", false)
+					: undefined;
+		const linked = typed === undefined ? [] : resolveStats(listStats(root, config), typed, "try again");
+		const injected = serviceMembers(root, config, linked);
+
 		generate({
 			context,
 			command: "make:service",
@@ -115,8 +131,10 @@ export const makeServiceCommand: CommandDefinition = defineCommand({
 			suffix: "Service",
 			template: "service",
 			side: "server",
-			directory: (config) => config.paths.services,
+			directory: (cfg) => cfg.paths.services,
+			extraVariables: () => ({ imports: injected.imports, members: injected.members }),
 		});
+		if (linked.length > 0) context.logger.step(`linked to ${linked.map((stat) => stat.name).join(", ")}: injected in the constructor`);
 	},
 });
 

@@ -1,6 +1,6 @@
 import { OnStart, Service } from "@flamework/core";
-
+{{ imports }}
 @Service()
 export class {{ className }} implements OnStart {
-	onStart(): void {}
+{{ members }}	onStart(): void {}
 }
