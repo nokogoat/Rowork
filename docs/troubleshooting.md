@@ -86,6 +86,21 @@ Studio has no Linux build; see [Getting started](getting-started.md#on-linux).
   Its version must match the Rojo in `rokit.toml`.
 - **`rojo plugin install` says "platform not supported"**: expected on Linux, use
   `rowork studio:setup` instead.
+- **`exec .../kombucha/bin/wine: no such file or directory`**: the first download of
+  Vinegar's Wine runtime was interrupted (Ctrl+C, closed window, lost network) and
+  left an incomplete folder that Vinegar then considers up to date. Delete the
+  runtime and let it download again; Studio itself is not affected:
+
+  ```bash
+  cd ~/.var/app/org.vinegarhq.Vinegar/data/vinegar
+  rm kombucha && rm -r kombucha-proton-*
+  rowork studio
+  ```
+
+  Let that first launch finish without closing it.
+- **Two Rojo buttons in Studio's toolbar**: the plugin is installed twice, for
+  example once from the Creator Store and once by `rowork studio:setup`. Keep one.
+  Its version should match the Rojo in `rokit.toml`.
 - **Studio looks blank or crashes**: the graphics renderer matters. Vinegar
   defaults to Vulkan; open its Settings (app menu, or
   `flatpak run org.vinegarhq.Vinegar manage`) and try another one. See also
