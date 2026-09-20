@@ -36,7 +36,7 @@ export function moduleCommand(definition: ModuleDefinition): CommandDefinition {
 export const addCommand = defineCommand({
 	name: "add",
 	guided: true,
-	description: "Add a ready-made feature to your game, chosen from a list.",
+	description: "Add a ready-made feature (a working pack of files) to your game, chosen from a list.",
 	async run(context) {
 		requireProject(context, "add");
 		requireInteractive("add", "rowork add:<module> (run `rowork --help` to list them)");
@@ -45,7 +45,7 @@ export const addCommand = defineCommand({
 		prompts.intro("rowork add");
 		const chosen = answered(
 			await prompts.select({
-				message: "What do you want to add?",
+				message: "Which feature do you want to add? (a working pack, not an empty file)",
 				options: coreModules.map((module) => ({
 					value: module.name,
 					label: installed.includes(module.name) ? `${module.title} (installed)` : module.title,

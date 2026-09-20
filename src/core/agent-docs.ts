@@ -33,6 +33,7 @@ export function renderManagedSection(config: RoworkConfig, roworkVersion: string
 		"",
 		"### How to work here",
 		"",
+		"- **`rowork make:*` creates one file, `rowork add:*` installs a feature.** `make` puts an (almost empty) file in the right place and connects it wherever it must be included; you write its logic. `add` installs a ready-made, working pack of files (saved player data, typed networking...). Do not reimplement in `make` files what an `add` module already provides.",
 		"- **Create things with Rowork instead of writing the files by hand.** It names them, puts them in the right directory and registers them with Flamework (a class in a directory not passed to `Flamework.addPaths` compiles and then silently never runs).",
 		"- **Always pass every argument.** Without arguments a command opens interactive questions and waits for a terminal. Commands marked *guided* below do that.",
 		"- **Modules connect themselves.** When two installed modules work together, `rowork add` generates the glue (see \"Modules wired together\"); `rowork wire` retries it. Do not write that glue by hand.",

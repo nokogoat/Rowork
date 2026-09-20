@@ -20,7 +20,7 @@ const CHOICES: Choice[] = [
 export const makeCommand = defineCommand({
 	name: "make",
 	guided: true,
-	description: "Choose what to create from a list (tool, service, controller, component).",
+	description: "Create a file in the right place and connect it where it is needed (choose from a list).",
 	async run(context) {
 		requireProject(context, "make");
 		requireInteractive("make", "rowork make:tool <name>, make:service <name>, make:controller <name> or make:component <name>");
@@ -28,7 +28,7 @@ export const makeCommand = defineCommand({
 		prompts.intro("rowork make");
 		const chosen = answered(
 			await prompts.select({
-				message: "What do you want to create?",
+				message: "Which file do you want to create? (Rowork puts it in the right place and connects it)",
 				options: CHOICES.map((choice) => ({ value: choice.command.name, label: choice.label, hint: choice.hint })),
 			}),
 		);

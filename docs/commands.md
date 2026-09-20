@@ -1,5 +1,18 @@
 # Commands
 
+## `make` or `add`?
+
+| | `rowork make:...` | `rowork add:...` |
+| --- | --- | --- |
+| **What it is** | one file, created cleanly | a ready-made feature: a working pack of files |
+| **Where the logic comes from** | you write it | already written and working |
+| **What Rowork does for you** | puts the file in the right place, names it correctly, and includes it wherever it must be (for example registering it with Flamework so it actually runs) | installs the packages, writes the files, connects them to each other and to the modules already there |
+| **How many times** | as many as you like | once per project |
+| **Example** | `rowork make:service Inventory` | `rowork add:player-data` |
+
+Both open a list when run alone (`rowork make`, `rowork add`), and both have a scripted form.
+Use `make` for the pieces of your own game, `add` for the chores every game shares.
+
 ## Global options
 
 Available on every command.

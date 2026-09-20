@@ -146,13 +146,17 @@ rowork update             # move to the latest Rojo, packages and Studio plugin
 
 ## Add things to your game
 
+There are two kinds of command, and the difference is simple:
+
 ```bash
-rowork make          # pick what to create from a list, then answer a few questions
+rowork add           # a ready-made FEATURE that works (saved player data, typed networking...)
+rowork make          # a single FILE for your own logic, put in the right place and connected
 ```
 
-Try **Tool**: name it, choose how long between two uses, and every player
-receives it when they spawn. You then write what it does in the generated
-component. See [Commands](commands.md#rowork-maketool-name).
+`rowork add` gives you working code for the chores every game shares. `rowork make`
+creates an almost empty service, controller or component where it belongs and
+connects it for you, so you only write what makes your game yours. See
+[make or add?](commands.md#make-or-add).
 
 Tired of typing `rowork` each time? `rowork console` opens a prompt where you
 just type `make`, `dev`, `studio`...
