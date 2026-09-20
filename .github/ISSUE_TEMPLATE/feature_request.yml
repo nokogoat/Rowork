@@ -1,0 +1,25 @@
+name: Feature or module request
+description: Suggest a command or a module
+labels: [enhancement]
+body:
+  - type: textarea
+    id: chore
+    attributes:
+      label: What chore does this remove?
+      description: Rowork is for things almost every Roblox game redoes. Describe the repetitive work you do by hand today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you type, and what would you get?
+      description: Sketch the command (Rowork commands have a guided version) and the files or behaviour it produces.
+    validations:
+      required: true
+  - type: dropdown
+    id: general
+    attributes:
+      label: Would most games use it?
+      options: ["Yes, nearly every game", "Many games", "Only some kinds of games"]
+    validations:
+      required: true
