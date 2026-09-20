@@ -9,6 +9,7 @@ import { requireProject } from "./make.js";
 export function moduleCommand(definition: ModuleDefinition): CommandDefinition {
 	return defineCommand({
 		name: `add:${definition.name}`,
+		guided: true,
 		description: `Add the ${definition.title} module: ${definition.description}`,
 		options: [
 			...(definition.options ?? []),
@@ -34,6 +35,7 @@ export function moduleCommand(definition: ModuleDefinition): CommandDefinition {
 
 export const addCommand = defineCommand({
 	name: "add",
+	guided: true,
 	description: "Add a ready-made feature to your game, chosen from a list.",
 	async run(context) {
 		requireProject(context, "add");

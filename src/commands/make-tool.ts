@@ -65,6 +65,7 @@ function settingsFromOptions(context: CommandContext): ToolSettings {
 
 export const makeToolCommand = defineCommand({
 	name: "make:tool",
+	guided: true,
 	description: "Create a tool players hold: settings, behaviour, and automatic delivery.",
 	arguments: [
 		{

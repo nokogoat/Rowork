@@ -325,6 +325,24 @@ One thing to check: Rowork also looked in `~/.rokit/bin` on its own. A plain npm
 script only sees your PATH, so `rojo` must be on it. `eject` warns you when it
 is not.
 
+## `rowork info`
+
+Shows the project, what is installed and what can be added. With `--json` it prints
+the same, plus every command with its arguments and options, as JSON on stdout: the
+entry point for scripts and AIs. See [Rowork and AI](ai.md).
+
+```bash
+rowork info
+rowork info --json
+```
+
+## `rowork agents:sync`
+
+Creates or refreshes `AGENTS.md` (and a `CLAUDE.md` that imports it) from the
+project's current state. `rowork init` and `rowork add` already do it; use this in a
+project created before it existed. Your own notes outside the generated block are
+kept, and an existing `CLAUDE.md` is never modified.
+
 ## `rowork studio` and `rowork studio:setup` (Linux)
 
 Roblox Studio has no Linux build. These commands run it through

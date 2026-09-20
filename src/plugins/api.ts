@@ -61,6 +61,12 @@ export interface CommandDefinition {
 	aliases?: string[];
 	arguments?: CommandArgument[];
 	options?: CommandOption[];
+	/**
+	 * True when running the command without its arguments opens interactive
+	 * questions. Listed by `rowork info --json` so a script or an AI knows to
+	 * pass every argument instead of waiting on a prompt that never comes.
+	 */
+	guided?: boolean;
 	run(context: CommandContext): Promise<void> | void;
 }
 

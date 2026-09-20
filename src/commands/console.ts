@@ -88,6 +88,7 @@ function runLine(tokens: string[], cwd: string): Promise<void> {
 
 export const consoleCommand = defineCommand({
 	name: "console",
+	guided: true,
 	description: "Open an interactive Rowork prompt: type commands without retyping `rowork`.",
 	async run(context) {
 		if (process.env[IN_CONSOLE] !== undefined) {

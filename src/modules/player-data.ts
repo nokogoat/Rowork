@@ -141,6 +141,11 @@ export const playerDataModule: ModuleDefinition = {
 	title: "Player data",
 	description: "Save and load each player's progress (coins, level...) so it survives leaving the game.",
 	dependencies: ["@rbxts/lapis", "@rbxts/t"],
+	agentGuide: [
+		"Saved data lives in `PlayerDataService` (server). From another service: inject it and call `get(player)`, `update(player, (data) => { data.coins += 1; return data; })`, `onLoaded(cb)`, `onChanged(cb)`.",
+		"To save a new value, add it in TWO places in `src/shared/data/PlayerData.ts`: the `PlayerData` interface and `DEFAULT_PLAYER_DATA`. Do not read data from the client.",
+		"Data is undefined until it has loaded: always handle that case.",
+	],
 	options: [
 		{
 			flags: "--field <spec...>",

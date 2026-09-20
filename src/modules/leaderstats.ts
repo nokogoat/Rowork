@@ -45,6 +45,10 @@ export const leaderstatsModule: ModuleDefinition = {
 	title: "Leaderstats",
 	description: "Show chosen player data (coins, level...) in the in-game leaderboard, kept up to date.",
 	requires: ["player-data"],
+	agentGuide: [
+		"`LeaderstatsService` mirrors PlayerData into Roblox's leaderboard. To show another value, add its name to the `SHOWN` list at the top of the file.",
+		"The leaderboard is only a display: read values from `PlayerDataService`, never from the `leaderstats` folder.",
+	],
 	options: [
 		{
 			flags: "--stat <field...>",

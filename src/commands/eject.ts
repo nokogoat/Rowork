@@ -5,6 +5,7 @@ import pc from "picocolors";
 
 import { RoworkError } from "../cli/errors.js";
 import { runningRecord, stopProcess, clearRecord } from "../core/background.js";
+import { removeAgentDocs, AGENTS_FILE } from "../core/agent-docs.js";
 import { CONFIG_FILENAME } from "../core/config.js";
 import { run as runBinary } from "../core/exec.js";
 import { isOnPlainPath } from "../core/toolchain.js";
@@ -33,6 +34,7 @@ function indentOf(source: string): string | number {
 
 export const ejectCommand = defineCommand({
 	name: "eject",
+	guided: true,
 	description: "Leave Rowork: keep a project that runs with plain tools, and remove Rowork's files.",
 	options: [
 		{ flags: "--yes", description: "do not ask for confirmation" },
@@ -70,6 +72,7 @@ export const ejectCommand = defineCommand({
 		const readme = existsSync(readmePath) ? readFileSync(readmePath, "utf8") : "";
 		const readmeChanges = /rowork dev/.test(readme);
 		if (readmeChanges) changes.push("README.md: `rowork dev` becomes `npm run dev`");
+		if (existsSync(join(root, AGENTS_FILE))) changes.push(`${AGENTS_FILE}: Rowork's generated block removed (your own notes stay)`);
 		changes.push(`${CONFIG_FILENAME}: removed`);
 		if (existsSync(join(root, ".rowork"))) changes.push(".rowork/: removed (background dev pid and log)");
 
@@ -126,6 +129,7 @@ export const ejectCommand = defineCommand({
 
 		if (readmeChanges) writeFileSync(readmePath, readme.replace(/rowork dev/g, "npm run dev"), "utf8");
 
+		removeAgentDocs(root);
 		rmSync(join(root, ".rowork"), { recursive: true, force: true });
 		rmSync(join(root, CONFIG_FILENAME), { force: true });
 

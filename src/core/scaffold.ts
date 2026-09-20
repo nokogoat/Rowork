@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { RoworkError } from "../cli/errors.js";
 import type { Logger } from "../plugins/api.js";
 import { renderTree, templatesRoot } from "../templates/engine.js";
+import { syncAgentDocs } from "./agent-docs.js";
 import { CONFIG_FILENAME, defaultConfig } from "./config.js";
 import { run as runBinary } from "./exec.js";
 import { installRokit } from "./rokit-installer.js";
@@ -119,11 +120,11 @@ export async function scaffoldProject(
 	}
 
 	logger.step(`writing ${CONFIG_FILENAME}`);
-	writeFileSync(
-		join(target, CONFIG_FILENAME),
-		`${JSON.stringify(defaultConfig(displayName), undefined, 2)}\n`,
-		"utf8",
-	);
+	const config = defaultConfig(displayName);
+	writeFileSync(join(target, CONFIG_FILENAME), `${JSON.stringify(config, undefined, 2)}\n`, "utf8");
+
+	logger.step("writing AGENTS.md (instructions for AIs and newcomers)");
+	syncAgentDocs(target, config, options.roworkVersion);
 
 	if (options.git) {
 		logger.step("initialising git repository");

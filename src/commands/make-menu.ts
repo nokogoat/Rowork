@@ -19,6 +19,7 @@ const CHOICES: Choice[] = [
 
 export const makeCommand = defineCommand({
 	name: "make",
+	guided: true,
 	description: "Choose what to create from a list (tool, service, controller, component).",
 	async run(context) {
 		requireProject(context, "make");

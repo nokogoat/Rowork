@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { RoworkError } from "../cli/errors.js";
 import type { ModuleDefinition } from "../modules/types.js";
 import type { CommandContext } from "../plugins/api.js";
-import { CONFIG_FILENAME, resolveProjectPath } from "./config.js";
+import { syncAgentDocs } from "./agent-docs.js";
+import { CONFIG_FILENAME, loadConfig, resolveProjectPath } from "./config.js";
 import { run as runBinary } from "./exec.js";
 import { ensureFlameworkPath, generateFile, importPath } from "./generate.js";
 import { findExecutable } from "./toolchain.js";
@@ -111,6 +112,10 @@ export async function installModule(
 	}
 
 	recordModule(root, definition.name);
+
+	// The project's AGENTS.md lists installed modules and how to use them.
+	const touched = syncAgentDocs(root, loadConfig(root), context.roworkVersion);
+	if (touched.length > 0) logger.step(`updated ${touched.join(", ")}`);
 
 	logger.success(`${definition.title} module added`);
 	logger.blank();

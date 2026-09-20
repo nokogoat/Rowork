@@ -208,6 +208,31 @@ try {
 	check(!/rowork dev/.test(readFileSync(join(ejectProject, "README.md"), "utf8")), "the README still says `rowork dev` after eject");
 	check(ejectRun("dev").status === 1, "rowork dev still ran in an ejected project");
 
+	// AI-friendly: AGENTS.md is generated, kept current by `add`, and removed on eject; info --json is machine-readable.
+	const agentsProject = join(workspace, "AgentsGame");
+	spawnSync(process.execPath, [cli, "init", "AgentsGame", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
+	const agentsPath = join(agentsProject, "AGENTS.md");
+	check(existsSync(agentsPath) && readFileSync(join(agentsProject, "CLAUDE.md"), "utf8").trim() === "@AGENTS.md", "init did not create AGENTS.md and a CLAUDE.md importing it");
+	writeFileSync(agentsPath, readFileSync(agentsPath, "utf8") + "\n## My notes\n\nKeep shop prices.\n");
+	const agentsRun = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: agentsProject, encoding: "utf8" });
+	check(agentsRun("add:player-data", "--field", "coins:number=0", "--no-install").status === 0, "could not add a module to the agents project");
+	const agentsAfter = readFileSync(agentsPath, "utf8");
+	check(agentsAfter.includes("PlayerDataService"), "AGENTS.md was not refreshed with the installed module");
+	check(agentsAfter.includes("Keep shop prices."), "AGENTS.md lost the user's own notes");
+	check(agentsAfter.split("rowork:begin").length === 2, "AGENTS.md now holds the generated block more than once");
+	const info = agentsRun("info", "--json");
+	let parsed;
+	try { parsed = JSON.parse(info.stdout); } catch { parsed = undefined; }
+	check(parsed !== undefined, `info --json did not print valid JSON on stdout\n${info.stdout.slice(0, 200)}`);
+	if (parsed !== undefined) {
+		check(parsed.project?.modules?.includes("player-data"), "info --json does not list the installed module");
+		check(parsed.modules.some((m) => m.name === "leaderstats" && m.installed === false && m.requires.includes("player-data")), "info --json lacks the module catalogue");
+		check(parsed.commands.some((c) => c.name === "add:player-data" && c.guided === true && c.options.length > 0), "info --json lacks a command with its options");
+	}
+	const outside = spawnSync(process.execPath, [cli, "info", "--json"], { cwd: workspace, encoding: "utf8" });
+	check(JSON.parse(outside.stdout).project === null, "info --json outside a project should give project: null");
+	check(agentsRun("eject", "--yes", "--no-install").status === 0 && readFileSync(agentsPath, "utf8").includes("Keep shop prices.") && !readFileSync(agentsPath, "utf8").includes("rowork:begin"), "eject did not remove only the generated block of AGENTS.md");
+
 	// A dev script the user wrote is theirs: eject must keep it.
 	const ownProject = join(workspace, "OwnScriptGame");
 	spawnSync(process.execPath, [cli, "init", "OwnScriptGame", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });

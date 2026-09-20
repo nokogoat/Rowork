@@ -44,6 +44,12 @@ export interface ModuleDefinition {
 	requires?: string[];
 	/** npm packages to install. Versions are resolved by npm, never hardcoded. */
 	dependencies?: string[];
+	/**
+	 * How to use the module once installed, written for whoever reads the
+	 * project's AGENTS.md next: a person learning it, or an AI working in it.
+	 * Short imperative lines: where the code is, what to call, what to edit.
+	 */
+	agentGuide?: string[];
 	/** Flags for the scripted form. */
 	options?: CommandOption[];
 	plan(input: PlanInput): Promise<ModulePlan> | ModulePlan;

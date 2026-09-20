@@ -11,6 +11,7 @@ import { startCommand } from "./start.js";
 
 export const initCommand = defineCommand({
 	name: "init",
+	guided: true,
 	description: "Create a ready-to-run Roblox project (roblox-ts + Flamework + Rojo).",
 	arguments: [
 		{ name: "name", description: "project name, also used as the directory name", required: false },

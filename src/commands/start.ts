@@ -13,6 +13,7 @@ import { printNextSteps } from "./next-steps.js";
 
 export const startCommand = defineCommand({
 	name: "start",
+	guided: true,
 	description: "Guided setup: answer a few questions and get a ready-to-run project.",
 	options: [{ flags: "--path <dir>", description: "parent directory to create the project in" }],
 	async run(context) {

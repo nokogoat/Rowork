@@ -26,6 +26,7 @@ MyGame/
   package.json                 npm dependencies and scripts
   rokit.toml                   pinned toolchain (Rojo)
   rowork.json                  Rowork configuration
+  AGENTS.md                    instructions for AIs and newcomers (CLAUDE.md imports it)
   README.md
   .gitignore
 ```

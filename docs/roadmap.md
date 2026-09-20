@@ -20,8 +20,14 @@ Rowork advances sprint by sprint.
   Lapis) `leaderstats` (a display of player data) and `networking` (typed messages
   between client and server).
 
+- **Made for humans and AIs.** A generated `AGENTS.md` kept current by `rowork
+  add`, and `rowork info --json` (see [Rowork and AI](ai.md)).
+
 ## Next
 
+- **Modules that wire themselves together**, in either order of installation.
+- **A weekly upstream check** that replays the integration tests against the latest
+  Rojo, roblox-ts, Flamework, Lapis and Rokit.
 - **More modules.** Only chores almost every game redoes: player settings, notifications. Each new module
   must pass that test; genre-specific features do not belong in the core.
 

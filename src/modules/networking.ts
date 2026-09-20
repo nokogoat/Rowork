@@ -133,6 +133,11 @@ export const networkingModule: ModuleDefinition = {
 	title: "Typed networking",
 	description: "Messages between client and server with types, no RemoteEvent to create or wire by hand.",
 	dependencies: ["@flamework/networking"],
+	agentGuide: [
+		"Every client/server message is declared once in `src/shared/networking.ts`, in `ClientToServerEvents` or `ServerToClientEvents`. To add one, add a line such as `buyItem(itemId: string, amount: number): void;`. Do not create RemoteEvents by hand.",
+		"Server: `import { Events } from \"../network\"`, then `Events.name.connect((player, ...args) => {})`, `Events.name.fire(player, ...args)`, `Events.name.broadcast(...args)`. Client: `Events.name.fire(...args)` and `Events.name.connect((...args) => {})`.",
+		"On the server the sender is always the first argument and comes from Roblox: never take a player from the arguments.",
+	],
 	options: [
 		{
 			flags: "--event <spec...>",

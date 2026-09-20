@@ -100,6 +100,7 @@ function generate(options: {
 
 export const makeServiceCommand: CommandDefinition = defineCommand({
 	name: "make:service",
+	guided: true,
 	description: "Create a Flamework service (server-side singleton).",
 	arguments: [NAME_ARGUMENT],
 	options: [FORCE_OPTION],
@@ -121,6 +122,7 @@ export const makeServiceCommand: CommandDefinition = defineCommand({
 
 export const makeControllerCommand: CommandDefinition = defineCommand({
 	name: "make:controller",
+	guided: true,
 	description: "Create a Flamework controller (client-side singleton).",
 	arguments: [NAME_ARGUMENT],
 	options: [FORCE_OPTION],
@@ -142,6 +144,7 @@ export const makeControllerCommand: CommandDefinition = defineCommand({
 
 export const makeComponentCommand: CommandDefinition = defineCommand({
 	name: "make:component",
+	guided: true,
 	description: "Create a Flamework component (behaviour attached to tagged instances).",
 	arguments: [NAME_ARGUMENT],
 	options: [
