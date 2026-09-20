@@ -15,6 +15,7 @@ Flamework, Rojo and a pinned toolchain, behind one command.
 | [Troubleshooting](troubleshooting.md) | fix an error message |
 | [Architecture](architecture.md) | understand the codebase before changing it |
 | [Contributing](contributing.md) | send a pull request |
+| [Releasing](releasing.md) | publish a version to npm (maintainer) |
 | [Roadmap](roadmap.md) | see what exists and what is planned |
 
 ## Status
