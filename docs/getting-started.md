@@ -1,0 +1,118 @@
+# Getting started
+
+From nothing to a running project in Roblox Studio.
+
+## Prerequisites
+
+- **Node.js 20 or newer** (`node --version`). roblox-ts needs Node anyway.
+- **Git** (optional, only for the repository Rowork can initialise).
+- **Roblox Studio**, to see and run your game.
+
+You do **not** need to install Rojo or roblox-ts yourself. Rowork can install
+[Rokit](https://github.com/rojo-rbx/rokit), which provides Rojo, and npm
+provides roblox-ts.
+
+## Install Rowork
+
+Rowork is not published on npm yet. Until it is, install it from the
+repository:
+
+```bash
+git clone https://github.com/nokogoat/Rowork
+cd Rowork
+npm install
+npm run build
+npm link        # puts `rowork` on your PATH
+```
+
+`npm link` points at your working copy, so after a code change `npm run build`
+is enough. Remove it with `npm uninstall -g rowork`.
+
+Once Rowork is published, this becomes:
+
+```bash
+npm install -g rowork
+# or, without installing anything permanently:
+npx rowork start
+```
+
+If your shell says `rowork: command not found` after `npm link`, check that the
+directory printed by `npm prefix -g` followed by `/bin` is in your `PATH`. Fish
+sometimes needs `rehash` or a new terminal.
+
+## Create a project
+
+### The guided way
+
+```bash
+rowork start
+```
+
+You are asked, in order:
+
+1. the name of your game,
+2. where to create it,
+3. whether to keep an example service and controller,
+4. whether to initialise a git repository,
+5. whether to install the npm dependencies (roblox-ts, Flamework),
+6. whether to install the Roblox toolchain. If Rokit is not on your machine,
+   Rowork offers to download and install it for you.
+
+A summary is shown and nothing is written until you confirm. Ctrl+C at any
+point cancels without creating anything.
+
+### The scripted way
+
+```bash
+rowork init MyGame
+```
+
+Same result without questions, for scripts and CI. Rokit is only installed
+automatically if you add `--install-rokit`. See [Commands](commands.md) for
+every flag.
+
+## Run it
+
+```bash
+cd MyGame
+rowork dev
+```
+
+The first run compiles once (Rojo cannot start without the compiler's output
+folder), then starts three things side by side:
+
+```
+compile   | Found 0 errors. Watching for file changes.
+rojo      | Rojo server listening: localhost, port 34872
+sourcemap | Created sourcemap at sourcemap.json
+```
+
+Leave it running. Press **Ctrl+C** to stop everything.
+
+## Connect Roblox Studio
+
+Rojo works through a plugin inside Studio. Install it once:
+
+```bash
+rojo plugin install
+```
+
+(If `rojo` is not on your PATH yet, use the shim Rokit created:
+`~/.rokit/bin/rojo plugin install`, or on Windows
+`%USERPROFILE%\.rokit\bin\rojo plugin install`.)
+
+Then, in Studio:
+
+1. Open a new **Baseplate** place.
+2. Open the **Rojo** plugin panel and click **Connect** (default address
+   `localhost:34872`).
+
+Your code is now synced. Edit a `.ts` file, the compiler rebuilds, Rojo pushes
+the change into Studio. Press **Play** to run it: the Output window shows
+`[MyGame] ExampleService started.` if you kept the examples.
+
+## What next
+
+- [Project structure](project-structure.md): where your code goes.
+- [Commands](commands.md): everything the CLI can do.
+- [Troubleshooting](troubleshooting.md) if something did not go as described.
