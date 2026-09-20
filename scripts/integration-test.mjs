@@ -111,6 +111,9 @@ try {
 	const added = run(process.execPath, [cli, "add:player-data", "--field", "coins:number=0", "--field", "level:number=1"], project);
 	check(added.status === 0, `\`rowork add:player-data\` failed\n${added.output}`);
 	check(existsSync(join(project, "node_modules", "@rbxts", "lapis")), "the module's dependencies were not installed");
+	const net = run(process.execPath, [cli, "add:networking", "--event", "buyItem:server(itemId: string)", "--event", "bought:client(itemId: string)"], project);
+	check(net.status === 0, `\`rowork add:networking\` failed\n${net.output}`);
+	check(existsSync(join(project, "node_modules", "@flamework", "networking")), "@flamework/networking was not installed");
 	const stats = run(process.execPath, [cli, "add:leaderstats", "--stat", "coins", "--stat", "level"], project);
 	check(stats.status === 0, `\`rowork add:leaderstats\` failed\n${stats.output}`);
 
@@ -144,6 +147,8 @@ try {
 	check(existsSync(join(project, "node_modules", "concurrently")), "eject did not install concurrently");
 	const rebuilt = run("npm", ["run", "build"], project);
 	check(rebuilt.status === 0 && !/error TS/.test(rebuilt.output), `the ejected project does not build with plain tools:\n${rebuilt.output}`);
+
+	check(existsSync(join(project, "out", "shared", "networking.luau")), "the networking module did not compile to Luau");
 
 	const outDirectory = join(project, "out");
 	check(existsSync(outDirectory), "no out/ directory was produced");

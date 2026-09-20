@@ -1,0 +1,22 @@
+import { Networking } from "@flamework/networking";
+
+/**
+ * Every message between client and server, described once, with types.
+ * Roblox RemoteEvents are created and wired for you: nothing to set up by hand.
+ *
+ * To add an event, add a line in the right interface below:
+ *
+ *   buyItem(itemId: string, amount: number): void;
+ *
+ * Events the client sends TO the server:
+ */
+interface ClientToServerEvents {
+{{ toServer }}
+}
+
+/** Events the server sends TO the client(s): */
+interface ServerToClientEvents {
+{{ toClient }}
+}
+
+export const GlobalEvents = Networking.createEvent<ClientToServerEvents, ServerToClientEvents>();

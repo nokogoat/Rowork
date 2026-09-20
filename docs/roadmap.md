@@ -17,11 +17,12 @@ Rowork advances sprint by sprint.
 - **`rowork eject`.** Leave Rowork at any time and keep a project that runs with
   plain tools, verified by building an ejected project in CI.
 - **Modules.** `rowork add` and the module system, with `player-data` (built on
-  Lapis) and `leaderstats` (a display of player data).
+  Lapis) `leaderstats` (a display of player data) and `networking` (typed messages
+  between client and server).
 
 ## Next
 
-- **More modules.** Only chores almost every game redoes: typed networking, player settings, notifications. Each new module
+- **More modules.** Only chores almost every game redoes: player settings, notifications. Each new module
   must pass that test; genre-specific features do not belong in the core.
 
 - **Sprint 4: domain scaffolding.** `make:tool` is done (a config, a server

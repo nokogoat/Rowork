@@ -1,0 +1,13 @@
+import { GlobalEvents } from "{{ networkingImport }}";
+
+/**
+ * The server's side of every event.
+ *
+ *   Events.buyItem.connect((player, itemId, amount) => { ... });   // the client sent one
+ *   Events.itemBought.fire(player, itemId);                          // send to one player
+ *   Events.itemBought.broadcast(itemId);                             // send to everyone
+ *
+ * The player who sent an event is always the first argument: clients cannot lie
+ * about who they are, so never take a player from the arguments.
+ */
+export const Events = GlobalEvents.createServer({});

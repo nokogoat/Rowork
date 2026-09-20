@@ -1,0 +1,9 @@
+import { GlobalEvents } from "{{ networkingImport }}";
+
+/**
+ * The client's side of every event.
+ *
+ *   Events.buyItem.fire(itemId, amount);                  // send to the server
+ *   Events.itemBought.connect((itemId) => { ... });       // the server sent one
+ */
+export const Events = GlobalEvents.createClient({});

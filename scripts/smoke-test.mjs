@@ -219,6 +219,19 @@ try {
 	check(keptRun.status === 0, `eject failed on a project with its own dev script\n${keptRun.stderr}`);
 	check(JSON.parse(readFileSync(ownManifestPath, "utf8")).scripts.dev === "node my-own-dev.js", "eject overwrote the user's own dev script");
 
+	// networking: typed events are validated before anything is written.
+	for (const bad of ["a:server(player id: number)", "a:server(x)", "a:server(x: number); evil()", "nodirection", "1a:server"]) {
+		check(makeRun("add:networking", "--event", bad, "--no-install").status === 1, `networking accepted an invalid event: ${bad}`);
+	}
+	check(!existsSync(join(bareProject, "src", "shared", "networking.ts")), "a refused networking event left files behind");
+	const net = makeRun("add:networking", "--event", "buy item:server(itemId: string, amount: number)", "--event", "itemBought:client(itemId: string)", "--no-install");
+	check(net.status === 0, `add:networking failed\n${net.stderr}`);
+	const networkingFile = join(bareProject, "src", "shared", "networking.ts");
+	const networking = existsSync(networkingFile) ? readFileSync(networkingFile, "utf8") : "";
+	check(networking.includes("buyItem(itemId: string, amount: number): void;"), "networking.ts lacks the client-to-server event");
+	check(networking.includes("itemBought(itemId: string): void;"), "networking.ts lacks the server-to-client event");
+	check(existsSync(join(bareProject, "src", "server", "network.ts")) && existsSync(join(bareProject, "src", "client", "network.ts")), "networking did not create both network.ts files");
+
 	// Guided versions need a terminal: without one they refuse and show the scripted form.
 	for (const command of ["make", "make:tool", "make:service", "make:controller", "make:component", "console"]) {
 		const guided = makeRun(command);

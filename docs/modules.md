@@ -129,6 +129,62 @@ You write nothing to keep it in sync.
 that file. Numbers, text and yes/no values are supported. The leaderboard is only
 a display: read a player's value from `PlayerDataService`, never from the folder.
 
+### `networking`: messages between client and server, with types
+
+Roblox games send messages between the player's computer (the client) and the
+server all the time: buy an item, open a door, show a notification. By hand that
+means creating RemoteEvents, naming them, and hoping both sides agree on what they
+carry. This module describes each message once, with types, using
+[Flamework Networking](https://flamework.fireboltofdeath.dev/docs/networking).
+A wrong call fails to compile instead of failing in the game.
+
+```bash
+rowork add:networking                                            # guided
+rowork add:networking --event "buyItem:server(itemId: string, amount: number)" \
+                      --event "itemBought:client(itemId: string)"
+```
+
+| Option | Effect |
+| --- | --- |
+| `--event <name:direction(arguments)>` | a message, repeatable. `server` = the client sends it to the server, `client` = the server sends it to the player(s). Arguments are `name: type` separated by commas |
+| `--no-install` | do not run `npm install` |
+
+The guided version asks the name (any words: `buy item` becomes `buyItem`), who
+sends it, and what it carries, then offers to add another.
+
+**Files it adds**
+
+| File | Role |
+| --- | --- |
+| `src/shared/networking.ts` | every message and its types, in two interfaces. **The only place to edit to add one** |
+| `src/server/network.ts` | the server's side: `Events` |
+| `src/client/network.ts` | the client's side: `Events` |
+
+**Using it**
+
+```ts
+// server: something the client sent
+import { Events } from "../network";
+Events.buyItem.connect((player, itemId, amount) => { /* ... */ });
+Events.itemBought.fire(player, itemId);     // to one player
+Events.itemBought.broadcast(itemId);        // to everyone
+
+// client
+import { Events } from "../network";
+Events.buyItem.fire("sword", 1);
+Events.itemBought.connect((itemId) => { /* ... */ });
+```
+
+On the server, the player who sent a message is always the first argument. It
+comes from Roblox, not from the client, so it cannot be faked: never take a player
+from the arguments.
+
+**Adding a message later:** add a line such as `buyItem(itemId: string, amount:
+number): void;` to `ClientToServerEvents` or `ServerToClientEvents`.
+
+Only events are generated. Flamework Networking also has request/response
+functions (`Networking.createFunction`); add them by hand when you need them.
+
 ## Coming next
 
-More chores everyone redoes: typed networking, player settings, notifications. See the [roadmap](roadmap.md).
+More chores everyone redoes: player settings, notifications. See the [roadmap](roadmap.md).
