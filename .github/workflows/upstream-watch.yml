@@ -1,0 +1,50 @@
+name: Upstream watch
+
+# Rowork installs the newest roblox-ts, Flamework, Lapis and Rokit when a project
+# is created, so an upstream release can break it without any change here. This
+# job replays the real end-to-end flow every Monday and opens an issue if it fails.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+  # Also runs when the check itself changes, so it is exercised before it is trusted.
+  pull_request:
+    paths:
+      - ".github/workflows/upstream-watch.yml"
+      - "scripts/upstream-watch.mjs"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Replay the flow against the latest upstream versions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/upstream-watch.mjs
+
+      - name: Open or update an issue on failure
+        if: failure() && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create upstream-watch --color B60205 --description "An upstream release broke Rowork" 2>/dev/null || true
+          existing=$(gh issue list --label upstream-watch --state open --json number --jq '.[0].number')
+          body="The weekly upstream check failed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          An upstream tool (Rojo, roblox-ts, Flamework, Lapis, Rokit or another dependency) probably released something that Rowork does not handle yet. The run summary lists the latest versions and the first failure."
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --label upstream-watch --title "Upstream check failed" --body "$body"
+          fi
