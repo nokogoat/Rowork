@@ -288,6 +288,43 @@ Every module has a guided version and scripted options (shown by
 `rowork add:<module> --help`). A module already installed is refused: its files
 are yours, and adding it again would overwrite your changes.
 
+## `rowork eject`
+
+Leaves Rowork and keeps a project that runs with plain tools. This is the
+no-lock-in guarantee: you can stop using Rowork at any time.
+
+```bash
+rowork eject --dry-run    # see exactly what would change
+rowork eject              # asks for confirmation (default: No)
+rowork eject --yes        # for scripts
+```
+
+| Option | Effect |
+| --- | --- |
+| `--dry-run` | list the changes and change nothing |
+| `--yes` | do not ask for confirmation |
+| `--no-install` | do not install `concurrently` |
+
+**What changes**
+
+- `package.json`: the `dev` script, which called `rowork dev`, becomes a plain
+  equivalent: `concurrently` running `rbxtsc -w`, `rojo serve` and `rojo sourcemap
+  --watch`, with a `predev` that builds once first (Rojo cannot start without the
+  compiler's output). `concurrently` is added to `devDependencies`. If your `dev`
+  script is not Rowork's own, it is left exactly as you wrote it.
+- `README.md`: `rowork dev` becomes `npm run dev`.
+- `rowork.json` and `.rowork/` are removed. A background `rowork dev` is stopped
+  first.
+
+**What does not change:** your source code, `default.project.json`,
+`tsconfig.json`, `rokit.toml`. Generated code never imports Rowork, so services,
+components and modules keep working untouched. From then on `rowork` commands stop
+working in that project, and `npm run dev` replaces `rowork dev`.
+
+One thing to check: Rowork also looked in `~/.rokit/bin` on its own. A plain npm
+script only sees your PATH, so `rojo` must be on it. `eject` warns you when it
+is not.
+
 ## `rowork studio` and `rowork studio:setup` (Linux)
 
 Roblox Studio has no Linux build. These commands run it through

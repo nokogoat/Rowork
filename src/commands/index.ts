@@ -3,6 +3,7 @@ import { coreModules } from "../modules/index.js";
 import { addCommand, moduleCommand } from "./add.js";
 import { consoleCommand } from "./console.js";
 import { devCommand } from "./dev.js";
+import { ejectCommand } from "./eject.js";
 import { devLogsCommand, devStopCommand } from "./dev-background.js";
 import { initCommand } from "./init.js";
 import { makeCommand } from "./make-menu.js";
@@ -31,5 +32,6 @@ export const coreCommands: CommandDefinition[] = [
 	studioSetupCommand,
 	consoleCommand,
 	addCommand,
+	ejectCommand,
 	...coreModules.map(moduleCommand),
 ];

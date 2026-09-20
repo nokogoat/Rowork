@@ -107,3 +107,19 @@ export function isPortFree(port: number): Promise<boolean> {
 		server.listen(port, "127.0.0.1");
 	});
 }
+
+/**
+ * True when `command` is on the plain PATH, the way a shell or an npm script
+ * sees it: no project binaries first, and none of Rowork's own fallback
+ * directories. Once a project has left Rowork, that is the only lookup left.
+ */
+export function isOnPlainPath(command: string): boolean {
+	const extensions =
+		process.platform === "win32"
+			? ["", ...(process.env["PATHEXT"] ?? ".EXE;.CMD;.BAT").split(";").filter(Boolean)]
+			: [""];
+	return (process.env["PATH"] ?? "")
+		.split(delimiter)
+		.filter((entry) => entry.length > 0)
+		.some((directory) => extensions.some((extension) => isExecutable(join(directory, `${command}${extension}`))));
+}

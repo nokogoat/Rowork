@@ -137,6 +137,14 @@ try {
 		check(false, "no flamework.build was produced");
 	}
 
+	// Leaving Rowork must leave a project that still builds with the plain tools.
+	const eject = run(process.execPath, [cli, "eject", "--yes"], project);
+	check(eject.status === 0, `\`rowork eject\` failed\n${eject.output}`);
+	check(!existsSync(join(project, "rowork.json")), "eject left rowork.json behind");
+	check(existsSync(join(project, "node_modules", "concurrently")), "eject did not install concurrently");
+	const rebuilt = run("npm", ["run", "build"], project);
+	check(rebuilt.status === 0 && !/error TS/.test(rebuilt.output), `the ejected project does not build with plain tools:\n${rebuilt.output}`);
+
 	const outDirectory = join(project, "out");
 	check(existsSync(outDirectory), "no out/ directory was produced");
 

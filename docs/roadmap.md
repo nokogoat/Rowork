@@ -14,6 +14,8 @@ Rowork advances sprint by sprint.
 - **Sprint 3: Flamework generators.** `make:service`, `make:controller`,
   `make:component`, with automatic registration in the runtime entry files.
 
+- **`rowork eject`.** Leave Rowork at any time and keep a project that runs with
+  plain tools, verified by building an ejected project in CI.
 - **Modules.** `rowork add` and the module system, with `player-data` (built on
   Lapis) and `leaderstats` (a display of player data).
 
@@ -30,7 +32,6 @@ Rowork advances sprint by sprint.
   handler, generated together and kept consistent.
 - **Sprint 5: public plugin API and Wally.** Stabilise the contract and port
   Wally support as the first official plugin, outside the core.
-- **`rowork eject`.** Leave Rowork at any time, keeping a working project.
 - **Error prioritisation.** In `dev`, surface compiler and Flamework diagnostics
   above everything else.
 

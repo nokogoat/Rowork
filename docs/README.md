@@ -24,6 +24,12 @@ Rowork is in early development (v0.0.x). Today: `start`, `init`, `dev`, `make:se
 Everything else in the roadmap, notably `eject` and the other domain generators, is **not implemented yet**, and these pages say so wherever it
 matters. The plugin API is at v1 and may still change before a stable release.
 
+## Leaving
+
+Nothing here locks you in. `rowork eject` turns your project into a plain
+roblox-ts / Flamework / Rojo project that no longer needs Rowork. See
+[Commands](commands.md#rowork-eject).
+
 ## Principles
 
 - **No lock-in.** `default.project.json`, `tsconfig.json` and `package.json`
