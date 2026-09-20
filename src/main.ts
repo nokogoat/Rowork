@@ -5,7 +5,7 @@ import pc from "picocolors";
 
 import { isRoworkError } from "./cli/errors.js";
 import { createProgram } from "./cli/program.js";
-import { CommandRegistry } from "./cli/registry.js";
+import { CommandRegistry, setActiveRegistry } from "./cli/registry.js";
 import { findProjectRoot, loadConfig } from "./core/config.js";
 import { coreCommands } from "./commands/index.js";
 import { loadPlugins } from "./plugins/loader.js";
@@ -79,6 +79,7 @@ export async function run(argv: string[]): Promise<void> {
 		logger.debug("Plugin loading disabled (--no-plugins).");
 	}
 
+	setActiveRegistry(registry);
 	const program = createProgram({ registry, cwd, projectRoot, config, roworkVersion: version });
 
 	try {

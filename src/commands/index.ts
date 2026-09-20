@@ -1,4 +1,5 @@
 import type { CommandDefinition } from "../plugins/api.js";
+import { consoleCommand } from "./console.js";
 import { devCommand } from "./dev.js";
 import { initCommand } from "./init.js";
 import { makeCommand } from "./make-menu.js";
@@ -23,4 +24,5 @@ export const coreCommands: CommandDefinition[] = [
 	makeToolCommand,
 	studioCommand,
 	studioSetupCommand,
+	consoleCommand,
 ];

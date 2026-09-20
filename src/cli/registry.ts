@@ -72,3 +72,18 @@ export class CommandRegistry {
 		return this.commands.has(name);
 	}
 }
+
+let active: CommandRegistry | undefined;
+
+/**
+ * The registry of the running CLI, for internal features that need to list
+ * commands (the console's help and completion). Deliberately not part of the
+ * public plugin API: exposing it there would freeze the registry's shape.
+ */
+export function setActiveRegistry(registry: CommandRegistry): void {
+	active = registry;
+}
+
+export function activeRegistry(): CommandRegistry | undefined {
+	return active;
+}

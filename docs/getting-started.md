@@ -144,6 +144,9 @@ Try **Tool**: name it, choose how long between two uses, and every player
 receives it when they spawn. You then write what it does in the generated
 component. See [Commands](commands.md#rowork-maketool-name).
 
+Tired of typing `rowork` each time? `rowork console` opens a prompt where you
+just type `make`, `dev`, `studio`...
+
 ## What next
 
 - [Project structure](project-structure.md): where your code goes.

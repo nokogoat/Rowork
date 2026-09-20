@@ -160,7 +160,7 @@ try {
 	);
 
 	// Guided versions need a terminal: without one they refuse and show the scripted form.
-	for (const command of ["make", "make:tool", "make:service", "make:controller", "make:component"]) {
+	for (const command of ["make", "make:tool", "make:service", "make:controller", "make:component", "console"]) {
 		const guided = makeRun(command);
 		check(guided.status === 1, `\`rowork ${command}\` without a TTY exited with ${guided.status}`);
 		check(/terminal/.test(guided.stderr), `\`rowork ${command}\` without a TTY did not explain why`);

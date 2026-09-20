@@ -20,6 +20,7 @@ src/
     make.ts              make:service, make:controller, make:component
     make-tool.ts         make:tool (settings, component, delivery)
     make-menu.ts         make: the list of everything that can be created
+    console.ts           console: interactive prompt (each line is a child process)
     studio.ts            studio, studio:setup (Linux)
     next-steps.ts        shared closing message
   core/
@@ -85,6 +86,15 @@ that takes a name treats it as optional: given, it runs scripted; missing, it
 asks in a terminal or refuses with the scripted form otherwise. `rowork make` runs
 the chosen command with empty arguments, so it always lands in the guided path.
 Cancelling (Ctrl+C) exits cleanly before anything is written.
+
+**The console runs each line as a child `rowork` process.** In-process dispatch
+would share state between commands, and clack prompts, `process.exit` on errors
+and the SIGINT handling of `dev` would all have to be re-plumbed. A child gets
+them for free and behaves exactly like the real CLI. The console ignores SIGINT
+while a command runs, so Ctrl+C stops `dev` and returns to the prompt. It reads
+the command list from an internal active-registry holder, not from the plugin
+API, so the public contract did not grow. A fresh readline interface is created
+per line because a guided command's own prompts would otherwise fight it for stdin.
 
 **The tool registry is rebuilt, not patched.** `src/shared/tools/index.ts` is
 regenerated from the `*Tool.ts` files present, so it cannot drift and needs no

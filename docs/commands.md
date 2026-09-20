@@ -101,6 +101,7 @@ command refuses and prints its scripted form.
 | `rowork make:tool` | name, seconds between uses, droppable, given at spawn |
 | `rowork make:component` | name, server or client, tag |
 | `rowork make:service`, `make:controller` | name |
+| `rowork console` | not a question: it is a prompt where you run any of the above |
 
 ## `rowork make`
 
@@ -219,6 +220,32 @@ with your own model. The name is normalised: `pickaxe`, `Pickaxe` and
 `PickaxeTool` are the same tool. The components directory is registered in
 `runtime.server.ts`. `ToolDefinition.ts` and `ToolService.ts` are shared by every
 tool and may hold your edits, so they are never overwritten, even with `--force`.
+
+## `rowork console`
+
+An interactive Rowork prompt, so you type commands without retyping `rowork`:
+
+```
+Zomblood > make
+Zomblood > make:tool
+Zomblood > dev
+Zomblood > help
+Zomblood > exit
+```
+
+- **Everything works as usual**: type `make:tool`, `dev --port 34873`, or even
+  `rowork make:service Ledger` (the leading `rowork` is optional).
+- **`help`** lists every command with its description; add `--help` to one
+  command for its options.
+- **Tab** completes command names. **Up and down** recall previous lines.
+- **`clear`** clears the screen. **`exit`**, `quit` or **Ctrl+D** leave.
+- **`dev` inside the console**: Ctrl+C stops `dev` and returns to the prompt
+  instead of closing the console.
+- A typo gets a one-line answer with suggestions, not the whole usage text.
+
+It needs a terminal, and cannot be nested. Each line runs as a real `rowork`
+process, so guided prompts, `--help` and the shutdown behaviour of `dev` are
+identical to running the commands directly.
 
 ## `rowork studio` and `rowork studio:setup` (Linux)
 
