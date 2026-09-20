@@ -21,6 +21,7 @@ src/
     make-tool.ts         make:tool (settings, component, delivery)
     make-menu.ts         make: the list of everything that can be created
     console.ts           console: interactive prompt (each line is a child process)
+    add.ts               add and add:<module>: one command per module
     studio.ts            studio, studio:setup (Linux)
     next-steps.ts        shared closing message
   core/
@@ -30,6 +31,7 @@ src/
     toolchain.ts         tool lookup on PATH, install advice
     exec.ts              run an external tool to completion
     generate.ts          write generated files, register Flamework paths
+    modules.ts           install a module: checks first, writes last
     github-release.ts    fetch a release, download an asset, verify its checksum
     studio.ts            Studio on Linux: Vinegar, Rojo plugin placement
     naming.ts            project name validation and case conversion
@@ -44,7 +46,9 @@ src/
   ui/logger.ts           leveled logger, stderr only
   ui/prompt.ts           guided-flow helpers: terminal check, cancel handling
 templates/init/          files copied into a new project
+src/modules/            module definitions (types.ts, one file per module)
 templates/make/          one template per make:* command (make:tool uses four)
+templates/modules/       the files each module copies into a project
 scripts/                 smoke, orphan and integration tests
 ```
 
@@ -95,6 +99,15 @@ while a command runs, so Ctrl+C stops `dev` and returns to the prompt. It reads
 the command list from an internal active-registry holder, not from the plugin
 API, so the public contract did not grow. A fresh readline interface is created
 per line because a guided command's own prompts would otherwise fight it for stdin.
+
+**Modules are code copied into the project.** A module is a `ModuleDefinition`
+(name, dependencies, options, and a `plan` that turns answers into files). The
+installer runs every check before the first write (already installed, missing
+prerequisite, a file it would overwrite), so a refusal leaves the project as it
+was. Each module gets its own `add:<name>` command, exactly like `make:*`, so
+flags stay per module and a community module can register the same way. A module
+wraps an established library when one exists (player-data wraps Lapis) instead of
+reimplementing hard parts such as session locking.
 
 **The tool registry is rebuilt, not patched.** `src/shared/tools/index.ts` is
 regenerated from the `*Tool.ts` files present, so it cannot drift and needs no

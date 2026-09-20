@@ -34,8 +34,10 @@ export interface GenerateOptions {
 	/** Directory to write into, relative to the project root. */
 	directory: string;
 	fileName: string;
-	/** Template name under `templates/make/`, without the `.ts.tmpl` suffix. */
+	/** Template name under `templates/<templateRoot>/`, without the `.ts.tmpl` suffix. */
 	template: string;
+	/** Directory under `templates/` holding the template. Defaults to `make`. */
+	templateRoot?: string;
 	variables: Record<string, string>;
 	force: boolean;
 	/** What to do when the file exists and `force` is off. Defaults to failing. */
@@ -58,7 +60,7 @@ export function generateFile(options: GenerateOptions): string | undefined {
 		});
 	}
 
-	const source = readFileSync(join(templatesRoot(), "make", `${options.template}.ts.tmpl`), "utf8");
+	const source = readFileSync(join(templatesRoot(), options.templateRoot ?? "make", `${options.template}.ts.tmpl`), "utf8");
 	mkdirSync(directory, { recursive: true });
 	writeFileSync(target, renderString(source, options.variables), "utf8");
 	return shown;

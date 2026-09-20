@@ -1,0 +1,127 @@
+import { OnStart, Service } from "@flamework/core";
+import { createCollection } from "@rbxts/lapis";
+import type { Document } from "@rbxts/lapis";
+import { DEFAULT_PLAYER_DATA, PlayerData } from "{{ dataImport }}";
+
+const Players = game.GetService("Players");
+const RunService = game.GetService("RunService");
+
+/**
+ * Saves and loads each player's data, using Lapis (https://github.com/nezuo/lapis)
+ * for the hard parts: session locking so two servers never overwrite each other,
+ * automatic saving, and saving when the server shuts down.
+ *
+ * From any service:
+ *
+ *   constructor(private readonly playerData: PlayerDataService) {}
+ *
+ *   const data = this.playerData.get(player);
+ *   this.playerData.update(player, (data) => {
+ *   	data.coins += 10;
+ *   	return data;
+ *   });
+ */
+const collection = createCollection<PlayerData>("PlayerData", { defaultData: DEFAULT_PLAYER_DATA });
+
+type Listener = (player: Player, data: Readonly<PlayerData>) => void;
+
+interface Session {
+	/** The saved document. Missing when saving is unavailable (see `load`). */
+	document?: Document<PlayerData>;
+	/** Used instead of the document when saving is unavailable. */
+	memory: PlayerData;
+}
+
+@Service()
+export class PlayerDataService implements OnStart {
+	private readonly sessions = new Map<Player, Session>();
+	private readonly loadedListeners = new Array<Listener>();
+	private readonly changedListeners = new Array<Listener>();
+
+	onStart(): void {
+		Players.PlayerAdded.Connect((player) => this.load(player));
+		Players.PlayerRemoving.Connect((player) => this.unload(player));
+		for (const player of Players.GetPlayers()) this.load(player);
+	}
+
+	/** The player's data, or undefined while it is still loading. Do not modify it: use `update`. */
+	get(player: Player): Readonly<PlayerData> | undefined {
+		const session = this.sessions.get(player);
+		if (session === undefined) return undefined;
+		return session.document !== undefined ? session.document.read() : session.memory;
+	}
+
+	/** Changes the player's data. Edit the copy you receive and return it. */
+	update(player: Player, change: (data: PlayerData) => PlayerData): void {
+		const session = this.sessions.get(player);
+		const current = this.get(player);
+		if (session === undefined || current === undefined) return;
+
+		const updated = change({ ...current });
+		if (session.document !== undefined) session.document.write(updated);
+		else session.memory = updated;
+
+		this.notify(this.changedListeners, player, updated);
+	}
+
+	/** Runs `callback` when a player's data has finished loading. */
+	onLoaded(callback: Listener): void {
+		this.loadedListeners.push(callback);
+	}
+
+	/** Runs `callback` each time a player's data changes through `update`. */
+	onChanged(callback: Listener): void {
+		this.changedListeners.push(callback);
+	}
+
+	private load(player: Player): void {
+		if (this.sessions.has(player)) return;
+
+		collection
+			.load(`Player_${player.UserId}`, [player.UserId])
+			.then((document) => {
+				// The player left while their data was loading.
+				if (player.Parent === undefined) {
+					document.close();
+					return;
+				}
+
+				// Fields added to PlayerData since this player last played get their default.
+				const data = { ...DEFAULT_PLAYER_DATA, ...document.read() };
+				document.write(data);
+
+				this.sessions.set(player, { document, memory: data });
+				this.notify(this.loadedListeners, player, data);
+			})
+			.catch((reason) => this.loadFailed(player, reason));
+	}
+
+	private loadFailed(player: Player, reason: unknown): void {
+		warn(`[PlayerData] could not load ${player.Name}'s data: ${tostring(reason)}`);
+
+		if (RunService.IsStudio()) {
+			// Studio has no DataStore access until it is enabled and the place is
+			// published: keep working with temporary data instead of blocking testing.
+			warn("[PlayerData] Studio: using temporary data that will NOT be saved.");
+			this.sessions.set(player, { memory: { ...DEFAULT_PLAYER_DATA } });
+			this.notify(this.loadedListeners, player, DEFAULT_PLAYER_DATA);
+			return;
+		}
+
+		// On a live server, playing without saving would silently lose progress
+		// (or worse, overwrite it): better to send the player back and let them retry.
+		player.Kick("Your data could not be loaded. Please rejoin.");
+	}
+
+	private unload(player: Player): void {
+		const session = this.sessions.get(player);
+		this.sessions.delete(player);
+		session?.document?.close().catch((reason) => {
+			warn(`[PlayerData] could not save ${player.Name}'s data: ${tostring(reason)}`);
+		});
+	}
+
+	private notify(listeners: Listener[], player: Player, data: Readonly<PlayerData>): void {
+		for (const listener of listeners) task.spawn(listener, player, data);
+	}
+}

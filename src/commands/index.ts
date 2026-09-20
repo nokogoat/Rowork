@@ -1,4 +1,6 @@
 import type { CommandDefinition } from "../plugins/api.js";
+import { coreModules } from "../modules/index.js";
+import { addCommand, moduleCommand } from "./add.js";
 import { consoleCommand } from "./console.js";
 import { devCommand } from "./dev.js";
 import { initCommand } from "./init.js";
@@ -25,4 +27,6 @@ export const coreCommands: CommandDefinition[] = [
 	studioCommand,
 	studioSetupCommand,
 	consoleCommand,
+	addCommand,
+	...coreModules.map(moduleCommand),
 ];

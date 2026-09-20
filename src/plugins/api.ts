@@ -108,6 +108,8 @@ export interface RoworkConfig {
 	};
 	/** Plugin module specifiers to load explicitly. */
 	plugins: string[];
+	/** Names of the modules installed with `rowork add`. */
+	modules?: string[];
 }
 
 /** Type-inference helper for command authors. */

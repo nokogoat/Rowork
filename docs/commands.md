@@ -101,6 +101,7 @@ command refuses and prints its scripted form.
 | `rowork make:tool` | name, seconds between uses, droppable, given at spawn |
 | `rowork make:component` | name, server or client, tag |
 | `rowork make:service`, `make:controller` | name |
+| `rowork add` | which module, then that module's own questions |
 | `rowork console` | not a question: it is a prompt where you run any of the above |
 
 ## `rowork make`
@@ -246,6 +247,22 @@ Zomblood > exit
 It needs a terminal, and cannot be nested. Each line runs as a real `rowork`
 process, so guided prompts, `--help` and the shutdown behaviour of `dev` are
 identical to running the commands directly.
+
+## `rowork add [module]` and `rowork add:<module>`
+
+Adds a ready-made feature to your game. `rowork add` shows the list; `rowork
+add:player-data` goes straight to one. See [Modules](modules.md) for what a module
+is and what each one does.
+
+```bash
+rowork add                         # guided: pick from a list
+rowork add:player-data             # guided version of one module
+rowork add:player-data --field coins:number=0 --no-install
+```
+
+Every module has a guided version and scripted options (shown by
+`rowork add:<module> --help`). A module already installed is refused: its files
+are yours, and adding it again would overwrite your changes.
 
 ## `rowork studio` and `rowork studio:setup` (Linux)
 

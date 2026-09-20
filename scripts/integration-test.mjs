@@ -107,6 +107,11 @@ try {
 	check(existsSync(plugin), "the Rojo plugin was not written");
 	check(existsSync(plugin) && readFileSync(plugin).subarray(0, 8).toString() === "<roblox!", "Rojo.rbxm is not a Roblox model file");
 
+	// A module, with the real npm install of its dependencies (Lapis).
+	const added = run(process.execPath, [cli, "add:player-data", "--field", "coins:number=0", "--field", "level:number=1"], project);
+	check(added.status === 0, `\`rowork add:player-data\` failed\n${added.output}`);
+	check(existsSync(join(project, "node_modules", "@rbxts", "lapis")), "the module's dependencies were not installed");
+
 	console.log("compiling...");
 	const compile = run(process.execPath, [join(project, "node_modules", "roblox-ts", "out", "CLI", "cli.js")], project);
 
@@ -123,7 +128,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PickaxeToolComponent", "ToolService"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PickaxeToolComponent", "ToolService", "PlayerDataService"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {

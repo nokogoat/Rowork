@@ -159,6 +159,32 @@ try {
 		"a second make:tool overwrote the shared ToolService",
 	);
 
+	// Modules: files written, recorded in rowork.json, never added twice, all-or-nothing.
+	check(makeRun("add:player-data").status === 1, "add:player-data without a TTY or options did not refuse");
+	check(makeRun("add").status === 1, "`rowork add` without a TTY did not refuse");
+	const badModule = makeRun("add:player-data", "--field", "Bad Field", "--no-install");
+	check(badModule.status === 1, "an invalid --field was accepted");
+	check(!existsSync(join(bareProject, "src", "shared", "data")), "a failed module install left files behind");
+	const added = makeRun("add:player-data", "--field", "coins:number=5", "--field", "nickname:string=Guest", "--no-install");
+	check(added.status === 0, `add:player-data failed\n${added.stderr}`);
+	const playerData = join(bareProject, "src", "shared", "data", "PlayerData.ts");
+	check(existsSync(playerData), "add:player-data did not create PlayerData.ts");
+	if (existsSync(playerData)) {
+		const source = readFileSync(playerData, "utf8");
+		check(source.includes("coins: number;") && source.includes("coins: 5,"), "PlayerData.ts ignores the coins field");
+		check(source.includes('nickname: "Guest"'), "PlayerData.ts ignores the nickname field");
+		check(!source.includes("{{"), "PlayerData.ts has an unrendered placeholder");
+	}
+	check(
+		existsSync(join(bareProject, "src", "server", "services", "PlayerDataService.ts")),
+		"add:player-data did not create PlayerDataService.ts",
+	);
+	check(
+		JSON.parse(readFileSync(join(bareProject, "rowork.json"), "utf8")).modules?.includes("player-data"),
+		"rowork.json does not record the installed module",
+	);
+	check(makeRun("add:player-data", "--field", "x:number=1", "--no-install").status === 1, "a module was installed twice");
+
 	// Guided versions need a terminal: without one they refuse and show the scripted form.
 	for (const command of ["make", "make:tool", "make:service", "make:controller", "make:component", "console"]) {
 		const guided = makeRun(command);

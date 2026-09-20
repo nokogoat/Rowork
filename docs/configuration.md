@@ -36,6 +36,7 @@ installed.
 | `paths.controllers` | where `make:controller` writes. Components go to `<paths.source>/<side>/components` |
 | `paths.shared` | shared code directory |
 | `plugins` | plugin module names to load explicitly. See [Plugins](plugins.md) |
+| `modules` | names of the [modules](modules.md) installed with `rowork add`. Written by Rowork; optional |
 
 Paths are relative to the project root, or absolute.
 

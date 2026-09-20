@@ -1,0 +1,15 @@
+/**
+ * Everything that is saved for one player.
+ *
+ * To save something new, add it in TWO places in this file: the interface below
+ * and DEFAULT_PLAYER_DATA. TypeScript refuses to compile if you forget one.
+ * Players who already have a save get the default the next time they join.
+ */
+export interface PlayerData {
+{{ interfaceFields }}
+}
+
+/** What a brand-new player starts with. */
+export const DEFAULT_PLAYER_DATA: PlayerData = {
+{{ defaultFields }}
+};

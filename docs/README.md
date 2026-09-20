@@ -6,6 +6,7 @@ Flamework, Rojo and a pinned toolchain, behind one command.
 | Page | Read it when you want to... |
 | --- | --- |
 | [Getting started](getting-started.md) | install Rowork, create a project and see it in Studio |
+| [Modules](modules.md) | add a ready-made feature (player data...) to your game |
 | [Commands](commands.md) | look up every command and flag |
 | [Project structure](project-structure.md) | understand what was generated and where your code goes |
 | [Configuration](configuration.md) | edit `rowork.json` |
