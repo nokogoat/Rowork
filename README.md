@@ -101,6 +101,32 @@ For a one-off command without publishing a package, drop a `.mjs` file into
 Core commands cannot be overridden by a plugin: Rowork reports the attempt and
 ignores it.
 
+## Development
+
+```bash
+git clone https://github.com/nokogoat/Rowork
+cd Rowork
+npm install
+npm run build
+npm link
+```
+
+`npm link` is the step that puts `rowork` on your PATH. Without it the CLI only
+runs as `node bin/rowork.js`. The link points at your working copy, so a
+`npm run build` is enough for a change to take effect, and `npm run watch`
+rebuilds as you type. Remove it later with `npm uninstall -g rowork`.
+
+```bash
+npm test                  # build, then every check below
+npm run test:smoke        # scaffolds a project, without installing anything
+npm run test:orphan       # proves `rowork dev` leaves no process behind
+npm run test:integration  # real install and compile, needs the network
+```
+
+Every change goes through a branch and a pull request. CI runs the build and
+the first two checks on Linux, macOS and Windows, and the integration test
+once on Linux.
+
 ## License
 
 MIT
