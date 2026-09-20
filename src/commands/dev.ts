@@ -5,7 +5,9 @@ import pc from "picocolors";
 
 import { RoworkError } from "../cli/errors.js";
 import { resolveProjectPath } from "../core/config.js";
-import { defineCommand } from "../plugins/api.js";
+import { run as runBinary } from "../core/exec.js";
+import { findMissing, pathWithLocalBinaries, installAdvice, type ToolRequirement } from "../core/toolchain.js";
+import { defineCommand, type CommandContext } from "../plugins/api.js";
 import { Supervisor, type TaskDefinition } from "../process/supervisor.js";
 
 export const devCommand = defineCommand({
@@ -65,6 +67,23 @@ export const devCommand = defineCommand({
 			});
 		}
 
+		// Fail before anything starts, with the fix, instead of letting each task
+		// die separately with a bare `spawn ENOENT` buried in the unified log.
+		const required: ToolRequirement[] = [];
+		if (context.options["compile"] !== false) required.push({ command: "rbxtsc", source: "npm" });
+		if (context.options["rojo"] !== false || context.options["sourcemap"] !== false) {
+			required.push({ command: "rojo", source: "rokit" });
+		}
+		const missing = findMissing(required, projectRoot);
+		if (missing.length > 0) {
+			throw new RoworkError(
+				`Missing tool${missing.length > 1 ? "s" : ""}: ${missing.map((tool) => tool.command).join(", ")}.`,
+				{ hint: installAdvice(missing) },
+			);
+		}
+
+		await ensureInitialBuild(context, projectRoot, config.paths.out);
+
 		if (tasks.length === 0) {
 			throw new RoworkError("Every task was disabled, nothing left to run.");
 		}
@@ -82,3 +101,32 @@ export const devCommand = defineCommand({
 		if (code !== 0) process.exitCode = code;
 	},
 });
+
+/**
+ * Rojo refuses to start when a `$path` in the project file does not exist yet,
+ * and on a fresh clone `out/` and `include/` only appear once roblox-ts has
+ * compiled. Starting all tasks at once therefore kills Rojo instantly and takes
+ * everything else down with it. One blocking build first removes that race.
+ */
+async function ensureInitialBuild(
+	context: CommandContext,
+	projectRoot: string,
+	outDirectory: string,
+): Promise<void> {
+	if (context.options["compile"] === false) return;
+	if (existsSync(join(projectRoot, outDirectory)) && existsSync(join(projectRoot, "include"))) return;
+
+	context.logger.info("First run: compiling once so Rojo has something to serve...");
+	try {
+		await runBinary("rbxtsc", [], {
+			cwd: projectRoot,
+			env: { PATH: pathWithLocalBinaries(projectRoot) },
+		});
+	} catch (cause) {
+		throw new RoworkError("The initial build failed.", {
+			hint: "Fix the compiler errors above, then run `rowork dev` again.",
+			cause,
+		});
+	}
+	context.logger.blank();
+}

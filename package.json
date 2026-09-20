@@ -52,8 +52,10 @@
     "gamedev"
   ],
   "dependencies": {
+    "@clack/prompts": "^1.8.1",
     "commander": "^12.1.0",
     "cross-spawn": "^7.0.6",
+    "fflate": "^0.8.3",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {

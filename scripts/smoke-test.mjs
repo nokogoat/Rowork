@@ -7,7 +7,7 @@
  * branches of exec.ts and bin/rowork.js are ever exercised.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -89,6 +89,39 @@ try {
 		{ encoding: "utf8" },
 	);
 	check(invalid.status === 1, `an invalid project name exited with ${invalid.status}`);
+
+	// `--no-examples` must drop the example files but keep the directories.
+	const bare = spawnSync(
+		process.execPath,
+		[cli, "init", "BareGame", "--path", workspace, "--no-install", "--no-git", "--no-examples"],
+		{ encoding: "utf8" },
+	);
+	check(bare.status === 0, `\`rowork init --no-examples\` exited with ${bare.status}\n${bare.stderr}`);
+	const bareProject = join(workspace, "BareGame");
+	check(
+		!existsSync(join(bareProject, "src", "server", "services", "ExampleService.ts")),
+		"--no-examples still generated ExampleService.ts",
+	);
+	check(
+		existsSync(join(bareProject, "src", "server", "services", ".gitkeep")),
+		"--no-examples left the services directory without a .gitkeep",
+	);
+
+	// `rowork start` is interactive: without a terminal it must refuse and point to `init`.
+	const wizard = spawnSync(process.execPath, [cli, "start"], { encoding: "utf8", stdio: "pipe" });
+	check(wizard.status === 1, `\`rowork start\` without a TTY exited with ${wizard.status}`);
+	check(wizard.stderr.includes("rowork init"), "`rowork start` without a TTY did not point to `rowork init`");
+
+	// `rowork dev` must name the missing tools instead of dying on a bare ENOENT.
+	// PATH is emptied so the check is the same whether or not the machine has Rojo.
+	mkdirSync(join(bareProject, "node_modules"));
+	const noTools = spawnSync(process.execPath, [cli, "dev"], {
+		cwd: bareProject,
+		encoding: "utf8",
+		env: { ...process.env, PATH: dirname(process.execPath) },
+	});
+	check(noTools.status === 1, `\`rowork dev\` without tools exited with ${noTools.status}`);
+	check(/Missing tools?: .*rojo/.test(noTools.stderr), "`rowork dev` did not name the missing rojo");
 } finally {
 	rmSync(workspace, { recursive: true, force: true });
 }

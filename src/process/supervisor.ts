@@ -1,9 +1,8 @@
 import type { ChildProcess } from "node:child_process";
-import { delimiter, join } from "node:path";
-
 import spawn from "cross-spawn";
 import pc from "picocolors";
 
+import { pathWithLocalBinaries } from "../core/toolchain.js";
 import type { Logger } from "../plugins/api.js";
 import { createLineSplitter } from "./log-mux.js";
 import { killTree, killTreeSync } from "./tree-kill.js";
@@ -80,7 +79,7 @@ export class Supervisor {
 				// colours. Most respect FORCE_COLOR, which keeps compiler
 				// diagnostics readable.
 				FORCE_COLOR: "1",
-				PATH: this.pathWithLocalBinaries(),
+				PATH: pathWithLocalBinaries(this.options.cwd),
 			},
 		});
 
@@ -179,12 +178,5 @@ export class Supervisor {
 				if (!task.exited) killTreeSync(task.child);
 			}
 		});
-	}
-
-	/** Makes the project's own `node_modules/.bin` reachable, the way npm scripts do. */
-	private pathWithLocalBinaries(): string {
-		const localBin = join(this.options.cwd, "node_modules", ".bin");
-		const current = process.env["PATH"] ?? "";
-		return current.length > 0 ? `${localBin}${delimiter}${current}` : localBin;
 	}
 }

@@ -6,6 +6,8 @@ export interface RunOptions {
 	cwd: string;
 	/** Whether the tool's own output reaches the terminal. */
 	stdio?: "inherit" | "ignore";
+	/** Extra environment variables, merged over the current ones. */
+	env?: Record<string, string>;
 }
 
 /**
@@ -26,6 +28,7 @@ export function run(command: string, args: string[], options: RunOptions): Promi
 		const child = spawn(command, args, {
 			cwd: options.cwd,
 			stdio: options.stdio ?? "inherit",
+			env: { ...process.env, ...options.env },
 		});
 
 		child.on("error", (cause) => {

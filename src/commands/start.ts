@@ -1,0 +1,146 @@
+import { resolve } from "node:path";
+
+import * as prompts from "@clack/prompts";
+import pc from "picocolors";
+
+import { RoworkError } from "../cli/errors.js";
+import { findExecutable } from "../core/toolchain.js";
+import { assertValidProjectName, toPascalCase } from "../core/naming.js";
+import { resolveTarget, scaffoldProject } from "../core/scaffold.js";
+import { defineCommand } from "../plugins/api.js";
+import { printNextSteps } from "./next-steps.js";
+
+/** Ends the wizard cleanly on Ctrl+C or Escape instead of throwing a stack trace. */
+function answered<T>(value: T): Exclude<T, symbol> {
+	if (prompts.isCancel(value)) {
+		prompts.cancel("Cancelled, nothing was created.");
+		process.exit(0);
+	}
+	return value as Exclude<T, symbol>;
+}
+
+export const startCommand = defineCommand({
+	name: "start",
+	description: "Guided setup: answer a few questions and get a ready-to-run project.",
+	options: [{ flags: "--path <dir>", description: "parent directory to create the project in" }],
+	async run(context) {
+		if (!process.stdin.isTTY || !process.stdout.isTTY) {
+			throw new RoworkError("`rowork start` is interactive and needs a terminal.", {
+				hint: "In scripts and CI use `rowork init <name>` with its flags instead.",
+			});
+		}
+
+		prompts.intro(pc.bgCyan(pc.black(" rowork ")) + pc.dim(`  v${context.roworkVersion}`));
+
+		const name = answered(
+			await prompts.text({
+				message: "What is your game called?",
+				placeholder: "MyGame",
+				validate(value) {
+					try {
+						assertValidProjectName((value ?? "").trim());
+					} catch (error) {
+						return error instanceof RoworkError ? error.message : String(error);
+					}
+					return undefined;
+				},
+			}),
+		).trim();
+
+		const parent = resolve(
+			context.cwd,
+			typeof context.options["path"] === "string"
+				? context.options["path"]
+				: answered(
+						await prompts.text({
+							message: "Where should it be created?",
+							initialValue: ".",
+							defaultValue: ".",
+						}),
+					),
+		);
+
+		// Fail on an existing directory now, not after five more questions.
+		try {
+			resolveTarget({ name, parent, force: false });
+		} catch (error) {
+			prompts.cancel(error instanceof Error ? error.message : String(error));
+			process.exit(1);
+		}
+
+		const examples = answered(
+			await prompts.confirm({
+				message: "Include an example service and controller?",
+				initialValue: true,
+			}),
+		);
+
+		const git = answered(
+			await prompts.confirm({ message: "Initialise a git repository?", initialValue: true }),
+		);
+
+		const install = answered(
+			await prompts.confirm({
+				message: "Install npm dependencies now? (roblox-ts, Flamework)",
+				initialValue: true,
+			}),
+		);
+
+		const rokitFound = findExecutable("rokit", context.cwd) !== undefined;
+		let rokit = true;
+		let installRokit = false;
+		if (rokitFound) {
+			rokit = answered(
+				await prompts.confirm({
+					message: "Install the pinned Roblox toolchain with Rokit? (Rojo)",
+					initialValue: true,
+				}),
+			);
+		} else {
+			installRokit = answered(
+				await prompts.confirm({
+					message:
+						"Rokit (the Roblox toolchain manager, provides Rojo) is not installed. Download and install it for you? (from github.com/rojo-rbx/rokit into ~/.rokit)",
+					initialValue: true,
+				}),
+			);
+			rokit = installRokit;
+		}
+
+		prompts.note(
+			[
+				`Name       ${toPascalCase(name)}`,
+				`Location   ${resolve(parent, name)}`,
+				`Examples   ${examples ? "yes" : "no"}`,
+				`Git        ${git ? "yes" : "no"}`,
+				`npm        ${install ? "install" : "skip"}`,
+				`Rokit      ${installRokit ? "install Rokit, then the toolchain" : rokit ? "install the toolchain" : "skip"}`,
+			].join("\n"),
+			"Summary",
+		);
+
+		if (!answered(await prompts.confirm({ message: "Create it?", initialValue: true }))) {
+			prompts.cancel("Cancelled, nothing was created.");
+			return;
+		}
+
+		prompts.log.step("Scaffolding");
+		const result = await scaffoldProject(
+			{
+				name,
+				parent,
+				install,
+				rokit,
+				installRokit,
+				git,
+				examples,
+				force: false,
+				roworkVersion: context.roworkVersion,
+			},
+			context.logger,
+		);
+
+		printNextSteps(context.logger, name, result);
+		prompts.outro("Happy building.");
+	},
+});

@@ -16,7 +16,7 @@ is running, nothing keeps file #200 consistent with the architecture of file #1.
 
 ## What Rowork does
 
-- **Generates**: `rowork init` today, `make:service`, `make:controller` and
+- **Generates**: `rowork start` and `rowork init` today, `make:service`, `make:controller` and
   `make:tool` next. Scaffolding does not stop on day one.
 - **Orchestrates**: one command to run the roblox-ts compiler, Rojo and the
   watchers together, with unified logs and readable errors.
@@ -38,7 +38,10 @@ npm install -g rowork
 ## Getting started
 
 ```bash
+rowork start         # guided setup: a few questions, then a ready project
+# or, non-interactive (scripts, CI):
 rowork init MyGame   # scaffolds, installs npm deps and the pinned toolchain
+                     # add --install-rokit to also install Rokit if it is missing
 cd MyGame
 rowork dev           # compiler, Rojo server and sourcemap watcher, together
 ```
@@ -56,6 +59,16 @@ compile   | watching for changes
 rojo      | Rojo server listening on port 34872
 sourcemap | sourcemap.json updated
 ```
+
+Rokit, the toolchain manager that provides Rojo, is installed for you when you
+ask for it (`rowork start` asks; `rowork init` needs `--install-rokit`). Rowork
+downloads it from the official release, checks the SHA-256 GitHub publishes for
+the archive before running anything, then uses Rokit's own `self-install`.
+
+On a fresh project `out/` does not exist yet and Rojo refuses to start without
+it, so the first run compiles once before launching the watchers. If `rojo` or
+`rbxtsc` cannot be found, `rowork dev` says so up front and tells you how to
+install it, instead of failing inside the log.
 
 The sourcemap watcher is there because the Flamework transformer resolves
 instance paths through the Rojo project. Keeping it regenerated removes a whole

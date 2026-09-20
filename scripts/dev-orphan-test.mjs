@@ -61,6 +61,9 @@ writeFileSync(
 	}),
 );
 writeFileSync(join(project, "default.project.json"), "{}");
+// Already built: this test is about supervision, not the first-run build.
+mkdirSync(join(project, "out"), { recursive: true });
+mkdirSync(join(project, "include"), { recursive: true });
 writeFileSync(heartbeat, "");
 
 const grandchildScript = join(workspace, "grandchild.mjs");

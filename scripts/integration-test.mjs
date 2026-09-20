@@ -11,7 +11,7 @@
  * It needs the network and takes a minute, so CI runs it as a single job
  * rather than across the whole matrix.
  */
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,8 +26,8 @@ const check = (condition, message) => {
 	if (!condition) failures.push(message);
 };
 
-function run(command, args, cwd) {
-	const result = spawn.sync(command, args, { cwd, encoding: "utf8" });
+function run(command, args, cwd, env = process.env) {
+	const result = spawn.sync(command, args, { cwd, encoding: "utf8", env });
 	return {
 		status: result.status,
 		output: `${result.stdout ?? ""}${result.stderr ?? ""}`,
@@ -36,21 +36,32 @@ function run(command, args, cwd) {
 
 const workspace = mkdtempSync(join(tmpdir(), "rowork-integration-"));
 const project = join(workspace, "IntegrationGame");
+// A throwaway home: `rokit self-install` edits shell profiles and creates ~/.rokit,
+// which must never touch the machine running the test.
+const home = join(workspace, "home");
+mkdirSync(home);
+const isolated = { ...process.env, HOME: home, USERPROFILE: home };
 
 try {
 	console.log("scaffolding and installing, this takes a minute...");
 
-	// --no-rokit because Rojo is not needed to compile, and rokit may prompt.
 	const init = run(
 		process.execPath,
-		[cli, "init", "IntegrationGame", "--path", workspace, "--no-rokit", "--no-git"],
+		[cli, "init", "IntegrationGame", "--path", workspace, "--install-rokit", "--no-git"],
 		workspace,
+		isolated,
 	);
 	check(init.status === 0, `\`rowork init\` exited with ${init.status}\n${init.output}`);
 
 	if (init.status !== 0) throw new Error("init failed, nothing further can be checked");
 
 	check(existsSync(join(project, "node_modules")), "dependencies were not installed");
+
+	// Rokit itself must have been downloaded and must have installed Rojo.
+	const shims = join(home, ".rokit", "bin");
+	const exe = process.platform === "win32" ? ".exe" : "";
+	check(existsSync(join(shims, `rokit${exe}`)), "Rokit was not installed");
+	check(existsSync(join(shims, `rojo${exe}`)), "Rojo was not installed by Rokit");
 
 	// roblox-ts patches one exact TypeScript version. Any other version makes
 	// Flamework warn on every compile, and can break the transformer outright.
