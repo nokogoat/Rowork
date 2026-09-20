@@ -361,6 +361,23 @@ try {
 	check(fmtScripts.format === "prettier --write src" && fmtScripts["format:check"] === "prettier --check src", "add:format did not add the format scripts");
 	check(!existsSync(join(workspace, "LintOff", ".prettierrc.json")), "--no-install should not include the formatter");
 
+	// Anti-spam: every event the client sends is rate limited per player, and new ones join the list.
+	const serverNetwork = join(bareProject, "src", "server", "network.ts");
+	const limiterFile = join(bareProject, "src", "server", "rateLimit.ts");
+	check(existsSync(limiterFile) && readFileSync(limiterFile, "utf8").includes("export function limit"), "networking did not generate the rate limiter");
+	const networkSource = readFileSync(serverNetwork, "utf8");
+	check(/buyItem: \[limit\(\)\]/.test(networkSource) && /castSpell: \[limit\(\)\]/.test(networkSource), "an event the client sends is not rate limited by default");
+	check(!/itemBought: \[limit/.test(networkSource), "an event the SERVER sends was rate limited (only client events can be flooded)");
+	check(statAt("make:event", "dash", "--to", "server").status === 0 && /dash: \[limit\(\)\]/.test(readFileSync(serverNetwork, "utf8")), "make:event did not rate limit a new client event");
+	check(statAt("make:event", "toast", "--to", "client").status === 0 && !/toast: \[limit/.test(readFileSync(serverNetwork, "utf8")), "make:event rate limited an event the server sends");
+	check(readFileSync(serverNetwork, "utf8").split("\n").every((line) => !/^\}/.test(line) || line === "});"), "the rate limit list lost the indentation of its closing brace");
+	// If the user removed the list, the event is still added and the warning says it is unprotected.
+	const withoutList = readFileSync(serverNetwork, "utf8").replace(/middleware: \{[\s\S]*?\n\t\},\n/, "");
+	writeFileSync(serverNetwork, withoutList);
+	const unprotectedRun = statAt("make:event", "sprint", "--to", "server");
+	check(unprotectedRun.status === 0 && /NOT rate limited/.test(unprotectedRun.stderr.replace(/\x1b\[[0-9;]*m/g, "")), "make:event did not warn that an event is unprotected");
+	check(readFileSync(networkFile, "utf8").includes("sprint(): void;") && readFileSync(serverNetwork, "utf8") === withoutList, "make:event failed or edited a network.ts without a rate limit list");
+
 	// Without the module it points to the fix.
 	const bareModules = join(workspace, "NoModules");
 	spawnSync(process.execPath, [cli, "init", "NoModules", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });

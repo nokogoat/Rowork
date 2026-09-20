@@ -137,6 +137,8 @@ export const networkingModule: ModuleDefinition = {
 		"Every client/server message is declared once in `src/shared/networking.ts`, in `ClientToServerEvents` or `ServerToClientEvents`. To add one, add a line such as `buyItem(itemId: string, amount: number): void;`. Do not create RemoteEvents by hand.",
 		"Server: `import { Events } from \"../network\"`, then `Events.name.connect((player, ...args) => {})`, `Events.name.fire(player, ...args)`, `Events.name.broadcast(...args)`. Client: `Events.name.fire(...args)` and `Events.name.connect((...args) => {})`.",
 		"On the server the sender is always the first argument and comes from Roblox: never take a player from the arguments.",
+		"Every event the client sends is rate limited per player (`limit()` in `src/server/network.ts`, settings in `src/server/rateLimit.ts`): `make:event` adds the line for you. Never remove it to fix a bug; raise the number for that event instead, e.g. `limit(60)`.",
+		"Flamework already checks at runtime that the arguments a client sends have the declared types; do not add manual type checks for that.",
 	],
 	options: [
 		{
@@ -172,10 +174,24 @@ export const networkingModule: ModuleDefinition = {
 					variables: { toServer: lines(events, "server"), toClient: lines(events, "client") },
 				},
 				{
+					template: "networking/rate-limit",
+					directory: `${config.paths.source}/server`,
+					fileName: "rateLimit.ts",
+					variables: {},
+				},
+				{
 					template: "networking/server-network",
 					directory: `${config.paths.source}/server`,
 					fileName: "network.ts",
-					variables: { networkingImport: `@import:${networkingFile}` },
+					variables: {
+						networkingImport: `@import:${networkingFile}`,
+						rateLimitImport: `@import:${config.paths.source}/server/rateLimit`,
+						// One line per event the client sends: those are the ones a cheater can flood.
+						entries: events
+							.filter((event) => event.direction === "server")
+							.map((event) => `\n\t\t${event.name}: [limit()],`)
+							.join(""),
+					},
 				},
 				{
 					template: "networking/client-network",

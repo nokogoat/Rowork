@@ -1,8 +1,14 @@
 import { OnStart, Service } from "@flamework/core";
 import { DataEvents } from "{{ eventsImport }}";
+import { limit } from "{{ rateLimitImport }}";
 import { PlayerDataService } from "./PlayerDataService";
 
-const Events = DataEvents.createServer({});
+const Events = DataEvents.createServer({
+	middleware: {
+		// A client asks for its data once when it starts: more than that is not normal.
+		dataRequested: [limit(5)],
+	},
+});
 
 /**
  * Sends each player's data to their own client, and only theirs: one player

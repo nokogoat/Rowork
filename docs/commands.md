@@ -318,7 +318,10 @@ does both (`rowork add:networking --event "buyItem:server()"`).
 
 The line is added to `ClientToServerEvents` or `ServerToClientEvents` in
 `src/shared/networking.ts`, and Rowork prints how to listen to it and how to send it.
-A name already used in either direction is refused (both would collide in `Events`),
+For an event the client sends, `make:event` also adds its line to the rate limit list in
+`src/server/network.ts`, so a new event is never left unprotected (if you removed that list,
+the event is still added and a warning says it is not limited). A name already used in either
+direction is refused (both would collide in `Events`),
 and the argument list is validated because it is written into code.
 
 ## `rowork console`

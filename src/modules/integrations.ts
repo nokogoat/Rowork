@@ -28,7 +28,10 @@ export const dataReplication: IntegrationDefinition = {
 					template: "data-replication/DataReplicationService",
 					directory: config.paths.services,
 					fileName: "DataReplicationService.ts",
-					variables: { eventsImport: `@import:${eventsFile}` },
+					variables: {
+						eventsImport: `@import:${eventsFile}`,
+						rateLimitImport: `@import:${config.paths.source}/server/rateLimit`,
+					},
 				},
 				{
 					template: "data-replication/PlayerDataController",

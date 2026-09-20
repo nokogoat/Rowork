@@ -1,0 +1,52 @@
+import type { Networking } from "@flamework/networking";
+
+const Players = game.GetService("Players");
+
+/**
+ * How many times ONE player may send the SAME event per second before the extra
+ * ones are ignored. Generous on purpose: normal play never gets near it, a script
+ * hammering the server does. Lower it for events that should be rare.
+ */
+export const DEFAULT_PER_SECOND = 30;
+
+/**
+ * Anti-spam for an event the client sends.
+ *
+ * A client is not trusted: a cheater can fire any event as fast as their computer
+ * allows, and every call runs your server code. Without a limit, one player can
+ * freeze the server for everyone. Add it to an event in `network.ts`:
+ *
+ *   buyItem: [limit()],       // the default
+ *   openChest: [limit(2)],    // at most twice a second
+ *
+ * Extra messages are dropped, and a warning tells you once per second so the cause
+ * is visible in your logs.
+ */
+export function limit<I extends readonly unknown[]>(
+	perSecond = DEFAULT_PER_SECOND,
+): Networking.EventMiddleware<I> {
+	return (processNext, event) => {
+		const windows = new Map<Player, { start: number; count: number }>();
+		Players.PlayerRemoving.Connect((player) => windows.delete(player));
+
+		return (player, ...args) => {
+			// Only the server receives from clients, so a player is always there.
+			if (player === undefined) return processNext(player, ...args);
+
+			const now = os.clock();
+			const window = windows.get(player);
+			if (window === undefined || now - window.start >= 1) {
+				windows.set(player, { start: now, count: 1 });
+				return processNext(player, ...args);
+			}
+
+			window.count += 1;
+			if (window.count <= perSecond) return processNext(player, ...args);
+
+			// Warn once per window, not once per dropped message: that would be spam too.
+			if (window.count === perSecond + 1) {
+				warn(`[network] ${player.Name} sends "${event.name}" too fast: extra messages are ignored`);
+			}
+		};
+	};
+}

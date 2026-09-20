@@ -51,10 +51,17 @@ function appendToBlock(source: string, block: Block, line: string, needsComma: b
 
 	let before = trimmed;
 	// An object literal needs a comma after the previous entry.
-	if (needsComma && trimmed.trim() !== "" && !trimmed.endsWith(",")) before = `${trimmed},`;
+	// (A trailing comment line is not an entry: leave it alone.)
+	const lastLine = trimmed.slice(lastLineBreak + 1).trim();
+	if (needsComma && trimmed.trim() !== "" && !trimmed.endsWith(",") && !lastLine.startsWith("//")) {
+		before = `${trimmed},`;
+	}
 
+	// Keep the line break and the indentation that were in front of the closing brace:
+	// a nested block (`middleware: { ... }`) is indented, a top-level one is not.
+	const trailing = body.slice(trimmed.length);
 	const closing = source.slice(block.end);
-	return `${source.slice(0, block.start)}${before}\n${line}\n${closing}`;
+	return `${source.slice(0, block.start)}${before}\n${line}${trailing.includes("\n") ? trailing : "\n"}${closing}`;
 }
 
 export type StatType = "number" | "string" | "boolean";
@@ -136,4 +143,21 @@ export function addEventToNetworking(
 	const updated = appendToBlock(cleaned, cleanedBlock, `\t${event.name}(${event.parameters}): void;`, false);
 	if (updated === "") throw unrecognized(file, "one event per line");
 	return updated;
+}
+
+/**
+ * Adds an event to the `middleware` list of the server's `createServer` call, so
+ * a new event the client sends is rate limited like the others.
+ *
+ * Returns undefined, not an error, when the list is not there any more: the user
+ * may have removed it on purpose, and the event itself is still worth adding. The
+ * caller says so.
+ */
+export function addRateLimit(source: string, name: string): string | undefined {
+	const block = findBlock(source, /middleware\s*:\s*\{/);
+	if (block === undefined) return undefined;
+	if (new RegExp(`^\\s*${name}\\s*:`, "m").test(source.slice(block.start, block.end))) return source;
+
+	const updated = appendToBlock(source, block, `\t\t${name}: [limit()],`, true);
+	return updated === "" ? undefined : updated;
 }

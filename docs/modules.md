@@ -157,7 +157,8 @@ sends it, and what it carries, then offers to add another.
 | File | Role |
 | --- | --- |
 | `src/shared/networking.ts` | every message and its types, in two interfaces. **The only place to edit to add one** |
-| `src/server/network.ts` | the server's side: `Events` |
+| `src/server/network.ts` | the server's side: `Events`, with the rate limit of each event the client sends |
+| `src/server/rateLimit.ts` | the `limit()` anti-spam and its default (30 a second per player) |
 | `src/client/network.ts` | the client's side: `Events` |
 
 **Using it**
@@ -178,6 +179,18 @@ Events.itemBought.connect((itemId) => { /* ... */ });
 On the server, the player who sent a message is always the first argument. It
 comes from Roblox, not from the client, so it cannot be faked: never take a player
 from the arguments.
+
+**Anti-spam, on by default.** A client is not trusted: a cheater can fire any event as fast as
+their computer allows, and every call runs your server code, so one player could freeze the
+server for everyone. Every event the client sends is **rate limited per player**
+(`limit()`, 30 a second by default, in `src/server/network.ts`): extra messages are dropped,
+and a warning tells you once a second so the cause shows in your logs. `make:event` adds the
+line for each new event. To change one, give a number, `openChest: [limit(2)]`, or change the
+default in `src/server/rateLimit.ts`. Events the server sends are not limited: nobody else can
+trigger them.
+
+Flamework also checks, at runtime, that the arguments a client sends really have the types you
+declared, so a wrong type never reaches your code. You do not need to check them again.
 
 **Adding a message later:** add a line such as `buyItem(itemId: string, amount:
 number): void;` to `ClientToServerEvents` or `ServerToClientEvents`.

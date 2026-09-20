@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 import { RoworkError } from "../cli/errors.js";
 import { resolveProjectPath } from "../core/config.js";
-import { addEventToNetworking } from "../core/schema-edit.js";
+import { addEventToNetworking, addRateLimit } from "../core/schema-edit.js";
 import { checkParameters, parameterProblem } from "../modules/networking.js";
 import { toFieldName } from "../modules/player-data.js";
 import { installModule } from "../core/modules.js";
@@ -144,8 +144,31 @@ export const makeEventCommand = defineCommand({
 			throw new RoworkError(`Cannot read ${file}.`, { hint: "It is created by `rowork add:networking`." });
 		}
 
-		writeFileSync(path, addEventToNetworking(source, file, side, { name, parameters }), "utf8");
+		const newNetworking = addEventToNetworking(source, file, side, { name, parameters });
+
+		// An event the client sends is rate limited like the others: its line is added to the
+		// server's list. Computed before anything is written, like every edit here.
+		const serverFile = `${config.paths.source}/server/network.ts`;
+		let newServer: string | undefined;
+		let unprotected = false;
+		if (side === "server") {
+			try {
+				newServer = addRateLimit(readFileSync(resolveProjectPath(root, serverFile), "utf8"), name);
+			} catch {
+				newServer = undefined;
+			}
+			unprotected = newServer === undefined;
+		}
+
+		writeFileSync(path, newNetworking, "utf8");
 		context.logger.step(`${file}: added ${name}(${parameters})`);
+		if (newServer !== undefined) {
+			writeFileSync(resolveProjectPath(root, serverFile), newServer, "utf8");
+			context.logger.step(`${serverFile}: ${name} is rate limited per player`);
+		}
+		if (unprotected) {
+			context.logger.warn(`${serverFile} has no \`middleware\` list: \`${name}\` is NOT rate limited. Add \`${name}: [limit()]\` yourself, or a cheater can flood it.`);
+		}
 		linkNow();
 		context.logger.success(`Event \`${name}\` added (${side === "server" ? "client to server" : "server to client"}).`);
 		context.logger.blank();
