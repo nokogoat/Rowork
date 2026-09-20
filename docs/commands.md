@@ -86,6 +86,29 @@ run inside a Rowork project. Details in [How `rowork dev` works](dev-command.md)
 | `--no-rojo` | skip the Rojo server |
 | `--no-sourcemap` | skip the sourcemap watcher |
 | `--port <port>` | port for the Rojo server (default 34872) |
+| `-d, --detach` | run in the background and give the terminal back |
+
+```bash
+rowork dev -d        # or: rowork -d dev
+rowork dev:logs -f   # follow what it prints (compiler errors included)
+rowork dev:stop      # stop everything
+```
+
+## `rowork dev:stop`
+
+Stops the `rowork dev` running in the background: the compiler, Rojo and the
+sourcemap watcher, and every process they started. It says so if nothing is
+running. If the process does not stop within ten seconds it is killed and Rowork
+warns you, in case a Rojo is left holding the port.
+
+## `rowork dev:logs`
+
+Prints the last lines of the background `rowork dev` output.
+
+| Option | Effect |
+| --- | --- |
+| `-n, --lines <count>` | how many recent lines (default 40) |
+| `-f, --follow` | keep printing new output until Ctrl+C |
 
 ## Guided commands
 

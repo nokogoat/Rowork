@@ -6,6 +6,16 @@ import pc from "picocolors";
 import { RoworkError } from "../cli/errors.js";
 import { resolveProjectPath } from "../core/config.js";
 import { run as runBinary } from "../core/exec.js";
+import {
+	clearRecord,
+	DAEMON_ENV,
+	logFile,
+	isAlive,
+	runningRecord,
+	spawnBackground,
+	tailLog,
+	writeRecord,
+} from "../core/background.js";
 import { findMissing, isPortFree, pathWithLocalBinaries, installAdvice, type ToolRequirement } from "../core/toolchain.js";
 import { defineCommand, type CommandContext } from "../plugins/api.js";
 import { Supervisor, type TaskDefinition } from "../process/supervisor.js";
@@ -18,6 +28,7 @@ export const devCommand = defineCommand({
 		{ flags: "--no-rojo", description: "skip the Rojo server" },
 		{ flags: "--no-sourcemap", description: "skip the sourcemap watcher" },
 		{ flags: "--port <port>", description: "port for the Rojo server" },
+		{ flags: "-d, --detach", description: "run in the background; stop with `rowork dev:stop`" },
 	],
 	async run(context) {
 		const { projectRoot, config } = context;
@@ -25,6 +36,14 @@ export const devCommand = defineCommand({
 		if (projectRoot === undefined || config === undefined) {
 			throw new RoworkError("`rowork dev` must run inside a Rowork project.", {
 				hint: "No rowork.json found here or in any parent directory. Create one with `rowork init <name>`.",
+			});
+		}
+
+		const isDaemon = process.env[DAEMON_ENV] !== undefined;
+		const already = isDaemon ? undefined : runningRecord(projectRoot);
+		if (already !== undefined) {
+			throw new RoworkError(`\`rowork dev\` is already running in the background (pid ${already.pid}).`, {
+				hint: "Stop it with `rowork dev:stop`, or read what it prints with `rowork dev:logs`.",
 			});
 		}
 
@@ -110,6 +129,11 @@ export const devCommand = defineCommand({
 			throw new RoworkError("Every task was disabled, nothing left to run.");
 		}
 
+		if (context.options["detach"] === true && !isDaemon) {
+			await startInBackground(context, projectRoot);
+			return;
+		}
+
 		context.logger.info(`${pc.bold(config.name)} ${pc.dim(projectRoot)}`);
 		for (const task of tasks) {
 			context.logger.step(`${task.paint(task.name)} ${pc.dim(`${task.command} ${task.args.join(" ")}`)}`);
@@ -118,6 +142,9 @@ export const devCommand = defineCommand({
 		context.logger.blank();
 
 		const supervisor = new Supervisor({ tasks, cwd: projectRoot, logger: context.logger });
+		// In the background, leave no stale pid file behind when the tasks end.
+		if (isDaemon) process.once("exit", () => clearRecord(projectRoot));
+
 		const code = await supervisor.run();
 
 		if (code !== 0) process.exitCode = code;
@@ -151,4 +178,46 @@ async function ensureInitialBuild(
 		});
 	}
 	context.logger.blank();
+}
+
+/**
+ * Relaunches `rowork dev` detached from this terminal.
+ *
+ * Every check and the first build already ran in the foreground, so their
+ * errors are visible here instead of ending up in a log nobody is reading.
+ */
+async function startInBackground(context: CommandContext, projectRoot: string): Promise<void> {
+	const script = process.argv[1];
+	if (script === undefined) throw new RoworkError("Cannot find the Rowork entry point to relaunch.");
+
+	const args: string[] = [];
+	for (const flag of ["compile", "rojo", "sourcemap"]) {
+		if (context.options[flag] === false) args.push(`--no-${flag}`);
+	}
+	const port = context.options["port"];
+	if (typeof port === "string") args.push("--port", port);
+
+	const pid = spawnBackground(projectRoot, script, args);
+	writeRecord(projectRoot, {
+		pid,
+		startedAt: new Date().toISOString(),
+		port: typeof port === "string" ? Number(port) : 34872,
+	});
+
+	// A task that cannot start dies within a second or two: wait for that, so a
+	// failure is reported now with its cause rather than discovered later.
+	for (let waited = 0; waited < 4000; waited += 200) {
+		await new Promise((resolve) => setTimeout(resolve, 200));
+		if (!isAlive(pid)) {
+			clearRecord(projectRoot);
+			for (const line of tailLog(projectRoot, 15)) context.logger.info(pc.dim(`  ${line}`));
+			throw new RoworkError("`rowork dev` stopped right after starting in the background.", {
+				hint: `Full output: ${logFile(projectRoot)}`,
+			});
+		}
+	}
+
+	context.logger.success(`rowork dev is running in the background (pid ${pid}).`);
+	context.logger.info(`  Output:  rowork dev:logs   (add -f to follow)`);
+	context.logger.info(`  Stop it: rowork dev:stop`);
 }

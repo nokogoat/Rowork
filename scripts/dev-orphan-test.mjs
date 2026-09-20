@@ -15,9 +15,9 @@
  * The supervisor must notice the second one dying, tear the first one down
  * including its grandchild, and exit non-zero.
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:net";
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -228,6 +228,41 @@ try {
 		check(busyExit === 1, `scenario 3: expected exit code 1 for a busy port, got ${busyExit}`);
 		check(busyOutput.includes(`Port ${busyPort} is already in use`), "scenario 3: the busy port was not reported");
 		check(!busyOutput.includes("fake compiler starting"), "scenario 3: tasks were started despite the busy port");
+	}
+
+	// Scenario 4: `dev -d` keeps running after the command returns, refuses a
+	// second start, and `dev:stop` takes down the whole tree.
+	{
+		writeFileSync(heartbeat, "");
+		const env = { ...process.env, FAKE_ROJO_STAY: "1" };
+		const cliRun = (...args) =>
+			spawnSync(process.execPath, [cli, ...args], { cwd: project, env, encoding: "utf8", timeout: 30000 });
+		const pidFile = join(project, ".rowork", "run", "dev.pid");
+
+		const started = cliRun("-d", "dev", "--no-sourcemap");
+		check(started.status === 0, `scenario 4: dev -d exited with ${started.status}\n${started.stderr}`);
+		check(existsSync(pidFile), "scenario 4: no pid file after dev -d");
+
+		// The command has returned: the tasks must still be alive and working.
+		await sleep(1200);
+		const whileRunning = statSync(heartbeat).size;
+		await sleep(800);
+		check(statSync(heartbeat).size > whileRunning, "scenario 4: the background tasks are not running");
+
+		const second = cliRun("dev", "-d", "--no-sourcemap");
+		check(second.status === 1 && /already running/.test(second.stderr), "scenario 4: a second dev -d was not refused");
+
+		const stopped = cliRun("dev:stop");
+		check(stopped.status === 0, `scenario 4: dev:stop exited with ${stopped.status}\n${stopped.stderr}`);
+		check(!existsSync(pidFile), "scenario 4: the pid file survived dev:stop");
+
+		await sleep(800);
+		const afterStop = statSync(heartbeat).size;
+		await sleep(1500);
+		check(statSync(heartbeat).size === afterStop, "scenario 4: tasks kept running after dev:stop");
+
+		const again = cliRun("dev:stop");
+		check(again.status === 0 && /No `rowork dev`/.test(again.stderr), "scenario 4: dev:stop with nothing running did not say so");
 	}
 } finally {
 	// Cleanup must never mask the assertions. On Windows a surviving grandchild

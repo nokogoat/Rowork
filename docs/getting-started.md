@@ -89,6 +89,9 @@ sourcemap | Created sourcemap at sourcemap.json
 
 Leave it running. Press **Ctrl+C** to stop everything.
 
+Want your terminal back? `rowork dev -d` runs it in the background; read its
+output with `rowork dev:logs -f` and stop it with `rowork dev:stop`.
+
 ## Connect Roblox Studio
 
 ### On Linux

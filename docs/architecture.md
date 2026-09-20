@@ -21,6 +21,7 @@ src/
     make-tool.ts         make:tool (settings, component, delivery)
     make-menu.ts         make: the list of everything that can be created
     console.ts           console: interactive prompt (each line is a child process)
+    dev-background.ts    dev:stop and dev:logs
     add.ts               add and add:<module>: one command per module
     studio.ts            studio, studio:setup (Linux)
     next-steps.ts        shared closing message
@@ -32,6 +33,7 @@ src/
     exec.ts              run an external tool to completion
     generate.ts          write generated files, register Flamework paths
     modules.ts           install a module: checks first, writes last
+    background.ts        dev in the background: detached spawn, pid file, stop
     github-release.ts    fetch a release, download an asset, verify its checksum
     studio.ts            Studio on Linux: Vinegar, Rojo plugin placement
     naming.ts            project name validation and case conversion
@@ -108,6 +110,17 @@ was. Each module gets its own `add:<name>` command, exactly like `make:*`, so
 flags stay per module and a community module can register the same way. A module
 wraps an established library when one exists (player-data wraps Lapis) instead of
 reimplementing hard parts such as session locking.
+
+**`dev -d` relaunches itself.** After the foreground checks and the first build,
+the CLI spawns `rowork dev` again with `detached: true` and its output going to a
+log file, marked by an environment variable so the child knows it is the
+background one and removes its pid file on exit. A pid file alone is not trusted:
+liveness is checked, and where `ps` exists the process must still look like
+Rowork, so a recycled pid after a reboot can never make `dev:stop` signal an
+unrelated process. Stopping sends SIGTERM to the supervisor, which stops each
+task's process tree itself (the same path as Ctrl+C); on Windows `taskkill /T`
+takes the tree. `rowork -d dev` is rewritten to `rowork dev -d` before parsing,
+since Commander would read a `-d` before the command as a global option.
 
 **The tool registry is rebuilt, not patched.** `src/shared/tools/index.ts` is
 regenerated from the `*Tool.ts` files present, so it cannot drift and needs no

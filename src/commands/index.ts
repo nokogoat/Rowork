@@ -3,6 +3,7 @@ import { coreModules } from "../modules/index.js";
 import { addCommand, moduleCommand } from "./add.js";
 import { consoleCommand } from "./console.js";
 import { devCommand } from "./dev.js";
+import { devLogsCommand, devStopCommand } from "./dev-background.js";
 import { initCommand } from "./init.js";
 import { makeCommand } from "./make-menu.js";
 import { makeToolCommand } from "./make-tool.js";
@@ -19,6 +20,8 @@ export const coreCommands: CommandDefinition[] = [
 	startCommand,
 	initCommand,
 	devCommand,
+	devStopCommand,
+	devLogsCommand,
 	makeCommand,
 	makeServiceCommand,
 	makeControllerCommand,

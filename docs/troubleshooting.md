@@ -55,6 +55,12 @@ Since 0.0.1 closing the terminal stops the tasks too (Rowork handles SIGHUP), so
 this mostly comes from a `rowork dev` started by an older build, or from a process
 killed with SIGKILL, which no program can intercept.
 
+## `rowork dev` is already running in the background
+
+You started it with `rowork dev -d` earlier. `rowork dev:logs` shows what it prints,
+`rowork dev:stop` stops it. If `dev:stop` says nothing is running but the port is
+busy, see the port section above.
+
 ## A task stopped and everything shut down
 
 That is intended: see [How `rowork dev` works](dev-command.md#how-it-stops). Read

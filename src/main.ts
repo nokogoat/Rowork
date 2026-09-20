@@ -51,7 +51,45 @@ function readGlobalFlags(argv: string[]): { cwd: string; plugins: boolean } {
 	return { cwd, plugins };
 }
 
-export async function run(argv: string[]): Promise<void> {
+/**
+ * Lets `rowork -d dev` mean `rowork dev -d`.
+ *
+ * Commander would treat a `-d` before the command as a global option, which
+ * does not exist. It is moved to just after the command name instead.
+ */
+export function hoistDetach(argv: string[]): string[] {
+	const head = argv.slice(0, 2);
+	const rest = argv.slice(2);
+	let detach = false;
+	const kept: string[] = [];
+	let commandIndex = -1;
+
+	for (let index = 0; index < rest.length; index += 1) {
+		const token = rest[index] as string;
+		if (commandIndex === -1 && (token === "-d" || token === "--detach")) {
+			detach = true;
+			continue;
+		}
+		kept.push(token);
+		if (commandIndex === -1 && token === "--cwd") {
+			// The value of --cwd is not the command.
+			const value = rest[index + 1];
+			if (value !== undefined) {
+				kept.push(value);
+				index += 1;
+			}
+		} else if (commandIndex === -1 && !token.startsWith("-")) {
+			commandIndex = kept.length - 1;
+		}
+	}
+
+	if (detach && commandIndex !== -1) kept.splice(commandIndex + 1, 0, "--detach");
+	else if (detach) kept.push("--detach");
+	return [...head, ...kept];
+}
+
+export async function run(rawArgv: string[]): Promise<void> {
+	const argv = hoistDetach(rawArgv);
 	const version = roworkVersion();
 	const { cwd, plugins: pluginsEnabled } = readGlobalFlags(argv.slice(2));
 

@@ -35,6 +35,32 @@ Rowork sets `FORCE_COLOR` to keep compiler diagnostics readable. The project's
 
 Only then are the three tasks started.
 
+## In the background
+
+`rowork dev -d` (or `rowork -d dev`) gives you the terminal back. Every check
+and the first build still run in the foreground first, so their errors appear
+right in front of you. Then `rowork dev` is relaunched detached from the terminal,
+in a session of its own on Linux and macOS, so closing the terminal does not stop
+it. If it dies within its first seconds, Rowork shows the last lines of its output
+instead of reporting success.
+
+| Command | Effect |
+| --- | --- |
+| `rowork dev -d` | start in the background |
+| `rowork dev:logs [-f] [-n 100]` | read its output, compiler errors included |
+| `rowork dev:stop` | stop it and everything it started |
+
+The pid and the log live in `.rowork/run/` (`dev.pid`, `dev.log`), which the
+generated `.gitignore` already excludes. In a project created before this
+existed, add `.rowork/run/` to your `.gitignore`. Only one background `rowork dev`
+per project: starting a second one, or a foreground one, is refused with the
+running pid. A stale pid file (after a crash or a reboot) is detected and removed;
+`dev:stop` also checks that the pid still belongs to Rowork before signalling it.
+
+The log is restarted each time you start. Compiler errors are in it, so read it
+with `rowork dev:logs` when something looks wrong: a background run hides nothing,
+but it does not show it to you unless you ask.
+
 ## Port check
 
 If the Rojo port (34872 by default, or `--port`) is already taken, `rowork dev`
