@@ -1,0 +1,20 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Artefacts locaux
+.rowork/cache/
+*.log
+npm-debug.log*
+
+# OS / editeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Ne jamais commiter de secret : l'historique de ce depot deviendra public.
+.env
+.env.*
+*.pem

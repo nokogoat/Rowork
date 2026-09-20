@@ -1,0 +1,9 @@
+# Normalise les fins de ligne : le depot reste en LF, quel que soit l'OS du contributeur.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.rbxl binary
+*.rbxm binary
+*.rbxlx binary

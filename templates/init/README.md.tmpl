@@ -1,0 +1,37 @@
+# {{ name }}
+
+Projet Roblox genere par [Rowork](https://github.com/nokogoat/Rowork) v{{ roworkVersion }}.
+
+## Stack
+
+- **roblox-ts** : TypeScript compile vers Luau
+- **Flamework** : services, controllers, injection de dependances
+- **Rojo** : synchronisation des fichiers vers Roblox Studio
+- **Rokit** : epinglage des versions d'outils
+
+## Demarrage
+
+```bash
+npm install          # dependances TypeScript
+rokit install        # installe Rojo a la version epinglee dans rokit.toml
+npm run watch        # compile src/ vers out/ en continu
+rojo serve           # expose le projet, puis connecte le plugin Rojo dans Studio
+```
+
+## Structure
+
+```
+src/
+  server/services/       services Flamework (logique serveur)
+  client/controllers/    controllers Flamework (logique client)
+  shared/                code partage serveur/client
+```
+
+Les fichiers `runtime.server.ts` et `runtime.client.ts` sont les points d'entree :
+ils declarent les dossiers a scanner puis appellent `Flamework.ignite()`.
+
+## Configuration Rowork
+
+`rowork.json` decrit les chemins du projet et les plugins actifs. Les fichiers
+`tsconfig.json`, `default.project.json` et `package.json` restent des fichiers
+standards, editables directement : Rowork ne les masque jamais.

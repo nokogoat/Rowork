@@ -1,0 +1,57 @@
+{
+  "name": "rowork",
+  "version": "0.0.1",
+  "description": "The meta-framework CLI for Roblox game development. Orchestrates Rojo, roblox-ts and Flamework, and scaffolds your game architecture.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nokogoat/Rowork.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nokogoat/Rowork/issues"
+  },
+  "homepage": "https://github.com/nokogoat/Rowork#readme",
+  "bin": {
+    "rowork": "bin/rowork.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./plugin": "./dist/plugins/api.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "rowork": "node bin/rowork.js"
+  },
+  "keywords": [
+    "roblox",
+    "roblox-ts",
+    "flamework",
+    "rojo",
+    "cli",
+    "framework",
+    "scaffolding",
+    "gamedev"
+  ],
+  "dependencies": {
+    "commander": "^12.1.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

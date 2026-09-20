@@ -1,0 +1,13 @@
+import { Flamework } from "@flamework/core";
+
+/**
+ * Point d'entree serveur.
+ *
+ * `addPaths` prend des chemins relatifs a la racine du projet. Ils sont resolus
+ * a la compilation par le transformer Flamework, qui s'appuie sur le projet
+ * Rojo : un dossier ajoute ici doit exister et etre expose dans
+ * default.project.json.
+ */
+Flamework.addPaths("src/server/services");
+
+Flamework.ignite();
