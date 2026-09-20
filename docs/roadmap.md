@@ -9,11 +9,11 @@ Rowork advances sprint by sprint.
 - **Sprint 2: `rowork dev`.** Multi-process orchestration, prefixed logs, clean
   shutdown, first-build handling, up-front tool check.
 - **Guided setup.** `rowork start`, and automatic Rokit installation.
+- **Sprint 3: Flamework generators.** `make:service`, `make:controller`,
+  `make:component`, with automatic registration in the runtime entry files.
 
 ## Next
 
-- **Sprint 3: Flamework generators.** `make:service`, `make:controller`,
-  `make:component`.
 - **Sprint 4: domain scaffolding.** `make:tool`, `make:npc`, `make:shop`,
   `make:screen`, `make:profile`. This is the point of Rowork: Flamework provides
   `service`, `controller` and `component`; Rowork adds the layer above, where a

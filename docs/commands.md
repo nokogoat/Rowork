@@ -86,9 +86,64 @@ run inside a Rowork project. Details in [How `rowork dev` works](dev-command.md)
 | `--no-sourcemap` | skip the sourcemap watcher |
 | `--port <port>` | port for the Rojo server (default 34872) |
 
+## `rowork make:service <name>`
+
+Creates a Flamework service: a server-side singleton, created and injected by
+Flamework.
+
+```bash
+rowork make:service Inventory       # src/server/services/InventoryService.ts
+rowork make:service player-stats    # PlayerStatsService
+```
+
+`<name>` can be typed as `Inventory`, `inventory`, `player-stats` or
+`InventoryService`: it is turned into PascalCase and the `Service` suffix is
+added if missing. It must start with a letter.
+
+| Option | Effect |
+| --- | --- |
+| `-f, --force` | overwrite the file if it already exists |
+
+Written to `paths.services` from [`rowork.json`](configuration.md). Without
+`--force`, an existing file is never overwritten.
+
+## `rowork make:controller <name>`
+
+Same as `make:service`, for the client side: `CameraController` in
+`paths.controllers` (default `src/client/controllers`).
+
+## `rowork make:component <name>`
+
+Creates a Flamework component: behaviour attached automatically to every
+instance carrying a CollectionService tag.
+
+```bash
+rowork make:component Door --side client --tag Openable
+rowork make:component Spawner          # server side, tag "Spawner"
+```
+
+| Option | Effect |
+| --- | --- |
+| `--side <side>` | `server` (default) or `client` |
+| `--tag <tag>` | the CollectionService tag (default: the name). Letters, digits, `_`, `-`, `.` |
+| `-f, --force` | overwrite the file if it already exists |
+
+Written to `<paths.source>/<side>/components/`, for example
+`src/client/components/DoorComponent.ts`.
+
+### Automatic registration
+
+Flamework only discovers classes in directories listed by `Flamework.addPaths`.
+A class in an unlisted directory compiles fine and then silently never runs, so
+every `make:*` command makes sure the matching entry file
+(`runtime.server.ts` or `runtime.client.ts`) lists the directory, and adds the
+line next to the existing `addPaths` calls when it is missing. It is idempotent:
+generating a second component does not add the line twice. If the entry file
+does not look the way Rowork generated it, nothing is edited and Rowork prints
+the line to add yourself.
+
 ## Not implemented yet
 
 These are planned (see the [roadmap](roadmap.md)) and do **not** exist:
-`make:service`, `make:controller`, `make:component`, `make:tool`, `eject`, and
-the other `make:*` generators. The generated example files mention
-`rowork make:service`; for now, create those files by hand.
+`make:tool` and the other domain generators (`make:npc`, `make:shop`,
+`make:screen`, `make:profile`), and `eject`.

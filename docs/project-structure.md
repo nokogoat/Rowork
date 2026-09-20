@@ -14,6 +14,13 @@ MyGame/
       controllers/
         ExampleController.ts   Flamework controller (optional example)
     shared/                    code used by both sides
+```
+
+`rowork make:component` adds a `components/` directory next to `services/` or
+`controllers/` the first time you use it (`src/server/components`,
+`src/client/components`) and registers it in the matching entry file.
+
+```
   default.project.json         Rojo project: what appears in Studio
   tsconfig.json                TypeScript / roblox-ts configuration
   package.json                 npm dependencies and scripts
@@ -34,8 +41,9 @@ With `--no-examples` the example files are omitted and each directory keeps a
 
 | You are writing... | Put it in |
 | --- | --- |
-| server-side logic (data, rules, anti-cheat) | `src/server/services/` |
-| client-side logic (input, camera, UI) | `src/client/controllers/` |
+| server-side logic (data, rules, anti-cheat) | `src/server/services/` (`rowork make:service`) |
+| client-side logic (input, camera, UI) | `src/client/controllers/` (`rowork make:controller`) |
+| behaviour attached to tagged instances | `src/<side>/components/` (`rowork make:component`) |
 | types, constants, helpers used by both | `src/shared/` |
 
 ## How code reaches Studio

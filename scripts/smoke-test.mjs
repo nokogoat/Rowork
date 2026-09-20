@@ -107,18 +107,47 @@ try {
 		"--no-examples left the services directory without a .gitkeep",
 	);
 
+	// Generators write the file, register component directories, and never overwrite.
+	const makeRun = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: bareProject, encoding: "utf8" });
+	check(makeRun("make:service", "player-stats").status === 0, "make:service failed");
+	check(
+		existsSync(join(bareProject, "src", "server", "services", "PlayerStatsService.ts")),
+		"make:service did not create PlayerStatsService.ts",
+	);
+	check(makeRun("make:controller", "Camera").status === 0, "make:controller failed");
+	check(
+		existsSync(join(bareProject, "src", "client", "controllers", "CameraController.ts")),
+		"make:controller did not create CameraController.ts",
+	);
+	check(makeRun("make:component", "Door", "--side", "client").status === 0, "make:component failed");
+	const clientRuntime = readFileSync(join(bareProject, "src", "client", "runtime.client.ts"), "utf8");
+	check(
+		clientRuntime.includes('Flamework.addPaths("src/client/components")'),
+		"make:component did not register its directory in runtime.client.ts",
+	);
+	makeRun("make:component", "Window", "--side", "client");
+	check(
+		clientRuntime.split("src/client/components").length === 2 &&
+			readFileSync(join(bareProject, "src", "client", "runtime.client.ts"), "utf8").split("src/client/components").length === 2,
+		"a second component registered the same directory twice",
+	);
+	check(makeRun("make:service", "PlayerStatsService").status === 1, "make:service overwrote an existing file");
+	check(makeRun("make:component", "Door", "--side", "nowhere").status === 1, "an invalid --side was accepted");
+	check(makeRun("make:component", "Door", "--tag", 'a"b', "--force").status === 1, "an unsafe --tag was accepted");
+
 	// `rowork start` is interactive: without a terminal it must refuse and point to `init`.
 	const wizard = spawnSync(process.execPath, [cli, "start"], { encoding: "utf8", stdio: "pipe" });
 	check(wizard.status === 1, `\`rowork start\` without a TTY exited with ${wizard.status}`);
 	check(wizard.stderr.includes("rowork init"), "`rowork start` without a TTY did not point to `rowork init`");
 
 	// `rowork dev` must name the missing tools instead of dying on a bare ENOENT.
-	// PATH is emptied so the check is the same whether or not the machine has Rojo.
+	// PATH is emptied and HOME is a throwaway, so the check is the same whether
+	// or not the machine has Rojo, on PATH or under ~/.rokit.
 	mkdirSync(join(bareProject, "node_modules"));
 	const noTools = spawnSync(process.execPath, [cli, "dev"], {
 		cwd: bareProject,
 		encoding: "utf8",
-		env: { ...process.env, PATH: dirname(process.execPath) },
+		env: { ...process.env, PATH: dirname(process.execPath), HOME: workspace, USERPROFILE: workspace },
 	});
 	check(noTools.status === 1, `\`rowork dev\` without tools exited with ${noTools.status}`);
 	check(/Missing tools?: .*rojo/.test(noTools.stderr), "`rowork dev` did not name the missing rojo");

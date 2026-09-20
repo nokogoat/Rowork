@@ -78,6 +78,18 @@ try {
 		`typescript ${installed} is installed but roblox-ts pins ${expected}`,
 	);
 
+	// The generators must produce code that really compiles, and Flamework must
+	// see the generated classes.
+	for (const args of [
+		["make:service", "Inventory"],
+		["make:controller", "Camera"],
+		["make:component", "Door", "--side", "client", "--tag", "Openable"],
+		["make:component", "Spawner"],
+	]) {
+		const made = run(process.execPath, [cli, ...args], project);
+		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
+	}
+
 	console.log("compiling...");
 	const compile = run(process.execPath, [join(project, "node_modules", "roblox-ts", "out", "CLI", "cli.js")], project);
 
@@ -90,6 +102,16 @@ try {
 		!/TypeScript version differs/.test(build.output),
 		`Flamework reports a TypeScript version mismatch:\n${build.output}`,
 	);
+
+	const buildFile = join(project, "flamework.build");
+	if (existsSync(buildFile)) {
+		const identifiers = readFileSync(buildFile, "utf8");
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent"]) {
+			check(identifiers.includes(name), `Flamework did not register ${name}`);
+		}
+	} else {
+		check(false, "no flamework.build was produced");
+	}
 
 	const outDirectory = join(project, "out");
 	check(existsSync(outDirectory), "no out/ directory was produced");

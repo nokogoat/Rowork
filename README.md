@@ -5,8 +5,8 @@
 Rowork is to Roblox what `artisan` is to Laravel: a single CLI that sets up the
 toolchain, runs it, generates code and keeps your architecture coherent.
 
-> Status: early development (v0.0.x). `start`, `init` and `dev` exist today; the
-> `make:*` generators are next. The plugin API is at v1 and may still move.
+> Status: early development (v0.0.x). `start`, `init`, `dev` and the Flamework
+> `make:*` generators exist today; the domain generators are next. The plugin API is at v1 and may still move.
 
 ## The problem
 
@@ -19,7 +19,8 @@ is running, nothing keeps file #200 consistent with the architecture of file #1.
 
 - **Generates.** `rowork start` walks you through creating a project;
   `rowork init` does it without questions. `make:service`, `make:controller`
-  and `make:tool` are next: scaffolding does not stop on day one.
+  and `make:component` create Flamework classes and register them; `make:tool`
+  and the domain generators are next.
 - **Orchestrates.** `rowork dev` runs the roblox-ts compiler, the Rojo server
   and a sourcemap watcher together, with unified logs and a clean shutdown.
 - **Installs the toolchain.** Rokit and Rojo can be installed for you, with the

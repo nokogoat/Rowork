@@ -32,8 +32,8 @@ installed.
 | `paths.source` | TypeScript sources |
 | `paths.out` | compiler output. `rowork dev` checks this directory to decide whether a first build is needed |
 | `paths.rojoProject` | Rojo project file, given to `rojo serve` and `rojo sourcemap` |
-| `paths.services` | where `make:service` will write (generator not implemented yet) |
-| `paths.controllers` | where `make:controller` will write (not implemented yet) |
+| `paths.services` | where `make:service` writes |
+| `paths.controllers` | where `make:controller` writes. Components go to `<paths.source>/<side>/components` |
 | `paths.shared` | shared code directory |
 | `plugins` | plugin module names to load explicitly. See [Plugins](plugins.md) |
 

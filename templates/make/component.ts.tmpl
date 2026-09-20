@@ -1,0 +1,8 @@
+import { BaseComponent, Component } from "@flamework/components";
+import { OnStart } from "@flamework/core";
+
+/** Attached by Flamework to every instance carrying the "{{ tag }}" CollectionService tag. */
+@Component({ tag: "{{ tag }}" })
+export class {{ className }} extends BaseComponent implements OnStart {
+	onStart(): void {}
+}

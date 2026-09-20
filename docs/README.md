@@ -18,9 +18,9 @@ Flamework, Rojo and a pinned toolchain, behind one command.
 
 ## Status
 
-Rowork is in early development (v0.0.x). Three commands exist today: `start`,
-`init` and `dev`. Everything else in the roadmap, notably the `make:*`
-generators, is **not implemented yet**, and these pages say so wherever it
+Rowork is in early development (v0.0.x). Today: `start`, `init`, `dev`, `make:service`,
+`make:controller` and `make:component`. Everything else in the roadmap, notably
+`make:tool` and `eject`, is **not implemented yet**, and these pages say so wherever it
 matters. The plugin API is at v1 and may still change before a stable release.
 
 ## Principles

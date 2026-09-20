@@ -17,6 +17,7 @@ src/
     start.ts             interactive wizard (@clack/prompts)
     init.ts              non-interactive creation
     dev.ts               orchestration entry
+    make.ts              make:service, make:controller, make:component
     next-steps.ts        shared closing message
   core/
     config.ts            rowork.json: find, load, validate
@@ -24,6 +25,7 @@ src/
     rokit-installer.ts   download, verify and install Rokit
     toolchain.ts         tool lookup on PATH, install advice
     exec.ts              run an external tool to completion
+    generate.ts          write generated files, register Flamework paths
     naming.ts            project name validation and case conversion
   process/
     supervisor.ts        runs long-lived tasks side by side
@@ -35,6 +37,7 @@ src/
   templates/engine.ts    renders template directories
   ui/logger.ts           leveled logger, stderr only
 templates/init/          files copied into a new project
+templates/make/          one template per make:* command
 scripts/                 smoke, orphan and integration tests
 ```
 
@@ -70,6 +73,12 @@ TypeScript is derived from what roblox-ts pins.
 
 **Tool lookup does not run the tool.** `toolchain.ts` scans PATH (with PATHEXT
 on Windows) so a check costs nothing and cannot have side effects.
+
+**Generators register what they generate.** Flamework silently ignores classes
+in directories not passed to `addPaths`. `ensureFlameworkPath` inserts the line
+next to the existing ones, idempotently, and edits nothing when the file does
+not look as generated. The integration test compiles generated code with the
+real compiler and checks Flamework's `flamework.build` lists every class.
 
 **Rokit installation is verified and opt-in.** The archive's SHA-256, published
 by GitHub, must match before anything is executed; a release without a digest is
