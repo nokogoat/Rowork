@@ -1,4 +1,4 @@
-# Normalise les fins de ligne : le depot reste en LF, quel que soit l'OS du contributeur.
+# Normalise line endings: the repository stays LF whatever the contributor's OS.
 * text=auto eol=lf
 
 *.png binary

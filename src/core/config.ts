@@ -6,7 +6,7 @@ import { ROWORK_PLUGIN_API_VERSION, type RoworkConfig } from "../plugins/api.js"
 
 export const CONFIG_FILENAME = "rowork.json";
 
-/** Remonte l'arborescence jusqu'a trouver un rowork.json. */
+/** Walks up the directory tree until a rowork.json is found. */
 export function findProjectRoot(from: string): string | undefined {
 	let current = resolve(from);
 	const { root } = parse(current);
@@ -27,24 +27,22 @@ export function loadConfig(projectRoot: string): RoworkConfig {
 	try {
 		parsed = JSON.parse(readFileSync(file, "utf8"));
 	} catch (cause) {
-		throw new RoworkError(`${CONFIG_FILENAME} est illisible ou mal forme.`, {
-			hint: `Verifie la syntaxe JSON de ${file}.`,
+		throw new RoworkError(`${CONFIG_FILENAME} is unreadable or malformed.`, {
+			hint: `Check the JSON syntax of ${file}.`,
 			cause,
 		});
 	}
 
 	if (typeof parsed !== "object" || parsed === null) {
-		throw new RoworkError(`${CONFIG_FILENAME} doit contenir un objet JSON.`);
+		throw new RoworkError(`${CONFIG_FILENAME} must contain a JSON object.`);
 	}
 
 	const config = parsed as RoworkConfig;
 
-	// Avertissement, pas erreur : une version de contrat differente ne doit jamais
-	// empecher l'utilisateur de lancer ses commandes.
 	if (config.roworkApiVersion !== ROWORK_PLUGIN_API_VERSION) {
 		throw new RoworkError(
-			`Ce projet cible l'API Rowork v${String(config.roworkApiVersion)}, cette CLI fournit la v${ROWORK_PLUGIN_API_VERSION}.`,
-			{ hint: "Mets a jour Rowork, ou ajuste `roworkApiVersion` dans rowork.json." },
+			`This project targets Rowork API v${String(config.roworkApiVersion)}, this CLI provides v${ROWORK_PLUGIN_API_VERSION}.`,
+			{ hint: "Update Rowork, or adjust `roworkApiVersion` in rowork.json." },
 		);
 	}
 
@@ -68,7 +66,7 @@ export function defaultConfig(name: string): RoworkConfig {
 	};
 }
 
-/** Resout un chemin de la config par rapport a la racine du projet. */
+/** Resolves a config path relative to the project root. */
 export function resolveProjectPath(projectRoot: string, path: string): string {
 	return isAbsolute(path) ? path : resolve(projectRoot, path);
 }

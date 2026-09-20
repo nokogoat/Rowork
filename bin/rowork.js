@@ -7,12 +7,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 const entry = join(here, "..", "dist", "main.js");
 
 if (!existsSync(entry)) {
-	console.error("Rowork n'est pas compile. Lance `npm run build` a la racine du depot.");
+	console.error("Rowork is not built. Run `npm run build` at the repository root.");
 	process.exit(1);
 }
 
-// pathToFileURL est obligatoire : `import("G:\...\main.js")` echoue sous Windows,
-// un chemin absolu Windows n'etant pas une URL valide.
+// pathToFileURL is mandatory: `import("G:\...\main.js")` fails on Windows,
+// because an absolute Windows path is not a valid URL.
 const { run } = await import(pathToFileURL(entry).href);
 
 await run(process.argv);

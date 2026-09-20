@@ -1,7 +1,7 @@
 import type { CommandDefinition } from "../plugins/api.js";
 import { logger } from "../ui/logger.js";
 
-/** Origine d'une commande, utilisee pour arbitrer les conflits de noms. */
+/** Where a command came from, used to arbitrate name conflicts. */
 export type CommandOrigin =
 	| { kind: "core" }
 	| { kind: "plugin"; pluginName: string }
@@ -15,20 +15,20 @@ export interface RegisteredCommand {
 function describeOrigin(origin: CommandOrigin): string {
 	switch (origin.kind) {
 		case "core":
-			return "le coeur de Rowork";
+			return "Rowork core";
 		case "plugin":
-			return `le plugin ${origin.pluginName}`;
+			return `plugin ${origin.pluginName}`;
 		case "local":
-			return `le fichier local ${origin.file}`;
+			return `local file ${origin.file}`;
 	}
 }
 
 /**
- * Registre des commandes, toutes sources confondues.
+ * Registry of every command, whatever its source.
  *
- * Arbitrage des conflits : le coeur gagne toujours. Sans cette regle, un plugin
- * tiers pourrait detourner `rowork init` de facon invisible pour l'utilisateur.
- * Entre plugins, le premier enregistre gagne, et le conflit est signale.
+ * Conflict arbitration: core always wins. Without this rule a third-party
+ * plugin could silently hijack `rowork init`. Between plugins, first
+ * registration wins and the conflict is reported.
  */
 export class CommandRegistry {
 	private readonly commands = new Map<string, RegisteredCommand>();
@@ -40,13 +40,13 @@ export class CommandRegistry {
 		if (existing !== undefined) {
 			if (existing.origin.kind === "core" || origin.kind !== "core") {
 				logger.warn(
-					`Commande \`${definition.name}\` ignoree : deja fournie par ${describeOrigin(existing.origin)} ` +
-						`(tentative depuis ${describeOrigin(origin)}).`,
+					`Skipping command \`${definition.name}\`: already provided by ${describeOrigin(existing.origin)} ` +
+						`(attempted by ${describeOrigin(origin)}).`,
 				);
 				return;
 			}
 			logger.warn(
-				`Commande \`${definition.name}\` fournie par ${describeOrigin(existing.origin)} remplacee par le coeur de Rowork.`,
+				`Command \`${definition.name}\` from ${describeOrigin(existing.origin)} replaced by Rowork core.`,
 			);
 		}
 
@@ -55,7 +55,7 @@ export class CommandRegistry {
 		for (const alias of definition.aliases ?? []) {
 			const owner = this.aliases.get(alias);
 			if (owner !== undefined && owner !== definition.name) {
-				logger.warn(`Alias \`${alias}\` ignore : deja pris par \`${owner}\`.`);
+				logger.warn(`Skipping alias \`${alias}\`: already taken by \`${owner}\`.`);
 				continue;
 			}
 			this.aliases.set(alias, definition.name);

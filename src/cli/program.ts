@@ -14,23 +14,23 @@ export interface ProgramOptions {
 }
 
 /**
- * Construit l'instance Commander a partir du registre.
+ * Builds the Commander instance from the registry.
  *
- * Les commandes du coeur et celles des plugins passent par exactement le meme
- * chemin : le coeur consomme son propre contrat public, ce qui garantit qu'une
- * regression de l'API plugin casse aussi la CLI, donc se voit immediatement.
+ * Core commands and plugin commands go through exactly the same path: the core
+ * consumes its own public contract, which guarantees that a regression in the
+ * plugin API also breaks the CLI, and is therefore noticed immediately.
  */
 export function createProgram(options: ProgramOptions): Command {
 	const program = new Command();
 
 	program
 		.name("rowork")
-		.description("Le meta-framework CLI pour le developpement de jeux Roblox.")
+		.description("The meta-framework CLI for Roblox game development.")
 		.version(options.roworkVersion, "-v, --version")
-		.option("--cwd <dir>", "repertoire de travail")
-		.option("--verbose", "logs detailles")
-		.option("--quiet", "n'afficher que les erreurs")
-		.option("--no-plugins", "demarrer sans charger les plugins")
+		.option("--cwd <dir>", "working directory")
+		.option("--verbose", "verbose logging")
+		.option("--quiet", "only print errors")
+		.option("--no-plugins", "start without loading any plugin")
 		.showHelpAfterError()
 		.configureHelp({ sortSubcommands: true });
 
@@ -51,7 +51,7 @@ export function createProgram(options: ProgramOptions): Command {
 		}
 
 		command.action(async (...invocation: unknown[]) => {
-			// Commander passe : ...arguments positionnels, options, puis la Command.
+			// Commander passes: ...positional arguments, options, then the Command.
 			const positional = invocation.slice(0, -2) as (string | string[] | undefined)[];
 			const commandOptions = (invocation.at(-2) ?? {}) as Record<string, unknown>;
 
@@ -74,10 +74,7 @@ export function createProgram(options: ProgramOptions): Command {
 		});
 	}
 
-	program.addHelpText(
-		"after",
-		`\n${pc.dim("Docs : https://github.com/nokogoat/Rowork")}\n`,
-	);
+	program.addHelpText("after", `\n${pc.dim("Docs: https://github.com/nokogoat/Rowork")}\n`);
 
 	return program;
 }

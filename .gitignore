@@ -2,19 +2,19 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# Artefacts locaux
+# Local artefacts
 .rowork/cache/
 *.log
 npm-debug.log*
 
-# OS / editeurs
+# OS / editors
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
 
-# Ne jamais commiter de secret : l'historique de ce depot deviendra public.
+# Never commit a secret: this repository history will become public.
 .env
 .env.*
 *.pem

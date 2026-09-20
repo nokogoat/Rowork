@@ -4,19 +4,20 @@ import { RoworkError } from "../cli/errors.js";
 
 export interface RunOptions {
 	cwd: string;
-	/** Laisse passer les sorties de l'outil sur le terminal. */
+	/** Whether the tool's own output reaches the terminal. */
 	stdio?: "inherit" | "ignore";
 }
 
 /**
- * Lance un executable externe.
+ * Runs an external executable.
  *
- * Sous Windows, `npm` et `git` sont des shims `.cmd` que `spawn` ne sait pas
- * executer directement ; on vise donc explicitement `<commande>.cmd`. On evite
- * `shell: true`, qui ouvrirait une injection via les arguments.
+ * On Windows, `npm` and `git` are `.cmd` shims that `spawn` cannot execute
+ * directly, so we explicitly target `<command>.cmd`. We deliberately avoid
+ * `shell: true`, which would open an injection vector through the arguments.
  */
 export function run(command: string, args: string[], options: RunOptions): Promise<void> {
-	const binary = process.platform === "win32" && !command.endsWith(".cmd") ? `${command}.cmd` : command;
+	const binary =
+		process.platform === "win32" && !command.endsWith(".cmd") ? `${command}.cmd` : command;
 
 	return new Promise((resolvePromise, rejectPromise) => {
 		const child = spawn(binary, args, {
@@ -26,8 +27,8 @@ export function run(command: string, args: string[], options: RunOptions): Promi
 
 		child.on("error", (cause) => {
 			rejectPromise(
-				new RoworkError(`Impossible de lancer \`${command}\`.`, {
-					hint: `Verifie que \`${command}\` est installe et accessible dans le PATH.`,
+				new RoworkError(`Could not run \`${command}\`.`, {
+					hint: `Make sure \`${command}\` is installed and available on your PATH.`,
 					cause,
 				}),
 			);
@@ -39,7 +40,7 @@ export function run(command: string, args: string[], options: RunOptions): Promi
 				return;
 			}
 			rejectPromise(
-				new RoworkError(`\`${command} ${args.join(" ")}\` s'est termine avec le code ${String(code)}.`),
+				new RoworkError(`\`${command} ${args.join(" ")}\` exited with code ${String(code)}.`),
 			);
 		});
 	});

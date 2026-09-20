@@ -1,12 +1,12 @@
 import { Controller, OnStart } from "@flamework/core";
 
 /**
- * Un controller est l'equivalent client d'un service.
- * Genere d'autres controllers avec `rowork make:controller <Nom>`.
+ * A controller is the client-side counterpart of a service.
+ * Generate more with `rowork make:controller <Name>`.
  */
 @Controller()
 export class ExampleController implements OnStart {
 	onStart(): void {
-		print("[{{ name }}] ExampleController demarre.");
+		print("[{{ name }}] ExampleController started.");
 	}
 }

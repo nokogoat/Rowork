@@ -1,6 +1,6 @@
 /**
- * Erreur attendue, destinee a l'utilisateur : message court + piste de resolution.
- * Tout le reste (bug interne) remonte en stack trace complete.
+ * An expected, user-facing error: short message plus a resolution hint.
+ * Anything else (an internal bug) surfaces as a full stack trace.
  */
 export class RoworkError extends Error {
 	readonly hint: string | undefined;

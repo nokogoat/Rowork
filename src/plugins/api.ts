@@ -1,13 +1,15 @@
 /**
- * CONTRAT PUBLIC DE L'API PLUGIN.
+ * PUBLIC PLUGIN API CONTRACT.
  *
- * Tout ce qui est exporte ici est expose aux plugins tiers via `rowork/plugin`.
- * Regle non negociable (voir CLAUDE.md) : toute modification incompatible de ce
- * fichier incremente ROWORK_PLUGIN_API_VERSION. Les plugins declarant une autre
- * version sont ignores avec un avertissement, jamais charges de force.
+ * Everything exported here is exposed to third-party plugins through
+ * `rowork/plugin`.
+ *
+ * Non-negotiable rule (see CLAUDE.md): any breaking change to this file bumps
+ * ROWORK_PLUGIN_API_VERSION. Plugins declaring a different version are skipped
+ * with a warning, never loaded anyway.
  */
 
-/** Version du contrat plugin. A incrementer a chaque breaking change. */
+/** Plugin contract version. Bump on every breaking change. */
 export const ROWORK_PLUGIN_API_VERSION = 1;
 
 export interface Logger {
@@ -16,36 +18,36 @@ export interface Logger {
 	success(message: string): void;
 	warn(message: string): void;
 	error(message: string): void;
-	/** Ligne de progression indentee, pour les etapes d'une commande. */
+	/** Indented progress line, for the steps of a running command. */
 	step(message: string): void;
 	blank(): void;
 }
 
 export interface CommandArgument {
-	/** Nom utilise comme cle dans `CommandContext.args`. */
+	/** Name used as the key in `CommandContext.args`. */
 	name: string;
 	description: string;
-	/** Defaut : true. */
+	/** Defaults to true. */
 	required?: boolean;
-	/** Collecte tous les arguments restants dans un tableau. */
+	/** Collects every remaining argument into an array. */
 	variadic?: boolean;
 	defaultValue?: string;
 }
 
 export interface CommandOption {
-	/** Syntaxe Commander, ex. `-f, --force` ou `--path <dir>`. */
+	/** Commander syntax, e.g. `-f, --force` or `--path <dir>`. */
 	flags: string;
 	description: string;
 	defaultValue?: string | boolean;
 }
 
 export interface CommandContext {
-	/** Arguments positionnels, indexes par `CommandArgument.name`. */
+	/** Positional arguments, keyed by `CommandArgument.name`. */
 	readonly args: Readonly<Record<string, string | string[] | undefined>>;
 	readonly options: Readonly<Record<string, unknown>>;
-	/** Repertoire de travail effectif (respecte `--cwd`). */
+	/** Effective working directory, honouring `--cwd`. */
 	readonly cwd: string;
-	/** Racine du projet Rowork (dossier contenant rowork.json), si on est dedans. */
+	/** Root of the Rowork project (the directory holding rowork.json), if any. */
 	readonly projectRoot: string | undefined;
 	readonly config: RoworkConfig | undefined;
 	readonly logger: Logger;
@@ -53,7 +55,7 @@ export interface CommandContext {
 }
 
 export interface CommandDefinition {
-	/** Nom invoque, ex. `init` ou `make:service`. */
+	/** Invocation name, e.g. `init` or `make:service`. */
 	name: string;
 	description: string;
 	aliases?: string[];
@@ -72,48 +74,48 @@ export interface PluginContext {
 }
 
 export interface RoworkPlugin {
-	/** Nom affiche dans les logs et les conflits de commandes. */
+	/** Name shown in logs and command conflict warnings. */
 	name: string;
-	/** Doit valoir ROWORK_PLUGIN_API_VERSION. */
+	/** Must equal ROWORK_PLUGIN_API_VERSION. */
 	apiVersion: number;
-	/** Commandes declarees statiquement. */
+	/** Statically declared commands. */
 	commands?: CommandDefinition[];
-	/** Enregistrement dynamique et initialisation. */
+	/** Dynamic registration and initialisation. */
 	setup?(context: PluginContext): Promise<void> | void;
 }
 
 export interface RoworkConfig {
 	$schema?: string;
-	/** Nom du jeu. */
+	/** Game name. */
 	name: string;
-	/** Version du contrat attendue par le projet. */
+	/** Contract version this project expects. */
 	roworkApiVersion: number;
-	/** Seul `roblox-ts` est supporte en v1 (voir CLAUDE.md, scope v1). */
+	/** Only `roblox-ts` is supported in v1 (see CLAUDE.md, v1 scope). */
 	language: "roblox-ts";
 	paths: {
-		/** Sources TypeScript. */
+		/** TypeScript sources. */
 		source: string;
-		/** Sortie du compilateur roblox-ts. */
+		/** roblox-ts compiler output. */
 		out: string;
-		/** Fichier projet Rojo. */
+		/** Rojo project file. */
 		rojoProject: string;
-		/** Dossier des services Flamework (cible de make:service). */
+		/** Flamework services directory (target of make:service). */
 		services: string;
-		/** Dossier des controllers Flamework (cible de make:controller). */
+		/** Flamework controllers directory (target of make:controller). */
 		controllers: string;
-		/** Dossier du code partage. */
+		/** Shared code directory. */
 		shared: string;
 	};
-	/** Specificateurs de modules plugins a charger explicitement. */
+	/** Plugin module specifiers to load explicitly. */
 	plugins: string[];
 }
 
-/** Helper d'inference de types pour les auteurs de commandes. */
+/** Type-inference helper for command authors. */
 export function defineCommand(definition: CommandDefinition): CommandDefinition {
 	return definition;
 }
 
-/** Helper d'inference de types pour les auteurs de plugins. */
+/** Type-inference helper for plugin authors. */
 export function definePlugin(plugin: RoworkPlugin): RoworkPlugin {
 	return plugin;
 }

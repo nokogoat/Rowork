@@ -14,11 +14,12 @@ import {
 } from "./api.js";
 
 /**
- * Dossier de commandes ad hoc, propres a un projet, sans passer par un paquet npm.
+ * Directory for one-off, project-specific commands that do not warrant an npm
+ * package.
  *
- * Prefere l'extension .mjs : le package.json d'un projet roblox-ts n'est pas
- * `"type": "module"`, et Node emet alors un avertissement MODULE_TYPELESS_PACKAGE_JSON
- * sur chaque fichier .js charge.
+ * Prefer the .mjs extension: a roblox-ts package.json is not
+ * `"type": "module"`, so Node emits a MODULE_TYPELESS_PACKAGE_JSON warning for
+ * every .js file loaded from here.
  */
 const LOCAL_COMMANDS_DIR = join(".rowork", "commands");
 
@@ -33,13 +34,13 @@ export interface LoadPluginsOptions {
 }
 
 /**
- * Charge les plugins depuis trois sources, dans cet ordre :
- *   1. `plugins` declares dans rowork.json (explicite, deterministe)
- *   2. dependances du projet dont le nom matche `rowork-plugin-*`
- *   3. fichiers de `.rowork/commands/`
+ * Loads plugins from three sources, in order:
+ *   1. `plugins` declared in rowork.json (explicit, deterministic)
+ *   2. project dependencies whose name matches `rowork-plugin-*`
+ *   3. files in `.rowork/commands/`
  *
- * Invariant : l'echec d'un plugin ne doit JAMAIS empecher la CLI de tourner.
- * Chaque chargement est isole, une erreur devient un avertissement.
+ * Invariant: a failing plugin must NEVER stop the CLI from running. Every load
+ * is isolated, and an error degrades to a warning.
  */
 export async function loadPlugins(options: LoadPluginsOptions): Promise<void> {
 	const { projectRoot } = options;
@@ -55,7 +56,7 @@ export async function loadPlugins(options: LoadPluginsOptions): Promise<void> {
 	await loadLocalCommands(projectRoot, options.registry);
 }
 
-/** Repere les paquets `rowork-plugin-*` dans le package.json du projet. */
+/** Picks up `rowork-plugin-*` packages from the project manifest. */
 function autoDetectedPlugins(projectRoot: string): string[] {
 	const manifestPath = join(projectRoot, "package.json");
 	if (!existsSync(manifestPath)) return [];
@@ -70,7 +71,7 @@ function autoDetectedPlugins(projectRoot: string): string[] {
 			...Object.keys(manifest.devDependencies ?? {}),
 		].filter((name) => PLUGIN_NAME_PATTERN.test(name));
 	} catch {
-		logger.debug(`package.json illisible dans ${projectRoot}, auto-detection des plugins ignoree.`);
+		logger.debug(`Unreadable manifest in ${projectRoot}, skipping plugin auto-detection.`);
 		return [];
 	}
 }
@@ -81,8 +82,8 @@ async function loadPluginModule(
 	options: LoadPluginsOptions,
 ): Promise<void> {
 	try {
-		// Resolution depuis le projet de l'utilisateur, pas depuis node_modules de
-		// Rowork : la CLI peut etre installee globalement.
+		// Resolve from the user project, not from the node_modules of Rowork
+		// itself: the CLI may well be installed globally.
 		const requireFromProject = createRequire(join(projectRoot, "package.json"));
 		const resolved = requireFromProject.resolve(specifier);
 		const module = (await import(pathToFileURL(resolved).href)) as {
@@ -92,14 +93,14 @@ async function loadPluginModule(
 
 		const plugin = (module.default ?? module.plugin) as RoworkPlugin | undefined;
 		if (plugin === undefined || typeof plugin !== "object") {
-			logger.warn(`Plugin \`${specifier}\` ignore : aucun export par defaut valide.`);
+			logger.warn(`Skipping plugin \`${specifier}\`: no valid default export.`);
 			return;
 		}
 
 		if (plugin.apiVersion !== ROWORK_PLUGIN_API_VERSION) {
 			logger.warn(
-				`Plugin \`${plugin.name || specifier}\` ignore : cible l'API v${String(plugin.apiVersion)}, ` +
-					`cette CLI fournit la v${ROWORK_PLUGIN_API_VERSION}.`,
+				`Skipping plugin \`${plugin.name || specifier}\`: targets API v${String(plugin.apiVersion)}, ` +
+					`this CLI provides v${ROWORK_PLUGIN_API_VERSION}.`,
 			);
 			return;
 		}
@@ -123,15 +124,15 @@ async function loadPluginModule(
 			await plugin.setup(context);
 		}
 
-		logger.debug(`Plugin charge : ${plugin.name || specifier}`);
+		logger.debug(`Loaded plugin: ${plugin.name || specifier}`);
 	} catch (error) {
 		logger.warn(
-			`Plugin \`${specifier}\` non charge : ${error instanceof Error ? error.message : String(error)}`,
+			`Could not load plugin \`${specifier}\`: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
 }
 
-/** Charge les commandes ponctuelles de `.rowork/commands/*.{js,mjs}`. */
+/** Loads ad hoc commands from `.rowork/commands/`. */
 async function loadLocalCommands(projectRoot: string, registry: CommandRegistry): Promise<void> {
 	const directory = join(projectRoot, LOCAL_COMMANDS_DIR);
 	if (!existsSync(directory)) return;
@@ -141,7 +142,7 @@ async function loadLocalCommands(projectRoot: string, registry: CommandRegistry)
 		entries = readdirSync(directory).filter((file) => /\.(?:js|mjs)$/.test(file));
 	} catch (error) {
 		logger.warn(
-			`Dossier ${LOCAL_COMMANDS_DIR} illisible : ${error instanceof Error ? error.message : String(error)}`,
+			`Unreadable ${LOCAL_COMMANDS_DIR} directory: ${error instanceof Error ? error.message : String(error)}`,
 		);
 		return;
 	}
@@ -160,7 +161,7 @@ async function loadLocalCommands(projectRoot: string, registry: CommandRegistry)
 			);
 
 			if (definitions.length === 0) {
-				logger.warn(`${join(LOCAL_COMMANDS_DIR, file)} n'exporte aucune commande valide.`);
+				logger.warn(`${join(LOCAL_COMMANDS_DIR, file)} exports no valid command.`);
 				continue;
 			}
 
@@ -169,7 +170,7 @@ async function loadLocalCommands(projectRoot: string, registry: CommandRegistry)
 			}
 		} catch (error) {
 			logger.warn(
-				`${join(LOCAL_COMMANDS_DIR, file)} non charge : ${error instanceof Error ? error.message : String(error)}`,
+				`Could not load ${join(LOCAL_COMMANDS_DIR, file)}: ${error instanceof Error ? error.message : String(error)}`,
 			);
 		}
 	}

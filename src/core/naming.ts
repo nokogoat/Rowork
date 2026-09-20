@@ -4,13 +4,13 @@ const VALID_NAME = /^[A-Za-z][A-Za-z0-9._-]*$/;
 
 export function assertValidProjectName(name: string): void {
 	if (!VALID_NAME.test(name)) {
-		throw new RoworkError(`\`${name}\` n'est pas un nom de projet valide.`, {
-			hint: "Commence par une lettre, puis lettres, chiffres, `.`, `-` ou `_`.",
+		throw new RoworkError(`\`${name}\` is not a valid project name.`, {
+			hint: "Start with a letter, then letters, digits, `.`, `-` or `_`.",
 		});
 	}
 }
 
-/** `Mon Super Jeu` / `mon-super-jeu` -> `MonSuperJeu` */
+/** `My Cool Game` / `my-cool-game` -> `MyCoolGame` */
 export function toPascalCase(value: string): string {
 	return value
 		.split(/[^A-Za-z0-9]+/)
@@ -19,7 +19,7 @@ export function toPascalCase(value: string): string {
 		.join("");
 }
 
-/** `MonSuperJeu` -> `mon-super-jeu` (nom de paquet npm valide) */
+/** `MyCoolGame` -> `my-cool-game` (a valid npm package name) */
 export function toKebabCase(value: string): string {
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1-$2")

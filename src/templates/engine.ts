@@ -8,7 +8,7 @@ export type TemplateVariables = Readonly<Record<string, string>>;
 
 const PLACEHOLDER = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
 
-/** Racine des templates embarques, relative au dist/ compile. */
+/** Root of the bundled templates, relative to the compiled dist/. */
 export function templatesRoot(): string {
 	return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates");
 }
@@ -17,8 +17,8 @@ export function renderString(source: string, variables: TemplateVariables): stri
 	return source.replace(PLACEHOLDER, (match, key: string) => {
 		const value = variables[key];
 		if (value === undefined) {
-			throw new RoworkError(`Variable de template inconnue : \`${key}\`.`, {
-				hint: `Occurrence : ${match}`,
+			throw new RoworkError(`Unknown template variable: \`${key}\`.`, {
+				hint: `Found in: ${match}`,
 			});
 		}
 		return value;
@@ -26,14 +26,14 @@ export function renderString(source: string, variables: TemplateVariables): stri
 }
 
 /**
- * Traduit un nom de fichier de template en nom final.
+ * Turns a template file name into its final name.
  *
- * - `.tmpl` final retire
- * - prefixe `_` traduit en `.`
+ * - a trailing `.tmpl` is dropped
+ * - a leading `_` becomes `.`
  *
- * Le prefixe `_` existe parce que npm exclut systematiquement les fichiers
- * `.gitignore` des tarballs publies : un template nomme `.gitignore` serait
- * absent du paquet installe.
+ * The `_` convention exists because npm always strips `.gitignore` files from
+ * published tarballs: a template literally named `.gitignore` would be missing
+ * from the installed package.
  */
 export function resolveTemplateName(name: string, variables: TemplateVariables): string {
 	let output = name.endsWith(".tmpl") ? name.slice(0, -".tmpl".length) : name;
@@ -41,7 +41,7 @@ export function resolveTemplateName(name: string, variables: TemplateVariables):
 	return renderString(output, variables);
 }
 
-/** Copie recursivement un dossier de templates en rendant noms et contenus. */
+/** Recursively copies a template directory, rendering both names and contents. */
 export function renderTree(
 	sourceDirectory: string,
 	targetDirectory: string,

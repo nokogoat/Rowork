@@ -2,8 +2,8 @@ import type { CommandDefinition } from "../plugins/api.js";
 import { initCommand } from "./init.js";
 
 /**
- * Commandes du coeur, listees explicitement plutot que decouvertes par glob :
- * verification par le compilateur, demarrage plus rapide, et aucun risque de
- * commande fantome au packaging.
+ * Core commands, listed explicitly rather than discovered by glob: the compiler
+ * checks them, startup stays fast, and no phantom command can slip into the
+ * published package.
  */
 export const coreCommands: CommandDefinition[] = [initCommand];

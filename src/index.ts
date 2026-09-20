@@ -1,2 +1,2 @@
-/** Point d'entree de la librairie : ne reexporte que le contrat public. */
+/** Library entry point: re-exports the public contract and nothing else. */
 export * from "./plugins/api.js";

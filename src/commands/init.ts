@@ -10,7 +10,7 @@ import { assertValidProjectName, toKebabCase, toPascalCase } from "../core/namin
 import { defineCommand } from "../plugins/api.js";
 import { renderTree, templatesRoot } from "../templates/engine.js";
 
-/** Types et outils de compilation : versions resolues par npm, jamais ecrites en dur. */
+/** Types and build tooling. Versions are resolved by npm, never hardcoded. */
 const DEV_DEPENDENCIES = [
 	"typescript",
 	"roblox-ts",
@@ -23,47 +23,48 @@ const DEPENDENCIES = ["@flamework/core", "@flamework/components"];
 
 export const initCommand = defineCommand({
 	name: "init",
-	description: "Cree un projet Roblox pret a l'emploi (roblox-ts + Flamework + Rojo).",
-	arguments: [{ name: "name", description: "Nom du projet, qui sert aussi de nom de dossier" }],
+	description: "Create a ready-to-run Roblox project (roblox-ts + Flamework + Rojo).",
+	arguments: [{ name: "name", description: "project name, also used as the directory name" }],
 	options: [
-		{ flags: "--path <dir>", description: "dossier parent dans lequel creer le projet" },
-		{ flags: "--no-install", description: "ne pas installer les dependances npm" },
-		{ flags: "--no-git", description: "ne pas initialiser de depot git" },
-		{ flags: "-f, --force", description: "autoriser un dossier cible deja non vide" },
+		{ flags: "--path <dir>", description: "parent directory to create the project in" },
+		{ flags: "--no-install", description: "skip installing npm dependencies" },
+		{ flags: "--no-git", description: "skip git repository initialisation" },
+		{ flags: "-f, --force", description: "allow a target directory that is not empty" },
 	],
 	async run(context) {
 		const rawName = context.args["name"];
 		if (typeof rawName !== "string") {
-			throw new RoworkError("Nom de projet manquant.", { hint: "Usage : rowork init <nom>" });
+			throw new RoworkError("Missing project name.", { hint: "Usage: rowork init <name>" });
 		}
 
 		assertValidProjectName(rawName);
 
 		const displayName = toPascalCase(rawName);
 		const packageName = toKebabCase(rawName);
-		const parent = typeof context.options["path"] === "string"
-			? resolve(context.cwd, context.options["path"])
-			: context.cwd;
+		const parent =
+			typeof context.options["path"] === "string"
+				? resolve(context.cwd, context.options["path"])
+				: context.cwd;
 		const target = join(parent, rawName);
 
 		if (existsSync(target) && readdirSync(target).length > 0 && context.options["force"] !== true) {
-			throw new RoworkError(`Le dossier ${target} existe deja et n'est pas vide.`, {
-				hint: "Relance avec --force pour ecrire dedans malgre tout.",
+			throw new RoworkError(`Directory ${target} already exists and is not empty.`, {
+				hint: "Re-run with --force to write into it anyway.",
 			});
 		}
 
-		context.logger.info(`Creation de ${pc.bold(displayName)} dans ${target}`);
+		context.logger.info(`Creating ${pc.bold(displayName)} in ${target}`);
 
 		mkdirSync(target, { recursive: true });
 
-		context.logger.step("generation de la structure du projet");
+		context.logger.step("scaffolding project structure");
 		renderTree(join(templatesRoot(), "init"), target, {
 			name: displayName,
 			packageName,
 			roworkVersion: context.roworkVersion,
 		});
 
-		context.logger.step(`ecriture de ${CONFIG_FILENAME}`);
+		context.logger.step(`writing ${CONFIG_FILENAME}`);
 		writeFileSync(
 			join(target, CONFIG_FILENAME),
 			`${JSON.stringify(defaultConfig(displayName), undefined, 2)}\n`,
@@ -71,31 +72,31 @@ export const initCommand = defineCommand({
 		);
 
 		if (context.options["git"] !== false) {
-			context.logger.step("initialisation du depot git");
+			context.logger.step("initialising git repository");
 			try {
 				await runBinary("git", ["init", "--quiet"], { cwd: target, stdio: "ignore" });
 			} catch {
-				// git absent ou en echec : ce n'est pas bloquant pour un projet utilisable.
-				context.logger.warn("git init a echoue, etape ignoree.");
+				// git missing or failing is not fatal: the project is still usable.
+				context.logger.warn("git init failed, skipping.");
 			}
 		}
 
 		if (context.options["install"] !== false) {
-			context.logger.step("installation des dependances (npm)");
+			context.logger.step("installing dependencies (npm)");
 			context.logger.blank();
 			await runBinary("npm", ["install", "--save-dev", ...DEV_DEPENDENCIES], { cwd: target });
 			await runBinary("npm", ["install", ...DEPENDENCIES], { cwd: target });
 		}
 
 		context.logger.blank();
-		context.logger.success(`${displayName} est pret.`);
+		context.logger.success(`${displayName} is ready.`);
 		context.logger.blank();
-		context.logger.info("Etapes suivantes :");
+		context.logger.info("Next steps:");
 		context.logger.info(`  cd ${rawName}`);
 		if (context.options["install"] === false) context.logger.info("  npm install");
-		context.logger.info("  rokit install        # installe Rojo a la version epinglee");
-		context.logger.info("  npm run watch        # compile le TypeScript en continu");
-		context.logger.info("  rojo serve           # puis connecte le plugin Rojo dans Studio");
+		context.logger.info("  rokit install        # install Rojo at the pinned version");
+		context.logger.info("  npm run watch        # compile TypeScript continuously");
+		context.logger.info("  rojo serve           # then connect the Rojo plugin in Studio");
 		context.logger.blank();
 	},
 });

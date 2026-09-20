@@ -1,12 +1,12 @@
 import { OnStart, Service } from "@flamework/core";
 
 /**
- * Un service est un singleton serveur, instancie et injecte par Flamework.
- * Genere d'autres services avec `rowork make:service <Nom>`.
+ * A service is a server-side singleton, instantiated and injected by Flamework.
+ * Generate more with `rowork make:service <Name>`.
  */
 @Service()
 export class ExampleService implements OnStart {
 	onStart(): void {
-		print("[{{ name }}] ExampleService demarre.");
+		print("[{{ name }}] ExampleService started.");
 	}
 }

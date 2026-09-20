@@ -23,8 +23,8 @@ function allowed(level: Exclude<LogLevel, "silent">): boolean {
 }
 
 /**
- * Les diagnostics partent sur stderr, jamais sur stdout : stdout reste reserve
- * aux sorties exploitables par un pipe (listes, chemins, JSON).
+ * Diagnostics go to stderr, never to stdout: stdout stays reserved for output
+ * meant to be piped (lists, paths, JSON).
  */
 function write(line: string): void {
 	process.stderr.write(`${line}\n`);
