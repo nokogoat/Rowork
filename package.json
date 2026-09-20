@@ -34,6 +34,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch",
+    "test:smoke": "node scripts/smoke-test.mjs",
+    "test": "npm run build && npm run test:smoke",
+    "prepublishOnly": "npm run test",
     "rowork": "node bin/rowork.js"
   },
   "keywords": [
