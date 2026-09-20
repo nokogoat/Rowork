@@ -281,6 +281,7 @@ is and what each one does.
 rowork add                         # guided: pick from a list
 rowork add:player-data             # guided version of one module
 rowork add:player-data --field coins:number=0 --no-install
+rowork add:leaderstats --stat coins   # needs player-data first
 ```
 
 Every module has a guided version and scripted options (shown by

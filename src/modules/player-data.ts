@@ -33,62 +33,99 @@ function defaultFor(type: FieldType, raw: string | undefined): string {
 /** Parses `name:type=default`, e.g. `coins:number=0` or `nickname:string=Guest`. */
 export function parseField(spec: string): Field {
 	const match = /^([^:=]+)(?::(number|string|boolean))?(?:=(.*))?$/.exec(spec.trim());
-	const name = match?.[1]?.trim();
+	const name = match?.[1] === undefined ? undefined : toFieldName(match[1]);
 	if (match === null || name === undefined || !IDENTIFIER.test(name)) {
 		throw new RoworkError(`\`${spec}\` is not a valid field.`, {
-			hint: "Write name:type=default, e.g. coins:number=0. The name starts with a lowercase letter.",
+			hint: "Write name:type=default, e.g. coins:number=0. The name uses letters and digits and starts with a letter.",
 		});
 	}
 	const type = (match[2] ?? "number") as FieldType;
 	return { name, type, defaultValue: defaultFor(type, match[3]) };
 }
 
+const OTHER = "__other__";
+
+/**
+ * Turns whatever the person typed into a valid field name:
+ * `Best Score` and `best-score` both become `bestScore`.
+ */
+export function toFieldName(raw: string): string {
+	const words = raw.split(/[^A-Za-z0-9]+/).filter((word) => word.length > 0);
+	return words
+		.map((word, index) =>
+			index === 0
+				? word.charAt(0).toLowerCase() + word.slice(1)
+				: word.charAt(0).toUpperCase() + word.slice(1),
+		)
+		.join("");
+}
+
+async function askCustomField(taken: Field[], first: boolean): Promise<Field | undefined> {
+	const raw = answered(
+		await prompts.text({
+			message: first
+				? "Name of the value to save (anything you like, e.g. kills or best score)"
+				: "Another one? Type its name, or leave empty when you are done",
+			placeholder: first ? "kills" : "",
+			validate: (value) => {
+				if (first && (value === undefined || value.trim() === "")) return "Type a name.";
+				if (value === undefined || value.trim() === "") return undefined;
+				const name = toFieldName(value);
+				if (!IDENTIFIER.test(name)) return "Use letters and digits, starting with a letter.";
+				if (taken.some((field) => field.name === name)) return `\`${name}\` is already there.`;
+				return undefined;
+			},
+		}),
+	);
+	if (raw.trim() === "") return undefined;
+
+	const name = toFieldName(raw);
+	const type = answered(
+		await prompts.select({
+			message: `What kind of value is ${name}?`,
+			options: [
+				{ value: "number", label: "Number", hint: "coins, kills, level" },
+				{ value: "string", label: "Text", hint: "a nickname, a title" },
+				{ value: "boolean", label: "Yes / no", hint: "has finished the tutorial" },
+			],
+		}),
+	) as FieldType;
+
+	const initial = answered(
+		await prompts.text({
+			message: `Starting value of ${name}?`,
+			placeholder: type === "number" ? "0" : type === "boolean" ? "false" : "",
+			defaultValue: "",
+		}),
+	);
+	return { name, type, defaultValue: defaultFor(type, initial) };
+}
+
 async function askFields(): Promise<Field[]> {
 	const chosen = answered(
 		await prompts.multiselect({
-			message: "What do you want to save for each player?",
-			options: COMMON_FIELDS.map((field) => ({ value: field.name, label: field.name })),
+			message: "What do you want to save for each player? (space to tick, enter to confirm)",
+			options: [
+				...COMMON_FIELDS.map((field) => ({ value: field.name, label: field.name })),
+				{ value: OTHER, label: "Other...", hint: "type your own, with the name you want" },
+			],
 			initialValues: ["coins", "level"],
-			required: false,
+			required: true,
 		}),
 	);
+
 	const fields = COMMON_FIELDS.filter((field) => chosen.includes(field.name));
 
-	for (;;) {
-		const name = answered(
-			await prompts.text({
-				message: "Add your own field? (a name like `kills`, or leave empty to finish)",
-				placeholder: "kills",
-				validate: (value) =>
-					value === undefined || value === "" || IDENTIFIER.test(value)
-						? fields.some((field) => field.name === value)
-							? "Already added."
-							: undefined
-						: "Start with a lowercase letter, then letters and digits only.",
-			}),
-		);
-		if (name === "") return fields;
-
-		const type = answered(
-			await prompts.select({
-				message: `What kind of value is ${name}?`,
-				options: [
-					{ value: "number", label: "Number", hint: "coins, kills, level" },
-					{ value: "string", label: "Text", hint: "a nickname, a title" },
-					{ value: "boolean", label: "Yes / no", hint: "has finished the tutorial" },
-				],
-			}),
-		) as FieldType;
-
-		const initial = answered(
-			await prompts.text({
-				message: `Starting value of ${name}?`,
-				placeholder: type === "number" ? "0" : type === "boolean" ? "false" : "",
-				defaultValue: "",
-			}),
-		);
-		fields.push({ name, type, defaultValue: defaultFor(type, initial) });
+	if (chosen.includes(OTHER)) {
+		let first = true;
+		for (;;) {
+			const field = await askCustomField(fields, first);
+			if (field === undefined) break;
+			fields.push(field);
+			first = false;
+		}
 	}
+	return fields;
 }
 
 function fieldsFromOptions(options: Readonly<Record<string, unknown>>): Field[] {

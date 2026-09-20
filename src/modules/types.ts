@@ -24,6 +24,8 @@ export interface PlanInput {
 	guided: boolean;
 	options: Readonly<Record<string, unknown>>;
 	config: RoworkConfig;
+	/** Root of the project, for modules that read what is already there. */
+	projectRoot: string;
 }
 
 /**

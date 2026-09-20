@@ -15,12 +15,11 @@ Rowork advances sprint by sprint.
   `make:component`, with automatic registration in the runtime entry files.
 
 - **Modules.** `rowork add` and the module system, with `player-data` (built on
-  Lapis) as the first module.
+  Lapis) and `leaderstats` (a display of player data).
 
 ## Next
 
-- **More modules.** Only chores almost every game redoes: leaderstats linked to
-  player data, typed networking, player settings, notifications. Each new module
+- **More modules.** Only chores almost every game redoes: typed networking, player settings, notifications. Each new module
   must pass that test; genre-specific features do not belong in the core.
 
 - **Sprint 4: domain scaffolding.** `make:tool` is done (a config, a server

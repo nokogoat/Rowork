@@ -55,7 +55,7 @@ export async function installModule(
 		}
 	}
 
-	const plan = await definition.plan({ guided, options: context.options, config });
+	const plan = await definition.plan({ guided, options: context.options, config, projectRoot: root });
 
 	const files = plan.files.map((file) => ({
 		...file,

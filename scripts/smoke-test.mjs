@@ -162,7 +162,7 @@ try {
 	// Modules: files written, recorded in rowork.json, never added twice, all-or-nothing.
 	check(makeRun("add:player-data").status === 1, "add:player-data without a TTY or options did not refuse");
 	check(makeRun("add").status === 1, "`rowork add` without a TTY did not refuse");
-	const badModule = makeRun("add:player-data", "--field", "Bad Field", "--no-install");
+	const badModule = makeRun("add:player-data", "--field", "1bad", "--no-install");
 	check(badModule.status === 1, "an invalid --field was accepted");
 	check(!existsSync(join(bareProject, "src", "shared", "data")), "a failed module install left files behind");
 	const added = makeRun("add:player-data", "--field", "coins:number=5", "--field", "nickname:string=Guest", "--no-install");
@@ -184,6 +184,14 @@ try {
 		"rowork.json does not record the installed module",
 	);
 	check(makeRun("add:player-data", "--field", "x:number=1", "--no-install").status === 1, "a module was installed twice");
+
+	// A module that depends on another: refused until the prerequisite exists, then reads its fields.
+	const leaderstatsFile = join(bareProject, "src", "server", "services", "LeaderstatsService.ts");
+	check(makeRun("add:leaderstats", "--stat", "nope").status === 1 && !existsSync(leaderstatsFile), "leaderstats accepted an unknown field, or wrote before refusing");
+	const stats = makeRun("add:leaderstats", "--stat", "coins");
+	check(stats.status === 0, `add:leaderstats failed\n${stats.stderr}`);
+	check(existsSync(leaderstatsFile) && readFileSync(leaderstatsFile, "utf8").includes('["coins"]'), "leaderstats does not show the requested field");
+	check(JSON.parse(readFileSync(join(bareProject, "rowork.json"), "utf8")).modules?.includes("leaderstats"), "leaderstats is not recorded in rowork.json");
 
 	// Guided versions need a terminal: without one they refuse and show the scripted form.
 	for (const command of ["make", "make:tool", "make:service", "make:controller", "make:component", "console"]) {

@@ -111,6 +111,8 @@ try {
 	const added = run(process.execPath, [cli, "add:player-data", "--field", "coins:number=0", "--field", "level:number=1"], project);
 	check(added.status === 0, `\`rowork add:player-data\` failed\n${added.output}`);
 	check(existsSync(join(project, "node_modules", "@rbxts", "lapis")), "the module's dependencies were not installed");
+	const stats = run(process.execPath, [cli, "add:leaderstats", "--stat", "coins", "--stat", "level"], project);
+	check(stats.status === 0, `\`rowork add:leaderstats\` failed\n${stats.output}`);
 
 	console.log("compiling...");
 	const compile = run(process.execPath, [join(project, "node_modules", "roblox-ts", "out", "CLI", "cli.js")], project);
@@ -128,7 +130,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PickaxeToolComponent", "ToolService", "PlayerDataService"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PickaxeToolComponent", "ToolService", "PlayerDataService", "LeaderstatsService"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {

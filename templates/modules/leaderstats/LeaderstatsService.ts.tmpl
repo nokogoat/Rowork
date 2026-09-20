@@ -1,0 +1,69 @@
+import { OnStart, Service } from "@flamework/core";
+import type { PlayerData } from "{{ dataImport }}";
+import { PlayerDataService } from "./PlayerDataService";
+
+const Players = game.GetService("Players");
+
+/**
+ * The PlayerData fields shown in the in-game leaderboard, in this order.
+ * Add a field name here and it appears for every player. Roblox displays
+ * numbers, text and yes/no values.
+ */
+const SHOWN: ReadonlyArray<keyof PlayerData> = [{{ shown }}];
+
+/**
+ * Mirrors player data into Roblox's leaderboard.
+ *
+ * Roblox shows any Folder named "leaderstats" under a Player, with one value
+ * object per column. This service builds it when a player's data has loaded and
+ * keeps it in sync when the data changes through PlayerDataService.update.
+ * The leaderboard is only a display: never read it back as the source of truth.
+ */
+@Service()
+export class LeaderstatsService implements OnStart {
+	constructor(private readonly playerData: PlayerDataService) {}
+
+	onStart(): void {
+		this.playerData.onLoaded((player, data) => this.create(player, data));
+		this.playerData.onChanged((player, data) => this.refresh(player, data));
+
+		// Players whose data finished loading before this service started.
+		for (const player of Players.GetPlayers()) {
+			const data = this.playerData.get(player);
+			if (data !== undefined) this.create(player, data);
+		}
+	}
+
+	private create(player: Player, data: Readonly<PlayerData>): void {
+		if (player.FindFirstChild("leaderstats") !== undefined) return;
+
+		const folder = new Instance("Folder");
+		folder.Name = "leaderstats";
+
+		for (const field of SHOWN) {
+			const value = data[field];
+			let stat: NumberValue | StringValue | BoolValue;
+
+			if (typeIs(value, "number")) stat = new Instance("NumberValue");
+			else if (typeIs(value, "boolean")) stat = new Instance("BoolValue");
+			else stat = new Instance("StringValue");
+
+			stat.Name = field;
+			stat.Value = value as never;
+			stat.Parent = folder;
+		}
+
+		folder.Parent = player;
+	}
+
+	private refresh(player: Player, data: Readonly<PlayerData>): void {
+		const folder = player.FindFirstChild("leaderstats");
+		if (folder === undefined) return;
+
+		for (const field of SHOWN) {
+			const stat = folder.FindFirstChild(field);
+			if (stat === undefined || !stat.IsA("ValueBase")) continue;
+			(stat as unknown as { Value: unknown }).Value = data[field];
+		}
+	}
+}

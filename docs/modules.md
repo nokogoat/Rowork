@@ -52,9 +52,13 @@ rowork add:player-data                                         # guided
 rowork add:player-data --field coins:number=0 --field nickname:string=Guest
 ```
 
+The guided version offers `coins`, `level` and `xp` to tick, plus **Other...** to
+type values of your own with any name you like (`best score` becomes `bestScore`),
+and asks the kind of value and its starting value for each.
+
 | Option | Effect |
 | --- | --- |
-| `--field <name:type=default>` | a value to save, repeatable. Types: `number`, `string`, `boolean` |
+| `--field <name:type=default>` | a value to save, repeatable. Types: `number`, `string`, `boolean`. The name can be anything: `"Best Score"` becomes `bestScore` |
 | `--no-install` | do not run `npm install` |
 
 Without `--field`, it saves `coins` and `level`.
@@ -101,7 +105,30 @@ is **not** saved), so you can keep testing. On a live server, if data cannot be
 loaded, the player is sent back with a message instead of playing on a save that
 would be lost or overwritten.
 
+### `leaderstats`: show player data in the leaderboard
+
+Shows chosen values (coins, level...) in Roblox's in-game player list, and keeps
+them current. It needs [`player-data`](#player-data-save-each-players-progress)
+first and reads its fields, so you pick from what you actually save.
+
+```bash
+rowork add:leaderstats                       # guided: tick the values to show
+rowork add:leaderstats --stat coins --stat level
+```
+
+| Option | Effect |
+| --- | --- |
+| `--stat <field>` | a `PlayerData` field to show, repeatable. Default: every number field |
+
+**File it adds:** `src/server/services/LeaderstatsService.ts`. It builds the
+`leaderstats` folder Roblox looks for under each player when their data has
+loaded, and refreshes it each time `PlayerDataService.update` changes the data.
+You write nothing to keep it in sync.
+
+**Showing another value later:** add its name to the `SHOWN` list at the top of
+that file. Numbers, text and yes/no values are supported. The leaderboard is only
+a display: read a player's value from `PlayerDataService`, never from the folder.
+
 ## Coming next
 
-More chores everyone redoes: visible stats (leaderstats) linked to player data,
-typed networking, player settings. See the [roadmap](roadmap.md).
+More chores everyone redoes: typed networking, player settings, notifications. See the [roadmap](roadmap.md).
