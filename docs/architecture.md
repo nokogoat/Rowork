@@ -40,7 +40,7 @@ src/
   templates/engine.ts    renders template directories
   ui/logger.ts           leveled logger, stderr only
 templates/init/          files copied into a new project
-templates/make/          one template per make:* command
+templates/make/          one template per make:* command (make:tool uses four)
 scripts/                 smoke, orphan and integration tests
 ```
 

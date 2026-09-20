@@ -85,6 +85,7 @@ try {
 		["make:controller", "Camera"],
 		["make:component", "Door", "--side", "client", "--tag", "Openable"],
 		["make:component", "Spawner"],
+		["make:tool", "Pickaxe"],
 	]) {
 		const made = run(process.execPath, [cli, ...args], project);
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
@@ -122,7 +123,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PickaxeToolComponent", "ToolService"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {

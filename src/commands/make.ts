@@ -60,7 +60,7 @@ function generate(options: {
 		variables: { className, ...options.extraVariables?.(base) },
 		force: context.options["force"] === true,
 	});
-	context.logger.success(`Created ${options.kind} ${className} (${written})`);
+	context.logger.success(`Created ${options.kind} ${className} (${written ?? directory})`);
 
 	const runtime = resolveProjectPath(root, join(config.paths.source, options.side, `runtime.${options.side}.ts`));
 	if (ensureFlameworkPath(runtime, directory, context.logger)) {

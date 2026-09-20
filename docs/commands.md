@@ -142,6 +142,45 @@ generating a second component does not add the line twice. If the entry file
 does not look the way Rowork generated it, nothing is edited and Rowork prints
 the line to add yourself.
 
+## `rowork make:tool <name>`
+
+Creates a whole tool (a Roblox `Tool` a player holds) as one consistent unit,
+instead of a single class.
+
+```bash
+rowork make:tool Pickaxe
+```
+
+| File | Role |
+| --- | --- |
+| `src/shared/tools/PickaxeTool.ts` | the tool's config: name, tag, cooldown, `canBeDropped` |
+| `src/server/components/PickaxeToolComponent.ts` | server behaviour: listens to `Activated`, enforces the cooldown, calls `activate(player)` |
+| `src/shared/tools/ToolDefinition.ts` | the config type, **created once** |
+| `src/server/services/ToolService.ts` | `give(player, definition)`, **created once** |
+
+`ToolService.give` builds the `Tool` instance (with a placeholder `Handle` you
+replace with your model), sets the tag from the config so Flamework attaches the
+component, and puts it in the player's backpack:
+
+```ts
+@Service()
+export class LoadoutService implements OnStart {
+  constructor(private readonly tools: ToolService) {}
+
+  onStart(): void {
+    Players.PlayerAdded.Connect((player) =>
+      player.CharacterAdded.Connect(() => this.tools.give(player, PickaxeTool)));
+  }
+}
+```
+
+Your gameplay goes in `PickaxeToolComponent.activate(player)`. The name is
+normalised: `pickaxe`, `Pickaxe` and `PickaxeTool` are the same tool. The
+component directory is registered in `runtime.server.ts`, as for
+`make:component`. `-f, --force` overwrites the tool's own files, never the shared
+`ToolDefinition.ts` and `ToolService.ts`, which are shared by every tool and
+may hold your edits.
+
 ## `rowork studio` and `rowork studio:setup` (Linux)
 
 Roblox Studio has no Linux build. These commands run it through
@@ -171,5 +210,5 @@ verified. Rokit, an executable, is stricter: it is refused without a checksum.
 ## Not implemented yet
 
 These are planned (see the [roadmap](roadmap.md)) and do **not** exist:
-`make:tool` and the other domain generators (`make:npc`, `make:shop`,
-`make:screen`, `make:profile`), and `eject`.
+the other domain generators (`make:npc`, `make:shop`, `make:screen`,
+`make:profile`), and `eject`.

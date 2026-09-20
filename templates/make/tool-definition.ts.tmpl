@@ -1,0 +1,13 @@
+/**
+ * Describes one tool. Each `rowork make:tool` adds a constant of this type in
+ * this directory: it is the single place its tag, cooldown and options live.
+ */
+export interface ToolDefinition {
+	/** Name shown in the player's backpack. */
+	readonly name: string;
+	/** CollectionService tag that makes Flamework attach the tool's component. */
+	readonly tag: string;
+	/** Minimum seconds between two activations. */
+	readonly cooldown: number;
+	readonly canBeDropped: boolean;
+}

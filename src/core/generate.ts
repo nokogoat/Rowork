@@ -38,15 +38,21 @@ export interface GenerateOptions {
 	template: string;
 	variables: Record<string, string>;
 	force: boolean;
+	/** What to do when the file exists and `force` is off. Defaults to failing. */
+	ifExists?: "fail" | "skip";
 }
 
-/** Writes one generated file and returns its path relative to the project. */
-export function generateFile(options: GenerateOptions): string {
+/**
+ * Writes one generated file and returns its path relative to the project, or
+ * undefined when it already existed and `ifExists` is "skip".
+ */
+export function generateFile(options: GenerateOptions): string | undefined {
 	const directory = resolveProjectPath(options.projectRoot, options.directory);
 	const target = join(directory, options.fileName);
 	const shown = relative(options.projectRoot, target);
 
 	if (existsSync(target) && !options.force) {
+		if (options.ifExists === "skip") return undefined;
 		throw new RoworkError(`${shown} already exists.`, {
 			hint: "Pick another name, or pass --force to overwrite it.",
 		});
@@ -56,6 +62,14 @@ export function generateFile(options: GenerateOptions): string {
 	mkdirSync(directory, { recursive: true });
 	writeFileSync(target, renderString(source, options.variables), "utf8");
 	return shown;
+}
+
+/** Relative module specifier from one project directory to a file (no extension). */
+export function importPath(projectRoot: string, fromDirectory: string, toFile: string): string {
+	const path = relative(resolveProjectPath(projectRoot, fromDirectory), resolveProjectPath(projectRoot, toFile))
+		.split("\\")
+		.join("/");
+	return path.startsWith(".") ? path : `./${path}`;
 }
 
 /**

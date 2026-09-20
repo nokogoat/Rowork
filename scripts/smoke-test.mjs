@@ -7,7 +7,7 @@
  * branches of exec.ts and bin/rowork.js are ever exercised.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -134,6 +134,25 @@ try {
 	check(makeRun("make:service", "PlayerStatsService").status === 1, "make:service overwrote an existing file");
 	check(makeRun("make:component", "Door", "--side", "nowhere").status === 1, "an invalid --side was accepted");
 	check(makeRun("make:component", "Door", "--tag", 'a"b', "--force").status === 1, "an unsafe --tag was accepted");
+
+	// make:tool writes config + component, plus shared infrastructure created once.
+	check(makeRun("make:tool", "pickaxe").status === 0, "make:tool failed");
+	for (const file of [
+		join("src", "shared", "tools", "ToolDefinition.ts"),
+		join("src", "shared", "tools", "PickaxeTool.ts"),
+		join("src", "server", "components", "PickaxeToolComponent.ts"),
+		join("src", "server", "services", "ToolService.ts"),
+	]) {
+		check(existsSync(join(bareProject, file)), `make:tool did not create ${file}`);
+	}
+	const serviceFile = join(bareProject, "src", "server", "services", "ToolService.ts");
+	writeFileSync(serviceFile, "// edited by the user\n" + readFileSync(serviceFile, "utf8"));
+	check(makeRun("make:tool", "PickaxeTool").status === 1, "make:tool overwrote an existing tool");
+	check(makeRun("make:tool", "Shovel").status === 0, "a second make:tool failed");
+	check(
+		readFileSync(serviceFile, "utf8").startsWith("// edited by the user"),
+		"a second make:tool overwrote the shared ToolService",
+	);
 
 	// `rowork start` is interactive: without a terminal it must refuse and point to `init`.
 	const wizard = spawnSync(process.execPath, [cli, "start"], { encoding: "utf8", stdio: "pipe" });

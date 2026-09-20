@@ -16,7 +16,8 @@ Rowork advances sprint by sprint.
 
 ## Next
 
-- **Sprint 4: domain scaffolding.** `make:tool`, `make:npc`, `make:shop`,
+- **Sprint 4: domain scaffolding.** `make:tool` is done (a config, a server
+  component and a shared service, generated together). Still to do: `make:npc`, `make:shop`,
   `make:screen`, `make:profile`. This is the point of Rowork: Flamework provides
   `service`, `controller` and `component`; Rowork adds the layer above, where a
   *tool* is a `Tool` instance plus a component, a config entry and a server
