@@ -1,0 +1,21 @@
+import React from "@rbxts/react";
+
+interface ButtonProps {
+	text: string;
+	onClick?: () => void;
+}
+
+/**
+ * A button. Copy this file to make your own components: one component per file,
+ * with a `.story.tsx` next to it to see it in Studio without running the game.
+ */
+export function Button({ text, onClick }: ButtonProps) {
+	return (
+		<textbutton
+			Size={UDim2.fromOffset(200, 50)}
+			Text={text}
+			TextScaled
+			Event={{ Activated: () => onClick?.() }}
+		/>
+	);
+}

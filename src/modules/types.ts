@@ -1,4 +1,4 @@
-import type { CommandOption, RoworkConfig } from "../plugins/api.js";
+import type { CommandOption, Logger, RoworkConfig } from "../plugins/api.js";
 
 /** One file a module writes into the project. */
 export interface ModuleFile {
@@ -15,6 +15,8 @@ export interface ModulePlan {
 	files: ModuleFile[];
 	/** Flamework directories the module's classes live in, to be registered. */
 	register: { side: "server" | "client"; directory: string }[];
+	/** tsconfig.json `compilerOptions` to set (JSX, for the UI module). See `core/tsconfig-edit.ts`. */
+	compilerOptions?: Record<string, string>;
 	/** npm scripts to add to package.json. One that already exists is never overwritten. */
 	scripts?: Record<string, string>;
 	/** Short lines printed after installation: what was added, what to do next. */
@@ -69,6 +71,17 @@ export interface ModuleDefinition {
 	 * Short imperative lines: where the code is, what to call, what to edit.
 	 */
 	agentGuide?: string[];
+	/**
+	 * Whether running it with no option asks questions. Defaults to "it has options".
+	 * A module whose options are only switches (`--no-plugin`) sets this to false so
+	 * it still runs without a terminal.
+	 */
+	asksQuestions?: boolean;
+	/**
+	 * Work that is not files or npm packages, run after everything else. Its failure
+	 * never undoes the install: it is reported and the user can finish by hand.
+	 */
+	postInstall?(input: { logger: Logger; projectRoot: string; options: Readonly<Record<string, unknown>> }): Promise<void>;
 	/** Flags for the scripted form. */
 	options?: CommandOption[];
 	plan(input: PlanInput): Promise<ModulePlan> | ModulePlan;

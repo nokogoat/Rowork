@@ -101,7 +101,15 @@ try {
 
 	const found = studio.findStudioDataDirectories(fakeData);
 	check(found.length === 1 && found[0] === robloxData, `Studio data directories: ${JSON.stringify(found)}`);
+	// The Creator Store copy of Rojo is found (and its absence too), so the two-plugins warning can fire.
+	check(studio.findStoreRojoPlugin(fakeData) === undefined, "a store plugin was reported where there is none");
+	mkdirSync(join(robloxData, "12345", "InstalledPlugins", "13916111004"), { recursive: true });
+	check(studio.findStoreRojoPlugin(fakeData)?.endsWith(join("InstalledPlugins", "13916111004")), "the Creator Store Rojo plugin was not detected");
 	await studio.installRojoPlugin(found, project, logger);
+	// The UI Labs preview plugin: from its GitHub release, checked against the published SHA-256.
+	await studio.installReleasePlugin(found, studio.UI_LABS, logger);
+	const uiLabsPlugin = join(robloxData, "Plugins", "UILabs.rbxm");
+	check(existsSync(uiLabsPlugin) && readFileSync(uiLabsPlugin).subarray(0, 8).toString() === "<roblox!", "the UI Labs plugin was not placed as a Roblox model file");
 	const plugin = join(robloxData, "Plugins", "Rojo.rbxm");
 	check(existsSync(plugin), "the Rojo plugin was not written");
 	check(existsSync(plugin) && readFileSync(plugin).subarray(0, 8).toString() === "<roblox!", "Rojo.rbxm is not a Roblox model file");
@@ -110,6 +118,9 @@ try {
 	const added = run(process.execPath, [cli, "add:player-data", "--field", "coins:number=0", "--field", "level:number=1"], project);
 	check(added.status === 0, `\`rowork add:player-data\` failed\n${added.output}`);
 	check(existsSync(join(project, "node_modules", "@rbxts", "lapis")), "the module's dependencies were not installed");
+	const ui = run(process.execPath, [cli, "add:ui"], project, isolated);
+	check(ui.status === 0, `\`rowork add:ui\` failed\n${ui.output}`);
+	check(existsSync(join(project, "node_modules", "@rbxts", "react-roblox")), "the React packages were not installed");
 	const net = run(process.execPath, [cli, "add:networking", "--event", "buyItem:server(itemId: string)", "--event", "bought:client(itemId: string)"], project);
 	check(net.status === 0, `\`rowork add:networking\` failed\n${net.output}`);
 	check(existsSync(join(project, "node_modules", "@flamework", "networking")), "@flamework/networking was not installed");
@@ -148,7 +159,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService", "OpenChestHandler", "VaultService"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService", "OpenChestHandler", "VaultService", "UiController"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {

@@ -6,11 +6,16 @@ import { defineCommand, type CommandDefinition } from "../plugins/api.js";
 import { answered, prompts, requireInteractive } from "../ui/prompt.js";
 import { requireProject } from "./make.js";
 
+/** Does running the module with no option ask questions? See `ModuleDefinition.asksQuestions`. */
+export function moduleAsks(definition: ModuleDefinition): boolean {
+	return definition.asksQuestions ?? (definition.options ?? []).length > 0;
+}
+
 /** One `add:<name>` command per module, so each can have its own flags. */
 export function moduleCommand(definition: ModuleDefinition): CommandDefinition {
 	return defineCommand({
 		name: `add:${definition.name}`,
-		guided: (definition.options ?? []).length > 0,
+		guided: moduleAsks(definition),
 		description: `Add the ${definition.title} module: ${definition.description}`,
 		options: [
 			...(definition.options ?? []),
@@ -26,7 +31,7 @@ export function moduleCommand(definition: ModuleDefinition): CommandDefinition {
 				(key) => key !== "install" && context.options[key] !== undefined,
 			);
 			// A module with nothing to ask (the linter) runs anywhere, terminal or not.
-			const asksQuestions = (definition.options ?? []).length > 0;
+			const asksQuestions = moduleAsks(definition);
 			if (!scripted && asksQuestions) {
 				requireInteractive(`add:${definition.name}`, `rowork add:${definition.name} <options> (see --help)`);
 			}
@@ -55,7 +60,7 @@ export const addCommand = defineCommand({
 					hint: `Available: ${coreModules.map((candidate) => candidate.name).join(", ")}.${close.length > 0 ? ` Did you mean ${close.join(", ")}?` : ""}`,
 				});
 			}
-			if ((module.options ?? []).length > 0) {
+			if (moduleAsks(module)) {
 				requireInteractive(`add ${module.name}`, `rowork add:${module.name} <options> (see --help)`);
 			}
 			await moduleCommand(module).run({ ...context, args: {}, options: {} });

@@ -65,6 +65,8 @@ Outside a project, `project` is `null` and the rest is still there. The plain
 
 ## Not there yet
 
-The generated code is commented for readers, but that pass has not been done
-everywhere. Modules do not yet wire themselves into each other automatically when
-added in either order. See the [roadmap](roadmap.md).
+The generated code is commented for readers, and every file explains what it does and why, but
+that pass has not been reviewed everywhere: if a file is hard to follow, that is a bug worth
+reporting. Modules do wire themselves together (see
+[Modules working together](modules.md#modules-working-together)), but only one pair exists so far.
+See the [roadmap](roadmap.md).

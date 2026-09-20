@@ -36,6 +36,9 @@ const NPM_PACKAGES = [
 	"@rbxts/lapis",
 	"eslint",
 	"eslint-plugin-roblox-ts",
+	"@rbxts/react",
+	"@rbxts/react-roblox",
+	"@rbxts/ui-labs",
 	"prettier",
 	"@rbxts/t",
 ];
@@ -116,6 +119,7 @@ if (!reportOnly && failures.length === 0) {
 			["add:player-data", "--field", "coins:number=0", "--field", "level:number=1"],
 			["add:leaderstats", "--stat", "coins", "--stat", "level"],
 			["add:networking", "--event", "buyItem:server(itemId: string)", "--event", "bought:client(itemId: string)"],
+			["add:ui", "--no-plugin"],
 			["make:service", "Ledger"],
 			["make:component", "Door", "--side", "client"],
 		]) {

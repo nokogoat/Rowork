@@ -62,3 +62,10 @@ export function writeRojoPin(projectRoot: string, version: string): boolean {
 export function baseVersion(range: string): string {
 	return range.replace(/^[\^~>=<\s]+/, "");
 }
+
+/** True when `version` (like "7.7.0") is at least `major.minor`. An unknown version is not. */
+export function rojoIsAtLeast(version: string | undefined, major: number, minor: number): boolean {
+	if (version === undefined) return false;
+	const [m = 0, n = 0] = version.split(".").map(Number);
+	return m > major || (m === major && n >= minor);
+}

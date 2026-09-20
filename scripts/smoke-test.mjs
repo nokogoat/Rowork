@@ -378,6 +378,38 @@ try {
 	check(unprotectedRun.status === 0 && /NOT rate limited/.test(unprotectedRun.stderr.replace(/\x1b\[[0-9;]*m/g, "")), "make:event did not warn that an event is unprotected");
 	check(readFileSync(networkFile, "utf8").includes("sprint(): void;") && readFileSync(serverNetwork, "utf8") === withoutList, "make:event failed or edited a network.ts without a rate limit list");
 
+	// The UI module edits tsconfig.json as text: old Roact values are replaced, comments survive,
+	// missing entries are inserted, and a value the user chose is never overwritten.
+	const makeUiProject = (label, transform) => {
+		const dir = join(workspace, label);
+		spawnSync(process.execPath, [cli, "init", label, "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
+		const tsconfigPath = join(dir, "tsconfig.json");
+		writeFileSync(tsconfigPath, transform(readFileSync(tsconfigPath, "utf8")));
+		return { dir, tsconfigPath, run: (...a) => spawnSync(process.execPath, [cli, ...a], { cwd: dir, encoding: "utf8" }) };
+	};
+	const oldRoact = makeUiProject("UiRoact", (source) => source.replace("React.createElement", "Roact.createElement").replace("React.Fragment", "Roact.Fragment").replace('"moduleDetection": "force",', '"moduleDetection": "force", // keep this comment'));
+	const uiRun = oldRoact.run("add:ui", "--no-install", "--no-plugin");
+	check(uiRun.status === 0, `add:ui failed\n${uiRun.stderr}`);
+	const roactAfter = readFileSync(oldRoact.tsconfigPath, "utf8");
+	check(roactAfter.includes('"jsxFactory": "React.createElement"') && roactAfter.includes('"jsxFragmentFactory": "React.Fragment"'), "add:ui did not replace the old Roact JSX settings");
+	check(roactAfter.includes("// keep this comment"), "add:ui destroyed a comment in tsconfig.json");
+	for (const file of ["App.tsx", "Button.tsx", "Button.story.tsx"]) check(existsSync(join(oldRoact.dir, "src", "client", "ui", file)), `add:ui did not create ${file}`);
+	const controller = join(oldRoact.dir, "src", "client", "controllers", "UiController.tsx");
+	check(existsSync(controller) && readFileSync(controller, "utf8").includes('from "../ui/App"'), "add:ui did not create UiController importing App");
+	check(["Button.tsx", "App.tsx", "Button.story.tsx"].every((f) => !/\{\{\s*\w+\s*\}\}/.test(readFileSync(join(oldRoact.dir, "src", "client", "ui", f), "utf8"))), "a UI template kept an unrendered placeholder");
+	const uiInfo = JSON.parse(oldRoact.run("info", "--json").stdout);
+	check(uiInfo.commands.find((c) => c.name === "add:ui")?.guided === false, "add:ui asks nothing and must not be marked guided");
+
+	const insertion = makeUiProject("UiInsert", (source) => source.replace(/^\s*"jsx[^\n]*\n/gm, ""));
+	check(!/jsx/.test(readFileSync(insertion.tsconfigPath, "utf8")), "test setup: the jsx entries should be missing");
+	check(insertion.run("add:ui", "--no-install", "--no-plugin").status === 0 && /"jsxFactory": "React.createElement"/.test(readFileSync(insertion.tsconfigPath, "utf8")), "add:ui did not insert the missing JSX settings");
+
+	const conflict = makeUiProject("UiConflict", (source) => source.replace("React.createElement", "h"));
+	const conflictBefore = readFileSync(conflict.tsconfigPath, "utf8");
+	const conflictRun = conflict.run("add:ui", "--no-install", "--no-plugin");
+	check(conflictRun.status === 1 && /jsxFactory/.test(conflictRun.stderr), "add:ui did not refuse a jsxFactory the user set");
+	check(readFileSync(conflict.tsconfigPath, "utf8") === conflictBefore && !existsSync(join(conflict.dir, "src", "client", "ui")), "a refused add:ui still wrote something");
+
 	// Without the module it points to the fix.
 	const bareModules = join(workspace, "NoModules");
 	spawnSync(process.execPath, [cli, "init", "NoModules", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });

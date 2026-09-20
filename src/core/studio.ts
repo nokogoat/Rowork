@@ -7,6 +7,7 @@ import spawn from "cross-spawn";
 
 import { RoworkError } from "../cli/errors.js";
 import type { Logger } from "../plugins/api.js";
+import { loadConfig } from "./config.js";
 import { run as runBinary } from "./exec.js";
 import { downloadAsset, getRelease } from "./github-release.js";
 import { findExecutable } from "./toolchain.js";
@@ -132,6 +133,81 @@ export async function installRojoPlugin(
 	}
 }
 
+/** Where a Studio plugin can be found, for the ones Rowork places itself. */
+export const UI_LABS = {
+	repository: "PepeElToro41/ui-labs",
+	asset: "Plugin.rbxm",
+	file: "UILabs.rbxm",
+	store: "https://create.roblox.com/store/asset/14293316215/",
+} as const;
+
+/**
+ * Places a plugin published as a GitHub release asset into Studio's plugins folder.
+ *
+ * Same reasoning as the Rojo plugin, and the same limit: on Linux the Wine prefix
+ * only exists after Studio has been launched once. Unlike Rojo's older releases,
+ * UI Labs publishes a SHA-256 for its plugin, so it is verified here.
+ */
+export async function installReleasePlugin(
+	dataDirectories: readonly string[],
+	plugin: { repository: string; asset: string; file: string },
+	logger: Logger,
+): Promise<void> {
+	logger.step(`downloading the ${plugin.file.replace(/\.rbxm$/, "")} plugin`);
+	const release = await getRelease(plugin.repository);
+	const asset = release.assets?.find((candidate) => candidate.name === plugin.asset);
+	if (asset === undefined) throw new Error(`no ${plugin.asset} in ${plugin.repository} ${release.tag_name}`);
+
+	const { data, verified } = await downloadAsset(asset, { allowUnverified: true });
+	if (!verified) logger.warn(`GitHub publishes no checksum for ${plugin.repository} ${release.tag_name}: the plugin could not be verified.`);
+
+	for (const dataDirectory of dataDirectories) {
+		const plugins = join(dataDirectory, "Plugins");
+		mkdirSync(plugins, { recursive: true });
+		writeFileSync(join(plugins, plugin.file), data);
+		logger.step(`installed ${join(plugins, plugin.file)}`);
+	}
+}
+
+/** The Rojo plugin in the Creator Store, as Studio names its folder for it. */
+const STORE_ROJO_PLUGIN_ID = "13916111004";
+
+/**
+ * Finds the Creator Store copy of the Rojo plugin, if Studio installed one.
+ *
+ * Studio keeps store plugins under `Roblox/<user id>/InstalledPlugins/<asset id>`.
+ * Rowork places its own copy, matching the Rojo it runs, in `Roblox/Plugins`: with
+ * both, Studio shows two Rojo buttons, and the store one is usually older.
+ */
+export function findStoreRojoPlugin(dataDirectory = vinegarDataDirectory()): string | undefined {
+	for (const roblox of findStudioDataDirectories(dataDirectory)) {
+		let users: string[];
+		try {
+			users = readdirSync(roblox, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+		} catch {
+			continue;
+		}
+		for (const user of users) {
+			const candidate = join(roblox, user, "InstalledPlugins", STORE_ROJO_PLUGIN_ID);
+			if (existsSync(candidate)) return candidate;
+		}
+	}
+	return undefined;
+}
+
+/**
+ * Says why two Rojo plugins is a problem, and what to do about it.
+ *
+ * Rojo 7.7 replaced JSON by MessagePack for its whole API. A plugin older than the
+ * server cannot read it and Studio reports "Can't parse JSON", which says nothing
+ * about the real cause. The Creator Store copy lags behind Rojo's releases.
+ */
+export function warnAboutStorePlugin(logger: Logger): void {
+	logger.warn("Studio has TWO Rojo plugins: the Creator Store one, and the one Rowork installed.");
+	logger.info("  The Store copy is usually older than the Rojo Rowork runs. Since Rojo 7.7 it cannot talk to the server");
+	logger.info("  and Studio only says \"Can't parse JSON\". Disable it: Plugins > Manage Plugins > Rojo (Creator Store).");
+}
+
 export interface StudioSetupResult {
 	pluginInstalled: boolean;
 }
@@ -160,6 +236,18 @@ export async function setupStudio(options: {
 	}
 
 	await installRojoPlugin(directories, options.projectRoot, logger);
+	if (findStoreRojoPlugin() !== undefined) warnAboutStorePlugin(logger);
+
+	// The UI module previews components with the UI Labs plugin: place it too.
+	if (options.projectRoot !== undefined) {
+		try {
+			if (loadConfig(options.projectRoot).modules?.includes("ui")) {
+				await installReleasePlugin(directories, UI_LABS, logger);
+			}
+		} catch (error) {
+			logger.warn(`Could not place the UI Labs plugin: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
 	return { pluginInstalled: true };
 }
 

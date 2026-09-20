@@ -500,8 +500,8 @@ verified. Rokit, an executable, is stricter: it is refused without a checksum.
 
 `rowork studio` launches Studio and returns immediately.
 
-## Not implemented yet
+## Not there yet
 
-These are planned (see the [roadmap](roadmap.md)) and do **not** exist:
-the other domain generators (`make:npc`, `make:shop`, `make:screen`,
-`make:profile`), and `eject`.
+These do **not** exist (see the [roadmap](roadmap.md)): using Wally packages from TypeScript,
+`rowork add wally`, a preview of the interface outside Roblox, and uploading files to Roblox
+from the project.

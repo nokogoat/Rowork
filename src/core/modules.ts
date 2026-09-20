@@ -7,6 +7,7 @@ import { coreIntegrations } from "../modules/integrations.js";
 import type { ModuleDefinition, ModulePlan } from "../modules/types.js";
 import type { CommandContext, Logger, RoworkConfig } from "../plugins/api.js";
 import { syncAgentDocs } from "./agent-docs.js";
+import { setCompilerOptions } from "./tsconfig-edit.js";
 import { CONFIG_FILENAME, loadConfig, resolveProjectPath } from "./config.js";
 import { run as runBinary } from "./exec.js";
 import { ensureFlameworkPath, generateFile, importPath } from "./generate.js";
@@ -63,6 +64,19 @@ export async function installModule(
 	const files = resolveFiles(plan, root);
 	assertNoClash(files, root);
 
+	// tsconfig.json is computed now, so a conflict stops the install before anything is written.
+	let newTsconfig: { path: string; source: string } | undefined;
+	if (plan.compilerOptions !== undefined) {
+		const path = join(root, "tsconfig.json");
+		let current: string;
+		try {
+			current = readFileSync(path, "utf8");
+		} catch {
+			throw new RoworkError("Cannot read tsconfig.json.", { hint: "This module needs to set compiler options there." });
+		}
+		newTsconfig = { path, source: setCompilerOptions(current, "tsconfig.json", plan.compilerOptions) };
+	}
+
 	logger.info(`Adding the ${definition.title} module`);
 
 	if (definition.dependencies !== undefined && context.options["install"] !== false) {
@@ -76,8 +90,20 @@ export async function installModule(
 	}
 
 	writePlan(logger, root, config, plan, files, "modules");
+	if (newTsconfig !== undefined && newTsconfig.source !== readFileSync(newTsconfig.path, "utf8")) {
+		writeFileSync(newTsconfig.path, newTsconfig.source, "utf8");
+		logger.step(`tsconfig.json: set ${Object.keys(plan.compilerOptions ?? {}).join(", ")}`);
+	}
 
 	recordModule(root, definition.name);
+
+	if (definition.postInstall !== undefined && context.options["install"] !== false) {
+		try {
+			await definition.postInstall({ logger, projectRoot: root, options: context.options });
+		} catch (error) {
+			logger.warn(`${definition.title}: a last step did not finish (${error instanceof Error ? error.message : String(error)}). The module itself is installed.`);
+		}
+	}
 
 	// Glue between this module and the ones already there, whatever the order.
 	await applyPendingIntegrations(context, root);

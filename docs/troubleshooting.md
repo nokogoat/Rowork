@@ -125,6 +125,12 @@ Studio has no Linux build; see [Getting started](getting-started.md#on-linux).
   ```
 
   Let that first launch finish without closing it.
+- **"Can't parse JSON" in Studio's Output when connecting Rojo**: the plugin is older than the Rojo
+  server. Rojo 7.7 replaced JSON by MessagePack for its whole API, and a plugin from before that
+  cannot read it. It is almost always the **Creator Store copy**, which lags behind Rojo's releases
+  (the error names it `cloud_13916111004`). Disable it in *Plugins > Manage Plugins*, and keep the one
+  Rowork installed (`rowork studio:setup`). Rowork warns you about this in `rowork dev`,
+  `rowork studio:setup` and `rowork update` when it finds both.
 - **Two Rojo buttons in Studio's toolbar**: the plugin is installed twice, for
   example once from the Creator Store and once by `rowork studio:setup`. Keep one.
   Its version should match the Rojo in `rokit.toml`.

@@ -1,0 +1,21 @@
+import { Controller, OnStart } from "@flamework/core";
+import React from "@rbxts/react";
+import { createRoot } from "@rbxts/react-roblox";
+import { App } from "{{ appImport }}";
+
+const Players = game.GetService("Players");
+
+/** Puts the React interface on the player's screen when the game starts. */
+@Controller()
+export class UiController implements OnStart {
+	onStart(): void {
+		const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui");
+
+		const screen = new Instance("ScreenGui");
+		screen.Name = "App";
+		screen.ResetOnSpawn = false;
+		screen.Parent = playerGui;
+
+		createRoot(screen).render(<App />);
+	}
+}

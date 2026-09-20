@@ -16,6 +16,8 @@ import {
 	tailLog,
 	writeRecord,
 } from "../core/background.js";
+import { findStoreRojoPlugin, needsStudioSetup, warnAboutStorePlugin } from "../core/studio.js";
+import { readRojoPin, rojoIsAtLeast } from "../core/versions.js";
 import { findMissing, isPortFree, pathWithLocalBinaries, installAdvice, type ToolRequirement } from "../core/toolchain.js";
 import { defineCommand, type CommandContext } from "../plugins/api.js";
 import { Supervisor, type TaskDefinition } from "../process/supervisor.js";
@@ -121,6 +123,12 @@ export const devCommand = defineCommand({
 					].join("\n      "),
 				});
 			}
+		}
+
+		// The Creator Store plugin lags behind Rojo's releases: with Rojo 7.7 or newer it fails
+		// with a misleading "Can't parse JSON". Say so before the user loses time on it.
+		if (needsStudioSetup() && rojoIsAtLeast(readRojoPin(projectRoot), 7, 7) && findStoreRojoPlugin() !== undefined) {
+			warnAboutStorePlugin(context.logger);
 		}
 
 		await ensureInitialBuild(context, projectRoot, config.paths.out);

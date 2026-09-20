@@ -5,8 +5,9 @@
 Rowork is to Roblox what `artisan` is to Laravel: a single CLI that sets up the
 toolchain, runs it, generates code and keeps your architecture coherent.
 
-> Status: early development (v0.0.x). `start`, `init`, `dev` and the Flamework
-> `make:*` generators exist today; the domain generators are next. The plugin API is at v1 and may still move.
+> Status: early development (v0.0.x), not on npm yet. Project setup, `dev`, `update`,
+> `eject`, six ready-made features (`add`) and file generators (`make`) exist today;
+> the plugin API is at v1 and may still move. See the [roadmap](docs/roadmap.md).
 
 ## The problem
 

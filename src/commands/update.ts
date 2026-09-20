@@ -7,10 +7,12 @@ import { RoworkError } from "../cli/errors.js";
 import { run as runBinary } from "../core/exec.js";
 import { pinnedTypescriptVersion } from "../core/scaffold.js";
 import {
+	findStoreRojoPlugin,
 	findStudioDataDirectories,
 	installRojoPlugin,
 	isVinegarInstalled,
 	needsStudioSetup,
+	warnAboutStorePlugin,
 } from "../core/studio.js";
 import { findExecutable } from "../core/toolchain.js";
 import {
@@ -160,7 +162,8 @@ export const updateCommand = defineCommand({
 				if (isVinegarInstalled() && directories.length > 0) {
 					try {
 						await installRojoPlugin(directories, root, logger);
-						logger.info("Restart Studio to load the new plugin. If the toolbar shows two Rojo buttons, remove the older one in Plugins > Manage Plugins.");
+						logger.info("Restart Studio to load the new plugin.");
+						if (findStoreRojoPlugin() !== undefined) warnAboutStorePlugin(logger);
 					} catch (error) {
 						logger.warn(`Could not update the Rojo plugin: ${error instanceof Error ? error.message : String(error)}. Run \`rowork studio:setup\`.`);
 					}

@@ -250,6 +250,54 @@ into your files (a test runs `format:check` on a generated project). Run `format
 own edits; the linter and the formatter do not fight, because the roblox-ts rules are about
 what the code means, not how it looks.
 
+### `ui`: your interface in React, with a preview in Studio
+
+Builds your interface with [React](https://react.dev) (`@rbxts/react`, the maintained successor of
+Roact) and lets you **see each component in Studio without running the game**, with the
+[UI Labs](https://github.com/PepeElToro41/ui-labs) plugin. Interfaces made by hand in Studio
+get messy on a big project; components stay small, reusable and testable one by one.
+
+```bash
+rowork add:ui
+```
+
+It asks no question. `--no-plugin` skips the Studio plugin.
+
+| File / change | Role |
+| --- | --- |
+| `src/client/ui/App.tsx` | the root of your interface: everything on screen starts here |
+| `src/client/ui/Button.tsx` | an example component, to copy |
+| `src/client/ui/Button.story.tsx` | its **story**: the component alone in UI Labs, with fields you can change live |
+| `src/client/controllers/UiController.tsx` | mounts `App` on the player's screen when the game starts |
+| `tsconfig.json` | the JSX settings roblox-ts needs: `React.createElement` and `React.Fragment` |
+
+A component is a function that returns what to draw. Lowercase tags (`frame`, `textbutton`, ...)
+are Roblox instances; your own components start with a capital letter. `useState` keeps a value
+and redraws when it changes:
+
+```tsx
+export function Counter() {
+  const [count, setCount] = useState(0);
+  return <textbutton Text={`${count}`} Event={{ Activated: () => setCount(count + 1) }} />;
+}
+```
+
+**Previewing.** Add a `Name.story.tsx` next to a component (copy `Button.story.tsx`), open the UI
+Labs plugin in Studio, and pick the story. On **Linux** Rowork places the plugin for you, like the
+Rojo one (it needs Studio launched once; if not, run `rowork studio:setup` afterwards). On
+**Windows and macOS** install it from the
+[Creator Store](https://create.roblox.com/store/asset/14293316215/). The plugin is downloaded from
+its GitHub release and checked against the checksum GitHub publishes.
+
+**`tsconfig.json`** is yours, so Rowork edits it as text: only the JSX lines change, comments and
+layout stay. A project created before this module has the old Roact setting there, which is
+replaced. If you set something else yourself, it is left alone and the command stops before writing
+anything.
+
+**With the other modules.** Read the player's saved data from `PlayerDataController` in your
+components rather than asking the server again, and let a button send an event: the server decides
+(see [Typed networking](#networking-messages-between-client-and-server-with-types)).
+
 ## Modules working together
 
 Some modules are more useful together, and the code that joins them is exactly the
