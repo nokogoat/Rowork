@@ -40,6 +40,8 @@ export interface ScaffoldOptions {
 	install: boolean;
 	/** Include the linter. On by default: a linter nobody has to go and find is one that gets used. */
 	lint: boolean;
+	/** Include the formatter (Prettier). On by default, for the same reason as the linter. */
+	format: boolean;
 	rokit: boolean;
 	/** Download and install Rokit itself when it is not on the machine. */
 	installRokit: boolean;
@@ -175,8 +177,9 @@ export async function scaffoldProject(
 
 	// The linter is part of a new project, not something to remember to add. It is
 	// a module that installs npm packages, so it needs the install step.
-	if (options.install && options.lint) {
-		logger.step("adding the linter (ESLint with the official roblox-ts rules)");
+	const quality = [...(options.lint ? ["lint"] : []), ...(options.format ? ["format"] : [])];
+	if (options.install && quality.length > 0) {
+		logger.step("adding the linter and the formatter (ESLint with the roblox-ts rules, Prettier)");
 		await installModulesByName(
 			{
 				args: {},
@@ -188,7 +191,7 @@ export async function scaffoldProject(
 				roworkVersion: options.roworkVersion,
 			},
 			target,
-			["lint"],
+			quality,
 		);
 	}
 
@@ -216,5 +219,5 @@ export async function scaffoldProject(
 		}
 	}
 
-	return { target, displayName, installed: options.install, toolchainReady, lintPending: options.lint && !options.install };
+	return { target, displayName, installed: options.install, toolchainReady, lintPending: (options.lint || options.format) && !options.install };
 }

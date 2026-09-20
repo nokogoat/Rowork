@@ -87,9 +87,9 @@ export const startCommand = defineCommand({
 			features = answered(
 				await prompts.multiselect({
 					message: "Which ready-made features do you want from the start? (space to tick, enter to confirm. You can add more later with `rowork add`)",
-					// The linter is not offered: it is always included.
+					// The linter and the formatter are not offered: they are always included.
 					options: coreModules
-						.filter((module) => module.name !== "lint")
+						.filter((module) => module.name !== "lint" && module.name !== "format")
 						.map((module) => ({ value: module.name, label: module.title, hint: module.description })),
 					required: false,
 				}),
@@ -136,7 +136,7 @@ export const startCommand = defineCommand({
 				`Examples   ${examples ? "yes" : "no"}`,
 				`Git        ${git ? "yes" : "no"}`,
 				`npm        ${install ? "install" : "skip"}`,
-				`Linter     ${install ? "included (ESLint, roblox-ts rules)" : "skipped (needs npm)"}`,
+				`Quality    ${install ? "linter (ESLint) and formatter (Prettier) included" : "skipped (needs npm)"}`,
 				`Features   ${features.length > 0 ? features.join(", ") : install ? "none" : "skipped (needs npm)"}`,
 				...(studio ? ["Studio     install Vinegar"] : []),
 				`Rokit      ${installRokit ? "install Rokit, then the toolchain" : rokit ? "install the toolchain" : "skip"}`,
@@ -156,6 +156,7 @@ export const startCommand = defineCommand({
 				parent,
 				install,
 				lint: true,
+				format: true,
 				rokit,
 				installRokit,
 				git,

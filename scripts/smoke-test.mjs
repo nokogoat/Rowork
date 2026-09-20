@@ -349,6 +349,18 @@ try {
 	}
 	check(/rowork add lint/.test(spawnSync(process.execPath, [cli, "init", "LintHint", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" }).stderr), "init --no-install did not say the linter is left for later");
 
+	// The formatter: no questions, scripts added without overwriting, and it is skipped like the linter.
+	const fmtProject = join(workspace, "FormatGame");
+	spawnSync(process.execPath, [cli, "init", "FormatGame", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
+	const fmtRun = spawnSync(process.execPath, [cli, "add:format", "--no-install"], { cwd: fmtProject, encoding: "utf8" });
+	check(fmtRun.status === 0, `add:format failed without a terminal\n${fmtRun.stderr}`);
+	const prettierConfig = existsSync(join(fmtProject, ".prettierrc.json")) ? JSON.parse(readFileSync(join(fmtProject, ".prettierrc.json"), "utf8")) : {};
+	check(prettierConfig.useTabs === true && prettierConfig.printWidth === 100, "add:format did not write the Prettier settings that match generated code");
+	check(readFileSync(join(fmtProject, ".prettierignore"), "utf8").includes("out"), "add:format does not ignore the build output");
+	const fmtScripts = JSON.parse(readFileSync(join(fmtProject, "package.json"), "utf8")).scripts;
+	check(fmtScripts.format === "prettier --write src" && fmtScripts["format:check"] === "prettier --check src", "add:format did not add the format scripts");
+	check(!existsSync(join(workspace, "LintOff", ".prettierrc.json")), "--no-install should not include the formatter");
+
 	// Without the module it points to the fix.
 	const bareModules = join(workspace, "NoModules");
 	spawnSync(process.execPath, [cli, "init", "NoModules", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });

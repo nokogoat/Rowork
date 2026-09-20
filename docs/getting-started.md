@@ -58,8 +58,8 @@ You are asked, in order:
 6. **which ready-made features you want from the start**: player data, leaderstats,
    typed networking. Tick what you want; you can add more later with `rowork add`. A
    feature that needs another brings it along (leaderstats needs player data). This step
-   needs npm. (The **linter is always included**: nobody should have to remember to add
-   it,)
+   needs npm. (The **linter and the formatter are always included**: nobody should have to
+   remember to add them,)
 7. whether to install the Roblox toolchain. If Rokit is not on your machine,
    Rowork offers to download and install it for you.
 

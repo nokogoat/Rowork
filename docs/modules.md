@@ -215,6 +215,28 @@ so a new project starts clean and any complaint is about your own code.
 **Node version.** ESLint 10 needs Node 20.19 or newer, 22.13 or newer, or 24. On an older
 Node the command stops before changing anything and tells you to update.
 
+### `format`: one style for everyone, automatically
+
+**Included in every new project**, like the linter (`rowork init --no-format` skips it;
+`rowork add:format` for a project created before). Adds [Prettier](https://prettier.io), so
+nobody argues about tabs, quotes or line breaks and code reviews stay about the code.
+
+```bash
+npm run format         # rewrite src/ in the project's style
+npm run format:check   # only report, for CI
+```
+
+| File / change | Role |
+| --- | --- |
+| `.prettierrc.json` | the style: tabs, 100 columns. It matches the code Rowork generates |
+| `.prettierignore` | what is never formatted: build output (`out`, `include`), `sourcemap.json`, the lock file |
+| `package.json` | gains `format` and `format:check`. A script you already have with that name is left as it is |
+
+Everything Rowork generates is already in this style, including what `make:` and `add:` write
+into your files (a test runs `format:check` on a generated project). Run `format` after your
+own edits; the linter and the formatter do not fight, because the roblox-ts rules are about
+what the code means, not how it looks.
+
 ## Modules working together
 
 Some modules are more useful together, and the code that joins them is exactly the

@@ -36,6 +36,7 @@ const NPM_PACKAGES = [
 	"@rbxts/lapis",
 	"eslint",
 	"eslint-plugin-roblox-ts",
+	"prettier",
 	"@rbxts/t",
 ];
 
@@ -126,6 +127,8 @@ if (!reportOnly && failures.length === 0) {
 		const build = run("npm", ["run", "build"], { cwd: project, env });
 		if (build.status !== 0 || /error TS/.test(build.output)) throw new Error(`the generated project no longer compiles:\n${build.output}`);
 
+		const format = run("npm", ["run", "format:check"], { cwd: project, env });
+		if (format.status !== 0) throw new Error(`the latest Prettier formats the code Rowork generates differently:\n${format.output}`);
 		const lint = run("npm", ["run", "lint"], { cwd: project, env });
 		if (lint.status !== 0) throw new Error(`the latest ESLint or roblox-ts plugin rejects the code Rowork generates:\n${lint.output}`);
 

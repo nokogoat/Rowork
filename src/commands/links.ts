@@ -149,6 +149,12 @@ export function createEventHandler(options: {
 	return { path: written ?? `${services}/${className}.ts`, className };
 }
 
+/** A constructor, laid out the way Prettier does: one parameter property per line as soon as there are several. */
+function constructorSource(params: string[]): string {
+	if (params.length <= 1) return `\tconstructor(${params.join("")}) {}`;
+	return `\tconstructor(\n${params.map((param) => `\t\t${param},`).join("\n")}\n\t) {}`;
+}
+
 /** Constructor injection for a service that uses saved values. */
 export function serviceMembers(root: string, config: RoworkConfig, stats: StatInfo[]): { imports: string; members: string } {
 	if (stats.length === 0) return { imports: "", members: "" };
@@ -164,6 +170,6 @@ export function serviceMembers(root: string, config: RoworkConfig, stats: StatIn
 	return {
 		// A blank line after the imports, as in a file written by hand.
 		imports: `${access.imports.join("\n")}\n`,
-		members: `\t// Saved values this service works with:\n${howTo.join("\n")}\n\tconstructor(${access.ctor.join(", ")}) {}\n\n`,
+		members: `\t// Saved values this service works with:\n${howTo.join("\n")}\n${constructorSource(access.ctor)}\n\n`,
 	};
 }

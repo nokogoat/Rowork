@@ -130,6 +130,7 @@ try {
 	// The linter comes with every new project: nobody has to go and add it.
 	check(existsSync(join(project, "eslint.config.mjs")), "a new project does not include the linter");
 	check(JSON.parse(readFileSync(join(project, "rowork.json"), "utf8")).modules?.includes("lint"), "the linter is not recorded in rowork.json");
+	check(existsSync(join(project, ".prettierrc.json")) && JSON.parse(readFileSync(join(project, "rowork.json"), "utf8")).modules?.includes("format"), "a new project does not include the formatter");
 
 	console.log("compiling...");
 	const compile = run(process.execPath, [join(project, "node_modules", "roblox-ts", "out", "CLI", "cli.js")], project);
@@ -154,6 +155,8 @@ try {
 		check(false, "no flamework.build was produced");
 	}
 
+	const formatted = run("npm", ["run", "format:check"], project);
+	check(formatted.status === 0, `the code Rowork generated is not formatted the way Rowork formats it:\n${formatted.output}`);
 	const linted = run("npm", ["run", "lint"], project);
 	check(linted.status === 0 && !/error/.test(linted.output.replace(/^npm .*$/gm, "")), `the code Rowork generated does not pass its own linter:\n${linted.output}`);
 

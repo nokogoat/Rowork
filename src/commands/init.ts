@@ -24,6 +24,7 @@ export const initCommand = defineCommand({
 		{ flags: "--no-git", description: "skip git repository initialisation" },
 		{ flags: "--no-examples", description: "skip the example service and controller" },
 		{ flags: "--no-lint", description: "skip the linter (ESLint with the roblox-ts rules)" },
+		{ flags: "--no-format", description: "skip the formatter (Prettier)" },
 		{ flags: "-f, --force", description: "allow a target directory that is not empty" },
 	],
 	async run(context) {
@@ -45,6 +46,7 @@ export const initCommand = defineCommand({
 						: context.cwd,
 				install: context.options["install"] !== false,
 				lint: context.options["lint"] !== false,
+				format: context.options["format"] !== false,
 				rokit: context.options["rokit"] !== false,
 				installRokit: context.options["installRokit"] === true,
 				git: context.options["git"] !== false,
