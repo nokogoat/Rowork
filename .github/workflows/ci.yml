@@ -40,3 +40,23 @@ jobs:
 
       - name: Scaffold a project end to end
         run: npm run test:smoke
+
+  # Single stable context for branch protection to require.
+  #
+  # Requiring the matrix jobs directly would pin their generated names
+  # ("build (ubuntu-latest, node 22)") into the repository ruleset: changing an
+  # OS or a Node version would then leave protection waiting forever on a check
+  # that no longer runs, blocking every pull request. This job depends on the
+  # whole matrix and exposes one name that never changes.
+  ci-success:
+    name: ci-success
+    if: always()
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify every matrix job succeeded
+        if: needs.build.result != 'success'
+        run: |
+          echo "matrix result: ${{ needs.build.result }}"
+          exit 1
+      - run: echo "All matrix jobs passed."
