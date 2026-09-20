@@ -41,6 +41,9 @@ jobs:
       - name: Scaffold a project end to end
         run: npm run test:smoke
 
+      - name: Verify no process survives rowork dev
+        run: npm run test:orphan
+
   # Single stable context for branch protection to require.
   #
   # Requiring the matrix jobs directly would pin their generated names

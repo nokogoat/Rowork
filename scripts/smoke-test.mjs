@@ -41,7 +41,7 @@ const workspace = mkdtempSync(join(tmpdir(), "rowork-smoke-"));
 try {
 	const result = spawnSync(
 		process.execPath,
-		[cli, "init", "SmokeGame", "--path", workspace, "--no-install", "--no-git"],
+		[cli, "init", "SmokeGame", "--path", workspace, "--no-install"],
 		{ encoding: "utf8" },
 	);
 
@@ -61,6 +61,10 @@ try {
 		const contents = readFileSync(path, "utf8");
 		check(!contents.includes("{{"), `unrendered template placeholder in ${file}`);
 	}
+
+	// Exercises core/exec.ts for real. Spawning external tools is where the
+	// platform-specific traps live, and a build alone never touches that path.
+	check(existsSync(join(project, ".git")), "git init did not run: no .git directory was created");
 
 	const configPath = join(project, "rowork.json");
 	if (existsSync(configPath)) {

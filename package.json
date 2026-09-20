@@ -35,9 +35,10 @@
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch",
     "test:smoke": "node scripts/smoke-test.mjs",
-    "test": "npm run build && npm run test:smoke",
+    "test": "npm run build && npm run test:smoke && npm run test:orphan",
     "prepublishOnly": "npm run test",
-    "rowork": "node bin/rowork.js"
+    "rowork": "node bin/rowork.js",
+    "test:orphan": "node scripts/dev-orphan-test.mjs"
   },
   "keywords": [
     "roblox",
@@ -51,9 +52,11 @@
   ],
   "dependencies": {
     "commander": "^12.1.0",
+    "cross-spawn": "^7.0.6",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
+    "@types/cross-spawn": "^6.0.6",
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
   }

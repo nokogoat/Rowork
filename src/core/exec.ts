@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import spawn from "cross-spawn";
 
 import { RoworkError } from "../cli/errors.js";
 
@@ -11,16 +11,19 @@ export interface RunOptions {
 /**
  * Runs an external executable.
  *
- * On Windows, `npm` and `git` are `.cmd` shims that `spawn` cannot execute
- * directly, so we explicitly target `<command>.cmd`. We deliberately avoid
- * `shell: true`, which would open an injection vector through the arguments.
+ * Every external tool Rowork drives on Windows (`npm`, `rojo`, `rbxtsc`) is a
+ * `.cmd` shim, and since the fix for CVE-2024-27980 Node refuses to spawn one
+ * without `shell: true`, failing with EINVAL. Turning the shell on instead
+ * would make every argument a shell injection vector, and a hostile
+ * rowork.json could then run arbitrary commands on a contributor's machine.
+ *
+ * cross-spawn is the standard way out: it invokes `cmd.exe` itself and escapes
+ * the arguments, so no argument is ever interpreted as a command. It is also
+ * why `.cmd` is never appended by hand anywhere in this codebase.
  */
 export function run(command: string, args: string[], options: RunOptions): Promise<void> {
-	const binary =
-		process.platform === "win32" && !command.endsWith(".cmd") ? `${command}.cmd` : command;
-
 	return new Promise((resolvePromise, rejectPromise) => {
-		const child = spawn(binary, args, {
+		const child = spawn(command, args, {
 			cwd: options.cwd,
 			stdio: options.stdio ?? "inherit",
 		});

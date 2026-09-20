@@ -1,4 +1,5 @@
 import type { CommandDefinition } from "../plugins/api.js";
+import { devCommand } from "./dev.js";
 import { initCommand } from "./init.js";
 
 /**
@@ -6,4 +7,4 @@ import { initCommand } from "./init.js";
  * checks them, startup stays fast, and no phantom command can slip into the
  * published package.
  */
-export const coreCommands: CommandDefinition[] = [initCommand];
+export const coreCommands: CommandDefinition[] = [initCommand, devCommand];
