@@ -55,6 +55,13 @@ Since 0.0.1 closing the terminal stops the tasks too (Rowork handles SIGHUP), so
 this mostly comes from a `rowork dev` started by an older build, or from a process
 killed with SIGKILL, which no program can intercept.
 
+## `Could not look up the latest Rojo`
+
+Rowork asks GitHub for the newest Rojo, and GitHub allows 60 anonymous requests an hour
+per address (a school or an office shares one). Rowork carries on with a built-in
+version and `rowork update` moves you later. To skip the lookup, or to pin a version for
+a whole team, set `ROWORK_ROJO_VERSION=7.7.0`.
+
 ## `rowork dev` is already running in the background
 
 You started it with `rowork dev -d` earlier. `rowork dev:logs` shows what it prints,

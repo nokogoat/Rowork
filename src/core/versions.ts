@@ -11,8 +11,17 @@ import { getRelease } from "./github-release.js";
  */
 export const FALLBACK_ROJO_VERSION = "7.7.0";
 
-/** The newest Rojo release, or undefined when GitHub cannot be reached. */
+/**
+ * The Rojo version to use: the one forced by `ROWORK_ROJO_VERSION` if set (a team
+ * that wants every project on the same version, and no lookup), otherwise the
+ * newest release, or undefined when GitHub cannot be reached. GitHub allows 60
+ * anonymous requests per hour per address, so a shared network can hit its limit:
+ * the caller then falls back with a warning.
+ */
 export async function latestRojoVersion(): Promise<string | undefined> {
+	const forced = process.env["ROWORK_ROJO_VERSION"]?.trim().replace(/^v/, "");
+	if (forced !== undefined && /^\d+\.\d+\.\d+/.test(forced)) return forced;
+
 	try {
 		return (await getRelease("rojo-rbx/rojo")).tag_name.replace(/^v/, "");
 	} catch {

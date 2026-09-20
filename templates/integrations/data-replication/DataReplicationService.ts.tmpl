@@ -1,0 +1,27 @@
+import { OnStart, Service } from "@flamework/core";
+import { DataEvents } from "{{ eventsImport }}";
+import { PlayerDataService } from "./PlayerDataService";
+
+const Events = DataEvents.createServer({});
+
+/**
+ * Sends each player's data to their own client, and only theirs: one player
+ * never sees another's. The data is a copy for display: the server stays the
+ * only place that changes it (PlayerDataService.update).
+ */
+@Service()
+export class DataReplicationService implements OnStart {
+	constructor(private readonly playerData: PlayerDataService) {}
+
+	onStart(): void {
+		this.playerData.onLoaded((player, data) => Events.dataChanged.fire(player, data));
+		this.playerData.onChanged((player, data) => Events.dataChanged.fire(player, data));
+
+		// A client can start after its data loaded, and would never hear about it
+		// otherwise: it asks once when it is ready.
+		Events.dataRequested.connect((player) => {
+			const data = this.playerData.get(player);
+			if (data !== undefined) Events.dataChanged.fire(player, data);
+		});
+	}
+}

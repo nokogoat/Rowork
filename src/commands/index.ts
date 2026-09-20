@@ -4,6 +4,7 @@ import { addCommand, moduleCommand } from "./add.js";
 import { consoleCommand } from "./console.js";
 import { agentsSyncCommand, infoCommand } from "./info.js";
 import { updateCommand } from "./update.js";
+import { wireCommand } from "./wire.js";
 import { devCommand } from "./dev.js";
 import { ejectCommand } from "./eject.js";
 import { devLogsCommand, devStopCommand } from "./dev-background.js";
@@ -37,6 +38,7 @@ export const coreCommands: CommandDefinition[] = [
 	ejectCommand,
 	infoCommand,
 	updateCommand,
+	wireCommand,
 	agentsSyncCommand,
 	...coreModules.map(moduleCommand),
 ];

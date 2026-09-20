@@ -30,6 +30,10 @@ const EXPECTED_FILES = [
 	join("src", "shared", ".gitkeep"),
 ];
 
+// Creating a project looks up the latest Rojo on GitHub, which allows only 60 anonymous
+// requests an hour: this test creates many projects, so it fixes the version instead.
+process.env["ROWORK_ROJO_VERSION"] = "7.7.0";
+
 const failures = [];
 
 function check(condition, message) {
@@ -290,6 +294,37 @@ try {
 	check(networking.includes("buyItem(itemId: string, amount: number): void;"), "networking.ts lacks the client-to-server event");
 	check(networking.includes("itemBought(itemId: string): void;"), "networking.ts lacks the server-to-client event");
 	check(existsSync(join(bareProject, "src", "server", "network.ts")) && existsSync(join(bareProject, "src", "client", "network.ts")), "networking did not create both network.ts files");
+
+	// Integrations: two modules that work together are wired when the second arrives, in either order.
+	const wireFiles = ["src/shared/data/dataEvents.ts", "src/server/services/DataReplicationService.ts", "src/client/controllers/PlayerDataController.ts"];
+	const wired = {};
+	for (const [label, order] of [["A", ["player-data", "networking"]], ["B", ["networking", "player-data"]]]) {
+		const dir = join(workspace, `Wire${label}`);
+		spawnSync(process.execPath, [cli, "init", `Wire${label}`, "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
+		const at = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: dir, encoding: "utf8" });
+		const args = { "player-data": ["add:player-data", "--field", "coins:number=0", "--no-install"], networking: ["add:networking", "--event", "ping:server()", "--no-install"] };
+		at(...args[order[0]]);
+		check(!existsSync(join(dir, wireFiles[0])), `order ${label}: the integration was applied before both modules were installed`);
+		check(at(...args[order[1]]).status === 0, `order ${label}: the second module failed`);
+		wired[label] = wireFiles.map((file) => (existsSync(join(dir, file)) ? readFileSync(join(dir, file), "utf8") : undefined));
+		check(wired[label].every((source) => source !== undefined && !source.includes("{{")), `order ${label}: the integration files are missing or unrendered`);
+		check(JSON.parse(readFileSync(join(dir, "rowork.json"), "utf8")).integrations?.includes("data-replication"), `order ${label}: the integration is not recorded`);
+		check(/wired together already is/.test(at("wire").stderr), `order ${label}: wire is not idempotent`);
+		check(/data-replication|Modules wired together/.test(readFileSync(join(dir, "AGENTS.md"), "utf8")), `order ${label}: AGENTS.md does not mention the wired modules`);
+	}
+	check(JSON.stringify(wired.A) === JSON.stringify(wired.B), "the two installation orders generated different files");
+
+	// A file the user already has is never overwritten: the module still installs, the glue stays pending.
+	const clashDir = join(workspace, "WireClash");
+	spawnSync(process.execPath, [cli, "init", "WireClash", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
+	const clashAt = (...a) => spawnSync(process.execPath, [cli, ...a], { cwd: clashDir, encoding: "utf8" });
+	clashAt("add:networking", "--event", "ping:server()", "--no-install");
+	mkdirSync(join(clashDir, "src", "shared", "data"), { recursive: true });
+	writeFileSync(join(clashDir, wireFiles[0]), "// mine\n");
+	check(clashAt("add:player-data", "--field", "coins:number=0", "--no-install").status === 0, "a clashing integration file made the module install fail");
+	check(readFileSync(join(clashDir, wireFiles[0]), "utf8") === "// mine\n", "an integration overwrote the user's file");
+	check(!JSON.parse(readFileSync(join(clashDir, "rowork.json"), "utf8")).integrations?.includes("data-replication"), "a skipped integration was recorded as applied");
+	check(clashAt("wire").status === 1, "wire did not report the integration it could not apply");
 
 	// Guided versions need a terminal: without one they refuse and show the scripted form.
 	for (const command of ["make", "make:tool", "make:service", "make:controller", "make:component", "console"]) {

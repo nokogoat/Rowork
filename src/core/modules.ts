@@ -2,8 +2,9 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { RoworkError } from "../cli/errors.js";
-import type { ModuleDefinition } from "../modules/types.js";
-import type { CommandContext } from "../plugins/api.js";
+import { coreIntegrations } from "../modules/integrations.js";
+import type { ModuleDefinition, ModulePlan } from "../modules/types.js";
+import type { CommandContext, Logger, RoworkConfig } from "../plugins/api.js";
 import { syncAgentDocs } from "./agent-docs.js";
 import { CONFIG_FILENAME, loadConfig, resolveProjectPath } from "./config.js";
 import { run as runBinary } from "./exec.js";
@@ -58,26 +59,8 @@ export async function installModule(
 
 	const plan = await definition.plan({ guided, options: context.options, config, projectRoot: root });
 
-	const files = plan.files.map((file) => ({
-		...file,
-		variables: Object.fromEntries(
-			Object.entries(file.variables).map(([key, value]) => [
-				key,
-				value.startsWith(IMPORT_MARKER)
-					? importPath(root, file.directory, value.slice(IMPORT_MARKER.length))
-					: value,
-			]),
-		),
-	}));
-
-	const clashes = files
-		.map((file) => join(file.directory, file.fileName))
-		.filter((path) => existsSync(resolveProjectPath(root, path)));
-	if (clashes.length > 0) {
-		throw new RoworkError(`Would overwrite: ${clashes.join(", ")}.`, {
-			hint: "Move or rename those files, then run the command again.",
-		});
-	}
+	const files = resolveFiles(plan, root);
+	assertNoClash(files, root);
 
 	logger.info(`Adding the ${definition.title} module`);
 
@@ -91,13 +74,69 @@ export async function installModule(
 		logger.blank();
 	}
 
+	writePlan(logger, root, config, plan, files, "modules");
+
+	recordModule(root, definition.name);
+
+	// Glue between this module and the ones already there, whatever the order.
+	await applyPendingIntegrations(context, root);
+
+	// The project's AGENTS.md lists installed modules and how to use them.
+	const touched = syncAgentDocs(root, loadConfig(root), context.roworkVersion);
+	if (touched.length > 0) logger.step(`updated ${touched.join(", ")}`);
+
+	logger.success(`${definition.title} module added`);
+	logger.blank();
+	for (const note of plan.notes) logger.info(note);
+}
+
+type ResolvedFile = ModulePlan["files"][number];
+
+/** Turns `@import:` markers into real relative import paths. */
+function resolveFiles(plan: ModulePlan, root: string): ResolvedFile[] {
+	return plan.files.map((file) => ({
+		...file,
+		variables: Object.fromEntries(
+			Object.entries(file.variables).map(([key, value]) => [
+				key,
+				value.startsWith(IMPORT_MARKER)
+					? importPath(root, file.directory, value.slice(IMPORT_MARKER.length))
+					: value,
+			]),
+		),
+	}));
+}
+
+function clashesOf(files: ResolvedFile[], root: string): string[] {
+	return files
+		.map((file) => join(file.directory, file.fileName))
+		.filter((path) => existsSync(resolveProjectPath(root, path)));
+}
+
+function assertNoClash(files: ResolvedFile[], root: string): void {
+	const clashes = clashesOf(files, root);
+	if (clashes.length > 0) {
+		throw new RoworkError(`Would overwrite: ${clashes.join(", ")}.`, {
+			hint: "Move or rename those files, then run the command again.",
+		});
+	}
+}
+
+function writePlan(
+	logger: Logger,
+	root: string,
+	config: RoworkConfig,
+	plan: ModulePlan,
+	files: ResolvedFile[],
+	templateRoot: string,
+): void {
 	for (const file of files) {
 		const written = generateFile({
 			projectRoot: root,
 			directory: file.directory,
 			fileName: file.fileName,
 			template: file.template,
-			templateRoot: "modules",
+			templateRoot,
 			variables: file.variables,
 			force: false,
 		});
@@ -110,14 +149,60 @@ export async function installModule(
 			logger.step(`registered ${entry.directory} in runtime.${entry.side}.ts`);
 		}
 	}
+}
 
-	recordModule(root, definition.name);
+function recordIntegration(projectRoot: string, name: string): void {
+	const file = join(projectRoot, CONFIG_FILENAME);
+	const config = JSON.parse(readFileSync(file, "utf8")) as { integrations?: string[] };
+	config.integrations = [...new Set([...(config.integrations ?? []), name])].sort();
+	writeFileSync(file, `${JSON.stringify(config, undefined, 2)}\n`, "utf8");
+}
 
-	// The project's AGENTS.md lists installed modules and how to use them.
-	const touched = syncAgentDocs(root, loadConfig(root), context.roworkVersion);
-	if (touched.length > 0) logger.step(`updated ${touched.join(", ")}`);
+/** Integrations whose modules are all installed and that have not been applied yet. */
+export function pendingIntegrations(config: RoworkConfig): typeof coreIntegrations {
+	const installed = config.modules ?? [];
+	const applied = config.integrations ?? [];
+	return coreIntegrations.filter(
+		(integration) => integration.modules.every((name) => installed.includes(name)) && !applied.includes(integration.name),
+	);
+}
 
-	logger.success(`${definition.title} module added`);
-	logger.blank();
-	for (const note of plan.notes) logger.info(note);
+/**
+ * Generates the glue between modules that are now all installed.
+ *
+ * A failure never undoes the module that triggered it: the integration is
+ * skipped with a warning and stays pending, so `rowork wire` can retry.
+ */
+export async function applyPendingIntegrations(
+	context: CommandContext,
+	root: string,
+	options: { dryRun?: boolean } = {},
+): Promise<string[]> {
+	const { logger } = context;
+	const applied: string[] = [];
+
+	for (const integration of pendingIntegrations(loadConfig(root))) {
+		if (options.dryRun === true) {
+			applied.push(integration.name);
+			continue;
+		}
+
+		try {
+			const config = loadConfig(root);
+			const plan = integration.plan({ config, projectRoot: root });
+			const files = resolveFiles(plan, root);
+			assertNoClash(files, root);
+
+			logger.blank();
+			logger.info(`Wiring ${integration.title}`);
+			writePlan(logger, root, config, plan, files, "integrations");
+			recordIntegration(root, integration.name);
+			for (const note of plan.notes) logger.info(note);
+			applied.push(integration.name);
+		} catch (error) {
+			logger.warn(`Could not wire ${integration.title}: ${error instanceof Error ? error.message : String(error)}`);
+			logger.info("Fix that, then run `rowork wire` to try again.");
+		}
+	}
+	return applied;
 }

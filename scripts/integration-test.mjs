@@ -133,7 +133,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PickaxeToolComponent", "ToolService", "PlayerDataService", "LeaderstatsService"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PickaxeToolComponent", "ToolService", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {

@@ -116,6 +116,8 @@ export interface RoworkConfig {
 	plugins: string[];
 	/** Names of the modules installed with `rowork add`. */
 	modules?: string[];
+	/** Names of the integrations between modules already applied. */
+	integrations?: string[];
 }
 
 /** Type-inference helper for command authors. */

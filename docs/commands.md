@@ -66,6 +66,13 @@ hardcoded in Rowork. The one exception is TypeScript: roblox-ts pins an exact
 version and patches it, so Rowork reads that version from roblox-ts and
 installs exactly it. Otherwise Flamework warns on every compile.
 
+**Which Rojo.** The newest release, looked up on GitHub when the project is created.
+GitHub allows 60 anonymous requests an hour per address, so on a shared network the
+lookup can fail: Rowork then warns and uses a built-in fallback. To choose the version
+yourself and skip the lookup (a team that wants every project on the same Rojo), set
+`ROWORK_ROJO_VERSION`, for example `ROWORK_ROJO_VERSION=7.7.0 rowork init MyGame`. It
+applies to `rowork update` too.
+
 **About Rokit.** Rokit is the toolchain manager that provides Rojo. With
 `--install-rokit`, Rowork downloads the latest official release from
 `github.com/rojo-rbx/rokit`, verifies the SHA-256 checksum GitHub publishes for
@@ -363,6 +370,18 @@ It then compiles the project to check the result. If a newer package broke it,
 Rowork says so and tells you how to go back: `git diff package.json` shows what
 moved, and `git checkout package.json package-lock.json && npm install` reverts it.
 Commit before updating so that is always possible.
+
+## `rowork wire`
+
+Generates the glue between installed modules that work together (see
+[Modules working together](modules.md#modules-working-together)). `rowork add` already
+does it, so you normally never run this. Use it after fixing a file that blocked the
+glue, or in a project whose modules were installed before an integration existed.
+
+```bash
+rowork wire --dry-run   # what would be wired, nothing changed
+rowork wire
+```
 
 ## `rowork info`
 

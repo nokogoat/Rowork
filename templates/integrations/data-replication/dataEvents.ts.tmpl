@@ -1,0 +1,21 @@
+import { Networking } from "@flamework/networking";
+import type { PlayerData } from "{{ dataImport }}";
+
+/**
+ * How a player's saved data reaches their own screen. Generated because both
+ * the player-data and the networking modules are installed.
+ *
+ * It has its own events on purpose, so your own src/shared/networking.ts stays
+ * yours: nothing here edits it.
+ */
+interface ClientToServerEvents {
+	/** The client has started and wants its data. It may have loaded before the client was ready. */
+	dataRequested(): void;
+}
+
+interface ServerToClientEvents {
+	/** The player's data: sent when it loads and each time it changes. */
+	dataChanged(data: PlayerData): void;
+}
+
+export const DataEvents = Networking.createEvent<ClientToServerEvents, ServerToClientEvents>();

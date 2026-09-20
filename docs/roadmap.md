@@ -28,9 +28,11 @@ Rowork advances sprint by sprint.
 - **A weekly upstream check** replays the real flow against the latest versions
   and opens an issue if it breaks.
 
+- **Modules that wire themselves together**, in either order: the first
+  integration sends player data to the client.
+
 ## Next
 
-- **Modules that wire themselves together**, in either order of installation.
 - **More modules.** Only chores almost every game redoes: player settings, notifications. Each new module
   must pass that test; genre-specific features do not belong in the core.
 

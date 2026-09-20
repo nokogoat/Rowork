@@ -32,7 +32,7 @@ src/
     toolchain.ts         tool lookup on PATH, install advice
     exec.ts              run an external tool to completion
     generate.ts          write generated files, register Flamework paths
-    modules.ts           install a module: checks first, writes last
+    modules.ts           install a module and apply integrations: checks first, writes last
     background.ts        dev in the background: detached spawn, pid file, stop
     versions.ts          latest versions (Rojo, npm), rokit.toml pin, offline fallback
     github-release.ts    fetch a release, download an asset, verify its checksum
@@ -52,6 +52,7 @@ templates/init/          files copied into a new project
 src/modules/            module definitions (types.ts, one file per module)
 templates/make/          one template per make:* command (make:tool uses four)
 templates/modules/       the files each module copies into a project
+templates/integrations/  the glue generated when several modules are installed
 scripts/                 smoke, orphan and integration tests
 ```
 
@@ -111,6 +112,16 @@ was. Each module gets its own `add:<name>` command, exactly like `make:*`, so
 flags stay per module and a community module can register the same way. A module
 wraps an established library when one exists (player-data wraps Lapis) instead of
 reimplementing hard parts such as session locking.
+
+**Integrations are declared by the pair, applied by whoever comes last.** An
+`IntegrationDefinition` lists the modules it needs. After any module is installed,
+the installer applies every integration whose modules are now all present and that
+`rowork.json` does not list yet. That is what makes the result independent of the
+order (a test compares the two orders byte for byte). Two rules keep it safe: glue
+goes in its own files, never patched into a file the user may have edited (the
+integration's events are separate from `networking.ts` for that reason), and a
+failure or a clash never undoes the module that triggered it: the integration stays
+pending and `rowork wire` retries.
 
 **`dev -d` relaunches itself.** After the foreground checks and the first build,
 the CLI spawns `rowork dev` again with `detached: true` and its output going to a

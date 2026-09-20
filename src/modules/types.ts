@@ -19,6 +19,23 @@ export interface ModulePlan {
 	notes: string[];
 }
 
+/**
+ * What two or more modules generate together once all of them are installed:
+ * the glue that would otherwise be written by hand. It applies whichever module
+ * was added last, so the order of installation never changes the result.
+ */
+export interface IntegrationDefinition {
+	/** Unique, kebab-case. Recorded in rowork.json once applied. */
+	name: string;
+	title: string;
+	description: string;
+	/** Every one of these modules must be installed. */
+	modules: string[];
+	/** How to use what it adds, for the project's AGENTS.md. */
+	agentGuide?: string[];
+	plan(input: { config: RoworkConfig; projectRoot: string }): ModulePlan;
+}
+
 export interface PlanInput {
 	/** True when the user ran the command with no options: ask the questions. */
 	guided: boolean;

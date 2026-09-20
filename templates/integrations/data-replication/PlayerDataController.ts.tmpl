@@ -1,0 +1,40 @@
+import { Controller, OnStart } from "@flamework/core";
+import type { PlayerData } from "{{ dataImport }}";
+import { DataEvents } from "{{ eventsImport }}";
+
+const Events = DataEvents.createClient({});
+
+/**
+ * This player's data on their own screen, for interfaces to display. It is a
+ * read-only copy sent by the server: to change data, ask the server (a message,
+ * then PlayerDataService.update there). Changing it here changes nothing.
+ *
+ *   constructor(private readonly playerData: PlayerDataController) {}
+ *   this.playerData.onChanged((data) => label.Text = `${data.coins}`);
+ */
+@Controller()
+export class PlayerDataController implements OnStart {
+	private data: PlayerData | undefined;
+	private readonly listeners = new Array<(data: PlayerData) => void>();
+
+	onStart(): void {
+		Events.dataChanged.connect((data) => {
+			this.data = data;
+			for (const listener of this.listeners) task.spawn(listener, data);
+		});
+
+		// Ask the server for the data in case it loaded before this client was ready.
+		Events.dataRequested.fire();
+	}
+
+	/** The data, or undefined until the server has sent it. */
+	get(): Readonly<PlayerData> | undefined {
+		return this.data;
+	}
+
+	/** Runs each time the data changes, and right away if it is already known. */
+	onChanged(callback: (data: PlayerData) => void): void {
+		this.listeners.push(callback);
+		if (this.data !== undefined) task.spawn(callback, this.data);
+	}
+}

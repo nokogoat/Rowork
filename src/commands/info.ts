@@ -5,6 +5,7 @@ import { runningRecord } from "../core/background.js";
 import { syncAgentDocs } from "../core/agent-docs.js";
 import { ROWORK_PLUGIN_API_VERSION, defineCommand } from "../plugins/api.js";
 import { coreModules } from "../modules/index.js";
+import { coreIntegrations } from "../modules/integrations.js";
 import { requireProject } from "./make.js";
 
 export const infoCommand = defineCommand({
@@ -25,6 +26,15 @@ export const infoCommand = defineCommand({
 			dependencies: module.dependencies ?? [],
 			command: `add:${module.name}`,
 			options: (module.options ?? []).map((option) => ({ flags: option.flags, description: option.description })),
+		}));
+
+		const appliedIntegrations = context.config?.integrations ?? [];
+		const integrations = coreIntegrations.map((integration) => ({
+			name: integration.name,
+			title: integration.title,
+			description: integration.description,
+			modules: integration.modules,
+			applied: appliedIntegrations.includes(integration.name),
 		}));
 
 		const commands = (activeRegistry()?.all() ?? []).map(({ definition }) => ({
@@ -52,9 +62,11 @@ export const infoCommand = defineCommand({
 								language: context.config.language,
 								paths: context.config.paths,
 								modules: installed,
+								integrations: appliedIntegrations,
 								devRunningInBackground: dev === undefined ? null : { pid: dev.pid, port: dev.port },
 							},
 				modules,
+				integrations,
 				commands,
 			};
 			process.stdout.write(`${JSON.stringify(output, undefined, 2)}\n`);

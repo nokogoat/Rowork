@@ -185,6 +185,40 @@ number): void;` to `ClientToServerEvents` or `ServerToClientEvents`.
 Only events are generated. Flamework Networking also has request/response
 functions (`Networking.createFunction`); add them by hand when you need them.
 
+## Modules working together
+
+Some modules are more useful together, and the code that joins them is exactly the
+kind of chore nobody wants to write twice. When two modules that work together are
+both installed, Rowork **generates the glue itself**, whichever you added first:
+adding A then B, or B then A, gives the same files. It is recorded in `rowork.json`
+(`integrations`), so it is never generated twice.
+
+| Wired when installed | What you get |
+| --- | --- |
+| `player-data` + `networking` | Each player's data is sent to their own client, for interfaces to read |
+
+**`player-data` + `networking`.** The server sends a player's data to that player
+(and only that player) when it loads and each time it changes. On the client:
+
+```ts
+constructor(private readonly playerData: PlayerDataController) {}
+
+this.playerData.onChanged((data) => { label.Text = `${data.coins}`; });
+const data = this.playerData.get();   // undefined until the server has sent it
+```
+
+The client's copy is read-only: to change data, send a message to the server and call
+`PlayerDataService.update` there. The events live in their own file
+(`src/shared/data/dataEvents.ts`), so your `networking.ts` is never edited.
+
+Files it adds: `src/shared/data/dataEvents.ts`,
+`src/server/services/DataReplicationService.ts`,
+`src/client/controllers/PlayerDataController.ts`.
+
+**Safety.** If a file it would create already exists, it is never overwritten: the
+module you just added still installs, the glue is skipped with a warning and stays
+pending. Fix the clash and run `rowork wire`.
+
 ## Coming next
 
 More chores everyone redoes: player settings, notifications. See the [roadmap](roadmap.md).
