@@ -5,6 +5,8 @@ import { resolveProjectPath } from "../core/config.js";
 import { addEventToNetworking } from "../core/schema-edit.js";
 import { checkParameters, parameterProblem } from "../modules/networking.js";
 import { toFieldName } from "../modules/player-data.js";
+import { installModule } from "../core/modules.js";
+import { networkingModule } from "../modules/networking.js";
 import { defineCommand } from "../plugins/api.js";
 import { answered, prompts, requireInteractive } from "../ui/prompt.js";
 import { requireProject } from "./make.js";
@@ -13,7 +15,7 @@ const IDENTIFIER = /^[a-z][A-Za-z0-9]*$/;
 
 export const makeEventCommand = defineCommand({
 	name: "make:event",
-	description: "Add a message between client and server, typed, in the networking file where it belongs.",
+	description: "Add an event (a typed message between client and server) to the networking file where it belongs.",
 	guided: true,
 	arguments: [{ name: "name", description: "the message, e.g. buyItem (omit it for the guided version)", required: false }],
 	options: [
@@ -23,13 +25,15 @@ export const makeEventCommand = defineCommand({
 	async run(context) {
 		const { root, config } = requireProject(context, "make:event");
 
-		if (!(config.modules ?? []).includes("networking")) {
-			throw new RoworkError("There is no networking file to add a message to.", {
-				hint: "Run `rowork add:networking` first.",
+		const missingModule = !(config.modules ?? []).includes("networking");
+		const given = context.args["name"];
+		if (missingModule && typeof given === "string") {
+			// Scripted: no question to ask. Say the one command that does both.
+			throw new RoworkError("There is no networking file to add an event to.", {
+				hint: `Run \`rowork add:networking --event "${given}:server()"\`: it installs typed networking and starts with that event.`,
 			});
 		}
 
-		const given = context.args["name"];
 		let rawName: string;
 		let side: "server" | "client" = "server";
 		let parameters = "";
@@ -75,6 +79,27 @@ export const makeEventCommand = defineCommand({
 		const name = toFieldName(rawName);
 		if (!IDENTIFIER.test(name)) {
 			throw new RoworkError(`\`${rawName}\` cannot be used as a name.`, { hint: "Use letters and digits, starting with a letter." });
+		}
+
+		// Guided and typed networking is not installed: offer to install it, starting with this event.
+		if (missingModule) {
+			const proceed = answered(
+				await prompts.confirm({
+					message: `Events need the Typed networking module, which is not installed. Add it now, starting with \`${name}\`?`,
+					initialValue: true,
+				}),
+			);
+			if (!proceed) {
+				prompts.cancel("Nothing changed.");
+				return;
+			}
+			await installModule(
+				{ ...context, options: { event: [`${name}:${side}(${parameters})`] } },
+				networkingModule,
+				root,
+				false,
+			);
+			return;
 		}
 
 		const file = `${config.paths.shared}/networking.ts`;

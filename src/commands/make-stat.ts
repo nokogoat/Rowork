@@ -5,6 +5,8 @@ import { RoworkError } from "../cli/errors.js";
 import { resolveProjectPath } from "../core/config.js";
 import { generateFile } from "../core/generate.js";
 import { addFieldToPlayerData, addToShownList, type StatType } from "../core/schema-edit.js";
+import { installModule } from "../core/modules.js";
+import { playerDataModule } from "../modules/player-data.js";
 import { defineCommand } from "../plugins/api.js";
 import { defaultFor, toFieldName } from "../modules/player-data.js";
 import { answered, prompts, requireInteractive } from "../ui/prompt.js";
@@ -39,9 +41,12 @@ export const makeStatCommand = defineCommand({
 		const { root, config } = requireProject(context, "make:stat");
 		const installed = config.modules ?? [];
 
-		if (!installed.includes("player-data")) {
+		const missingModule = !installed.includes("player-data");
+		const given0 = context.args["name"];
+		if (missingModule && typeof given0 === "string") {
+			// Scripted: no question to ask. Say the one command that does both.
 			throw new RoworkError("There is no player data to add a value to.", {
-				hint: "Run `rowork add:player-data` first: it is what saves the values.",
+				hint: `Run \`rowork add:player-data --field ${given0}:number=0\`: it installs the saving and starts with that value.`,
 			});
 		}
 
@@ -112,6 +117,40 @@ export const makeStatCommand = defineCommand({
 		const defaultValue = defaultFor(type, rawDefault);
 		const className = `${name.charAt(0).toUpperCase()}${name.slice(1)}Service`;
 
+		const createService = (): void => {
+			const written = generateFile({
+				projectRoot: root,
+				directory: config.paths.services,
+				fileName: `${className}.ts`,
+				template: "stat-service",
+				variables: { name, type, className, extra: type === "number" ? ADD_METHOD.replaceAll("{{ name }}", name) : "" },
+				force: false,
+			});
+			if (written !== undefined) context.logger.step(written);
+		};
+
+		// Guided and nothing saves values yet: offer to install what does, starting with this value.
+		if (missingModule) {
+			const proceed = answered(
+				await prompts.confirm({
+					message: `Saving values needs the Player data module, which is not installed. Add it now, starting with \`${name}\`?`,
+					initialValue: true,
+				}),
+			);
+			if (!proceed) {
+				prompts.cancel("Nothing changed.");
+				return;
+			}
+			await installModule(
+				{ ...context, options: { field: [`${name}:${type}=${rawDefault ?? ""}`] } },
+				playerDataModule,
+				root,
+				false,
+			);
+			if (service) createService();
+			return;
+		}
+
 		// ---- every edit is computed in memory first: nothing is written unless all of them work
 		const dataFile = `${config.paths.shared}/data/PlayerData.ts`;
 		const dataPath = resolveProjectPath(root, dataFile);
@@ -142,17 +181,7 @@ export const makeStatCommand = defineCommand({
 			writeFileSync(newShown.path, newShown.source, "utf8");
 			context.logger.step(`${config.paths.services}/LeaderstatsService.ts: added to the leaderboard`);
 		}
-		if (service) {
-			const written = generateFile({
-				projectRoot: root,
-				directory: config.paths.services,
-				fileName: `${className}.ts`,
-				template: "stat-service",
-				variables: { name, type, className, extra: type === "number" ? ADD_METHOD.replaceAll("{{ name }}", name) : "" },
-				force: false,
-			});
-			if (written !== undefined) context.logger.step(written);
-		}
+		if (service) createService();
 
 		context.logger.success(`Saved \`${name}\` for every player.`);
 		context.logger.blank();

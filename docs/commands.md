@@ -154,8 +154,8 @@ Shows everything you can create and asks what you want:
 
 ```
 What do you want to create?
-> Saved value  kills, coins, level: added to the player data everywhere it must be
-  Message      a typed message between client and server
+> Stat (saved value)  kills, coins, level: added to the player data everywhere it must be
+  Event                a typed message between client and server
   Service      server-side logic: data, rules, spawning
   Controller   client-side logic: input, camera, effects
   Component    behaviour attached to tagged objects: doors, pickups
@@ -234,6 +234,9 @@ rowork make:stat                                         # guided: asks each ste
 ```
 
 It needs the [`player-data`](modules.md#player-data-save-each-players-progress) module.
+If it is not installed yet, the guided version offers to add it for you, starting with
+this value, and carries on. In a script, it stops and prints the single command that
+does both (`rowork add:player-data --field kills:number=0`).
 
 | Option | Effect |
 | --- | --- |
@@ -275,7 +278,9 @@ rowork make:event                                        # guided
 ```
 
 It needs the [`networking`](modules.md#networking-messages-between-client-and-server-with-types)
-module.
+module. If it is not installed yet, the guided version offers to add it for you, starting
+with this event, and carries on. In a script, it stops and prints the single command that
+does both (`rowork add:networking --event "buyItem:server()"`).
 
 | Option | Effect |
 | --- | --- |

@@ -12,8 +12,8 @@ interface Choice {
 
 /** Everything `rowork make` can create, in the order most people need it. */
 const CHOICES: Choice[] = [
-	{ command: makeStatCommand, label: "Saved value", hint: "kills, coins, level: added to the player data everywhere it must be" },
-	{ command: makeEventCommand, label: "Message", hint: "a typed message between client and server (needs the networking module)" },
+	{ command: makeStatCommand, label: "Stat (saved value)", hint: "kills, coins, level: added to the player data everywhere it must be" },
+	{ command: makeEventCommand, label: "Event", hint: "a typed message between client and server" },
 	{ command: makeServiceCommand, label: "Service", hint: "server-side logic: data, rules, spawning" },
 	{ command: makeControllerCommand, label: "Controller", hint: "client-side logic: input, camera, effects" },
 	{ command: makeComponentCommand, label: "Component", hint: "behaviour attached to tagged objects: doors, pickups" },
