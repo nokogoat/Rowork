@@ -64,7 +64,7 @@ Both are planned as **tabs of the dashboard** (see [The dashboard](dashboard.md)
 
 - **The Wally bridge.** Use Wally (Luau) packages from TypeScript. Technically the hardest item:
   to be proved on a real package before it is promised.
-- **Publish to npm** (`npm install -g rowork`), then open the repository. See [Releasing](releasing.md).
+- **Publish to npm** (`npm install -g rowork`). The repository is already public. See [Releasing](releasing.md).
 - **The UI Labs plugin on Windows and macOS** (Linux is done), and refreshing it in `rowork update`.
 - **Request/response functions** for networking (events are done).
 - **More modules**, only chores almost every game redoes: player settings, notifications.
@@ -76,3 +76,15 @@ Both are planned as **tabs of the dashboard** (see [The dashboard](dashboard.md)
 - roblox-ts and npm only. Flamework requires roblox-ts, which requires npm.
 - Pure Luau projects are out of scope for v1.
 - Wally is a plugin, not part of the core.
+
+## Ideas we are thinking about (not promised)
+
+These are directions, not commitments, and none of them exists yet:
+
+- **Adopting an existing project** without rewriting it, instead of only starting new ones.
+- **Data migrations**: change the shape of your saved data after players already have some.
+- **Stronger server-side validation** of what clients send (values and permissions, not only types).
+- **Generated tests** next to the generated code.
+- **Environments and feature flags** for a game that is live.
+- **A browser preview** of your interface, without Studio.
+- **A richer plugin API**, once real plugins show what it needs.
