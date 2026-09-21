@@ -32,6 +32,9 @@ const check = (condition, message) => {
 	if (!condition) failures.push(message);
 };
 
+/** Colours depend on the environment (CI turns them on): match on the text, not on the escape codes. */
+const plain = (text) => text.replace(/\u001b\[[0-9;?]*[A-Za-z]/g, "");
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Windows paths need forward slashes inside the generated POSIX shim. */
@@ -249,20 +252,52 @@ try {
 		await sleep(800);
 		check(statSync(heartbeat).size > whileRunning, "scenario 4: the background tasks are not running");
 
+		// The dashboard runs inside that same process: its address is printed, recorded (privately),
+		// reachable with its token, and gone once dev is stopped.
+		check(/Dashboard: http:\/\/127\.0\.0\.1:\d+\/\?token=/.test(plain(started.stderr)), "scenario 4: dev -d did not print the dashboard address");
+		const dashboardFile = join(project, ".rowork", "run", "dashboard.json");
+		check(existsSync(dashboardFile), "scenario 4: no dashboard record while dev -d runs");
+		let dashboardPort;
+		if (existsSync(dashboardFile)) {
+			const record = JSON.parse(readFileSync(dashboardFile, "utf8"));
+			dashboardPort = record.port;
+			const fetchWithCookie = async (path, cookie) => {
+				const response = await fetch(`http://127.0.0.1:${record.port}${path}`, { redirect: "manual", headers: cookie ? { cookie } : {} });
+				return response;
+			};
+			const login = await fetchWithCookie(new URL(record.url).pathname + new URL(record.url).search);
+			const cookie = login.headers.get("set-cookie")?.split(";")[0];
+			const page = await fetchWithCookie("/", cookie);
+			check(login.status === 302 && page.status === 200, "scenario 4: the dashboard inside dev -d did not serve its page");
+			const info = await (await fetchWithCookie("/api/info", cookie)).json();
+			check(info.project?.dev?.mode === "background", "scenario 4: the dashboard does not know dev runs in the background");
+		}
+
 		const second = cliRun("dev", "-d", "--no-sourcemap");
-		check(second.status === 1 && /already running/.test(second.stderr), "scenario 4: a second dev -d was not refused");
+		check(second.status === 1 && /already running/.test(plain(second.stderr)), "scenario 4: a second dev -d was not refused");
 
 		const stopped = cliRun("dev:stop");
 		check(stopped.status === 0, `scenario 4: dev:stop exited with ${stopped.status}\n${stopped.stderr}`);
 		check(!existsSync(pidFile), "scenario 4: the pid file survived dev:stop");
+		check(!existsSync(dashboardFile), "scenario 4: the dashboard record survived dev:stop");
+		if (dashboardPort !== undefined) {
+			const stillUp = await fetch(`http://127.0.0.1:${dashboardPort}/`).then(() => true, () => false);
+			check(!stillUp, "scenario 4: the dashboard kept listening after dev:stop");
+		}
 
 		await sleep(800);
 		const afterStop = statSync(heartbeat).size;
 		await sleep(1500);
 		check(statSync(heartbeat).size === afterStop, "scenario 4: tasks kept running after dev:stop");
 
+		// --no-dashboard: no server, no record, no address.
+		const quiet = cliRun("dev", "-d", "--no-sourcemap", "--no-dashboard");
+		check(quiet.status === 0 && !/Dashboard: http/.test(plain(quiet.stderr)), "scenario 4: --no-dashboard still printed a dashboard address");
+		check(!existsSync(dashboardFile), "scenario 4: --no-dashboard still wrote a dashboard record");
+		cliRun("dev:stop");
+
 		const again = cliRun("dev:stop");
-		check(again.status === 0 && /No `rowork dev`/.test(again.stderr), "scenario 4: dev:stop with nothing running did not say so");
+		check(again.status === 0 && /No `rowork dev`/.test(plain(again.stderr)), "scenario 4: dev:stop with nothing running did not say so");
 	}
 } finally {
 	// Cleanup must never mask the assertions. On Windows a surviving grandchild

@@ -61,6 +61,16 @@ The log is restarted each time you start. Compiler errors are in it, so read it
 with `rowork dev:logs` when something looks wrong: a background run hides nothing,
 but it does not show it to you unless you ask.
 
+## The dashboard
+
+`rowork dev` also starts [the dashboard](dashboard.md), a local web page with the state of the project
+and the live output of everything above. Its address is printed with the tasks. It runs in the same
+process, so it stops with `dev`, and it never stops the game from being built: if it cannot start, a
+warning says so and the tasks carry on. `--no-dashboard` skips it, `--open` opens it in your browser.
+
+The output is also written to `.rowork/run/dev.log`, in a terminal or detached, which is what the
+dashboard and `rowork dev:logs` read.
+
 ## Port check
 
 If the Rojo port (34872 by default, or `--port`) is already taken, `rowork dev`

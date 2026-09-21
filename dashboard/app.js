@@ -74,9 +74,11 @@
 			commands.appendChild(item);
 		}
 
-		const dev = info.project && info.project.devRunningInBackground;
+		const dev = info.project && info.project.dev;
 		const status = $("dev-status");
-		status.textContent = dev ? `running in the background (pid ${dev.pid}, port ${dev.port})` : "not running in the background";
+		status.textContent = dev
+			? `running ${dev.mode === "foreground" ? "in a terminal" : "in the background"} (pid ${dev.pid}, port ${dev.port})`
+			: "not running";
 		status.className = dev ? "status on" : "status";
 	}
 

@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { createWriteStream, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
 import pc from "picocolors";
@@ -7,15 +7,21 @@ import { RoworkError } from "../cli/errors.js";
 import { resolveProjectPath } from "../core/config.js";
 import { run as runBinary } from "../core/exec.js";
 import {
+	clearDashboardRecord,
 	clearRecord,
 	DAEMON_ENV,
 	logFile,
 	isAlive,
+	runDirectory,
+	runningDashboard,
 	runningRecord,
 	spawnBackground,
 	tailLog,
+	writeDashboardRecord,
 	writeRecord,
 } from "../core/background.js";
+import { openBrowser } from "../dashboard/open.js";
+import { startDashboard, type RunningDashboard } from "../dashboard/server.js";
 import { findStoreRojoPlugin, needsStudioSetup, warnAboutStorePlugin } from "../core/studio.js";
 import { readRojoPin, rojoIsAtLeast } from "../core/versions.js";
 import { findMissing, isPortFree, pathWithLocalBinaries, installAdvice, type ToolRequirement } from "../core/toolchain.js";
@@ -31,6 +37,8 @@ export const devCommand = defineCommand({
 		{ flags: "--no-sourcemap", description: "skip the sourcemap watcher" },
 		{ flags: "--port <port>", description: "port for the Rojo server" },
 		{ flags: "-d, --detach", description: "run in the background; stop with `rowork dev:stop`" },
+		{ flags: "--no-dashboard", description: "do not start the local web dashboard" },
+		{ flags: "--open", description: "open the dashboard in your browser" },
 	],
 	async run(context) {
 		const { projectRoot, config } = context;
@@ -44,7 +52,7 @@ export const devCommand = defineCommand({
 		const isDaemon = process.env[DAEMON_ENV] !== undefined;
 		const already = isDaemon ? undefined : runningRecord(projectRoot);
 		if (already !== undefined) {
-			throw new RoworkError(`\`rowork dev\` is already running in the background (pid ${already.pid}).`, {
+			throw new RoworkError(`\`rowork dev\` is already running for this project (pid ${already.pid}).`, {
 				hint: "Stop it with `rowork dev:stop`, or read what it prints with `rowork dev:logs`.",
 			});
 		}
@@ -149,11 +157,52 @@ export const devCommand = defineCommand({
 		context.logger.info(pc.dim("Press Ctrl+C to stop everything."));
 		context.logger.blank();
 
-		const supervisor = new Supervisor({ tasks, cwd: projectRoot, logger: context.logger });
-		// In the background, leave no stale pid file behind when the tasks end.
-		if (isDaemon) process.once("exit", () => clearRecord(projectRoot));
+		// The output goes to a file too, so the dashboard and `dev:logs` see what a terminal sees.
+		// (Detached, the process's own output already IS that file.)
+		let logStream: ReturnType<typeof createWriteStream> | undefined;
+		if (!isDaemon) {
+			mkdirSync(runDirectory(projectRoot), { recursive: true });
+			logStream = createWriteStream(logFile(projectRoot), { flags: "w" });
+			writeRecord(projectRoot, {
+				pid: process.pid,
+				startedAt: new Date().toISOString(),
+				port: typeof context.options["port"] === "string" ? Number(context.options["port"]) : 34872,
+				mode: "foreground",
+			});
+		}
 
+		let dashboard: RunningDashboard | undefined;
+		if (context.options["dashboard"] !== false) {
+			try {
+				dashboard = await startDashboard({ projectRoot, roworkVersion: context.roworkVersion, port: 0 });
+				writeDashboardRecord(projectRoot, { pid: process.pid, port: dashboard.port, url: dashboard.url });
+				context.logger.info(`Dashboard: ${pc.bold(dashboard.url)}`);
+				context.logger.info(pc.dim("  Only this computer can reach it. Do not share the address: it carries a secret token."));
+				if (context.options["open"] === true && !isDaemon) openBrowser(dashboard.url);
+			} catch (error) {
+				// The dashboard is a convenience: never let it stop the game from being built.
+				context.logger.warn(`The dashboard did not start: ${error instanceof Error ? error.message : String(error)}`);
+			}
+		}
+
+		// However this ends, leave no record of a process that is gone.
+		process.once("exit", () => {
+			clearRecord(projectRoot);
+			clearDashboardRecord(projectRoot);
+		});
+
+		const supervisor = new Supervisor({
+			tasks,
+			cwd: projectRoot,
+			logger: context.logger,
+			...(logStream === undefined ? {} : { onOutput: (text: string) => logStream?.write(text) }),
+		});
 		const code = await supervisor.run();
+
+		await dashboard?.close();
+		logStream?.end();
+		clearRecord(projectRoot);
+		clearDashboardRecord(projectRoot);
 
 		if (code !== 0) process.exitCode = code;
 	},
@@ -199,7 +248,7 @@ async function startInBackground(context: CommandContext, projectRoot: string): 
 	if (script === undefined) throw new RoworkError("Cannot find the Rowork entry point to relaunch.");
 
 	const args: string[] = [];
-	for (const flag of ["compile", "rojo", "sourcemap"]) {
+	for (const flag of ["compile", "rojo", "sourcemap", "dashboard"]) {
 		if (context.options[flag] === false) args.push(`--no-${flag}`);
 	}
 	const port = context.options["port"];
@@ -210,6 +259,7 @@ async function startInBackground(context: CommandContext, projectRoot: string): 
 		pid,
 		startedAt: new Date().toISOString(),
 		port: typeof port === "string" ? Number(port) : 34872,
+		mode: "background",
 	});
 
 	// A task that cannot start dies within a second or two: wait for that, so a
@@ -228,4 +278,17 @@ async function startInBackground(context: CommandContext, projectRoot: string): 
 	context.logger.success(`rowork dev is running in the background (pid ${pid}).`);
 	context.logger.info(`  Output:  rowork dev:logs   (add -f to follow)`);
 	context.logger.info(`  Stop it: rowork dev:stop`);
+
+	// The background process starts its dashboard a moment after itself.
+	if (context.options["dashboard"] !== false) {
+		for (let waited = 0; waited < 3000; waited += 200) {
+			const running = runningDashboard(projectRoot);
+			if (running !== undefined) {
+				context.logger.info(`  Dashboard: ${pc.bold(running.url)}`);
+				if (context.options["open"] === true) openBrowser(running.url);
+				break;
+			}
+			await new Promise((resolve) => setTimeout(resolve, 200));
+		}
+	}
 }

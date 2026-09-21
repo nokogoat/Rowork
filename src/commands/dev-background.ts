@@ -3,7 +3,7 @@ import { existsSync, openSync, readSync, closeSync, statSync } from "node:fs";
 import pc from "picocolors";
 
 import { RoworkError } from "../cli/errors.js";
-import { clearRecord, logFile, runningRecord, stopProcess, tailLog } from "../core/background.js";
+import { clearDashboardRecord, clearRecord, logFile, runningRecord, stopProcess, tailLog } from "../core/background.js";
 import { defineCommand } from "../plugins/api.js";
 
 function requireRoot(root: string | undefined, command: string): string {
@@ -30,6 +30,7 @@ export const devStopCommand = defineCommand({
 		context.logger.step(`stopping rowork dev (pid ${record.pid})`);
 		const clean = await stopProcess(record.pid);
 		clearRecord(root);
+		clearDashboardRecord(root);
 
 		if (clean) {
 			context.logger.success("Stopped.");

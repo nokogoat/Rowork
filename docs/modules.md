@@ -150,7 +150,8 @@ rowork add:networking --event "buyItem:server(itemId: string, amount: number)" \
 | `--no-install` | do not run `npm install` |
 
 The guided version asks the name (any words: `buy item` becomes `buyItem`), who
-sends it, and what it carries, then offers to add another.
+sends it, and what it carries one thing at a time (a name, then its kind from a list: text,
+number, yes/no or your own), then offers to add another event.
 
 **Files it adds**
 

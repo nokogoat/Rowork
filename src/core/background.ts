@@ -9,6 +9,15 @@ export interface DevRecord {
 	pid: number;
 	startedAt: string;
 	port: number;
+	/** In a terminal of its own, or detached with `dev -d`. Older records have none. */
+	mode?: "foreground" | "background";
+}
+
+export interface DashboardRecord {
+	pid: number;
+	port: number;
+	/** The address WITH its secret token: this file is as private as the token itself. */
+	url: string;
 }
 
 export function runDirectory(projectRoot: string): string {
@@ -127,4 +136,35 @@ export async function stopProcess(pid: number): Promise<boolean> {
 		// Gone in the meantime.
 	}
 	return false;
+}
+
+const dashboardFile = (root: string): string => join(runDirectory(root), "dashboard.json");
+
+/**
+ * Remembers the dashboard that is running, so `rowork dev -d` can print its address
+ * and `rowork dashboard` can open it instead of starting a second one.
+ *
+ * The address holds the secret token, so the file is readable by its owner only
+ * (mode 0600; on Windows the user profile already is private) and lives in
+ * `.rowork/run/`, which the generated .gitignore excludes.
+ */
+export function writeDashboardRecord(root: string, record: DashboardRecord): void {
+	mkdirSync(runDirectory(root), { recursive: true });
+	writeFileSync(dashboardFile(root), `${JSON.stringify(record)}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
+export function clearDashboardRecord(root: string): void {
+	rmSync(dashboardFile(root), { force: true });
+}
+
+/** The dashboard of this project, if its process is really alive. A stale record is removed. */
+export function runningDashboard(root: string): DashboardRecord | undefined {
+	try {
+		const record = JSON.parse(readFileSync(dashboardFile(root), "utf8")) as DashboardRecord;
+		if (isAlive(record.pid) && looksLikeRowork(record.pid)) return record;
+	} catch {
+		// No record, or unreadable: nothing is running as far as Rowork knows.
+	}
+	clearDashboardRecord(root);
+	return undefined;
 }

@@ -262,7 +262,7 @@ try {
 	check(JSON.parse(readFileSync(ownManifestPath, "utf8")).scripts.dev === "node my-own-dev.js", "eject overwrote the user's own dev script");
 
 	// networking: typed events are validated before anything is written.
-	for (const bad of ["a:server(player id: number)", "a:server(x)", "a:server(x: number); evil()", "nodirection", "1a:server"]) {
+	for (const bad of ["a:server(player id: number)", "a:server(x)", "a:server(x: number); evil()", "a:server(itemId: 1)", "nodirection", "1a:server"]) {
 		check(makeRun("add:networking", "--event", bad, "--no-install").status === 1, `networking accepted an invalid event: ${bad}`);
 	}
 	check(!existsSync(join(bareProject, "src", "shared", "networking.ts")), "a refused networking event left files behind");

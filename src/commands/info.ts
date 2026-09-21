@@ -27,9 +27,9 @@ export const infoCommand = defineCommand({
 			logger.info(pc.dim("Not inside a Rowork project. `rowork start` creates one."));
 			return;
 		}
-		const dev = info.project.devRunningInBackground;
+		const dev = info.project.dev;
 		logger.info(`${pc.bold(info.project.name)} ${pc.dim(info.project.root)}`);
-		logger.info(`  dev: ${dev === null ? "not running in the background" : `running in the background (pid ${dev.pid}, port ${dev.port})`}`);
+		logger.info(`  dev: ${dev === null ? "not running" : `running ${dev.mode === "foreground" ? "in a terminal" : "in the background"} (pid ${dev.pid}, port ${dev.port})`}`);
 		logger.blank();
 		logger.info(pc.bold("Modules"));
 		for (const module of info.modules) {

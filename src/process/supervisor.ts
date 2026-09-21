@@ -30,6 +30,8 @@ export interface SupervisorOptions {
 	tasks: TaskDefinition[];
 	cwd: string;
 	logger: Logger;
+	/** Receives, verbatim, every line the supervisor prints for a task (prefix and colours included). */
+	onOutput?: (text: string) => void;
 }
 
 /**
@@ -89,7 +91,9 @@ export class Supervisor {
 		const emit = (line: string, isStderr: boolean): void => {
 			task.recentOutput.push(line);
 			if (task.recentOutput.length > RECENT_OUTPUT_LINES) task.recentOutput.shift();
-			process.stderr.write(`${prefix} ${pc.dim("|")} ${isStderr ? pc.yellow(line) : line}\n`);
+			const text = `${prefix} ${pc.dim("|")} ${isStderr ? pc.yellow(line) : line}\n`;
+			process.stderr.write(text);
+			this.options.onOutput?.(text);
 		};
 
 		const stdout = createLineSplitter((line) => emit(line, false));

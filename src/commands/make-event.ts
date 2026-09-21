@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { RoworkError } from "../cli/errors.js";
 import { resolveProjectPath } from "../core/config.js";
 import { addEventToNetworking, addRateLimit } from "../core/schema-edit.js";
-import { checkParameters, parameterProblem } from "../modules/networking.js";
+import { askEventParameters, checkParameters } from "../modules/networking.js";
 import { toFieldName } from "../modules/player-data.js";
 import { installModule } from "../core/modules.js";
 import { networkingModule } from "../modules/networking.js";
@@ -73,14 +73,7 @@ export const makeEventCommand = defineCommand({
 					],
 				}),
 			) as "server" | "client";
-			parameters = answered(
-				await prompts.text({
-					message: "What does it carry? (like `itemId: string, amount: number`, empty for nothing)",
-					placeholder: "itemId: string, amount: number",
-					defaultValue: "",
-					validate: (value) => parameterProblem(value ?? ""),
-				}),
-			).trim();
+			parameters = await askEventParameters(toFieldName(rawName));
 			// "Link it to...?" only makes sense for what the client sends: that is what the server reacts to.
 			if (side === "server") {
 				linkTyped = await askStatLink(root, config, "Should the server change a saved value when it receives this? Type its name.", true);

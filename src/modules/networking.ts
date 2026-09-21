@@ -47,6 +47,10 @@ export function parameterProblem(text: string): string | undefined {
 		if (!PARAMETER.test(part)) {
 			return `\`${part}\` is not \`name: type\`. The name is one word, like itemId: string`;
 		}
+		const type = part.slice(part.indexOf(":") + 1).trim();
+		if (!/^[A-Za-z_"'[{(]/.test(type)) {
+			return `\`${type}\` is not a type. Use string (text), number or boolean (yes/no)`;
+		}
 	}
 	return undefined;
 }
@@ -108,16 +112,9 @@ async function askEvents(): Promise<NetworkEvent[]> {
 			}),
 		) as Direction;
 
-		const parameters = answered(
-			await prompts.text({
-				message: `What does ${name} carry? (like \`itemId: string, amount: number\`, empty for nothing)`,
-				placeholder: "itemId: string, amount: number",
-				defaultValue: "",
-				validate: (value) => parameterProblem(value ?? ""),
-			}),
-		);
+		const parameters = await askEventParameters(name);
 
-		events.push({ name, direction, parameters: parameters.trim() });
+		events.push({ name, direction, parameters });
 	}
 }
 
@@ -215,3 +212,60 @@ export const networkingModule: ModuleDefinition = {
 		};
 	},
 };
+
+const KNOWN_TYPES = [
+	{ value: "string", label: "Text", hint: "an item name, a message" },
+	{ value: "number", label: "Number", hint: "an amount, an id" },
+	{ value: "boolean", label: "Yes / no", hint: "true or false" },
+	{ value: "other", label: "Other...", hint: "Player, Vector3, a list... type it yourself" },
+] as const;
+
+/**
+ * Asks what an event carries, one thing at a time, without any syntax to learn:
+ * a name, then a kind picked from a list. Returns what the networking file needs,
+ * like `itemId: string, amount: number` (or an empty string for nothing).
+ */
+export async function askEventParameters(eventName: string): Promise<string> {
+	const parts: string[] = [];
+
+	for (;;) {
+		const first = parts.length === 0;
+		const raw = answered(
+			await prompts.text({
+				message: first
+					? `Does ${eventName} carry any information? Name one thing (like itemId, or amount). Leave empty if it carries nothing.`
+					: "Anything else? Name it, or leave empty when that is all.",
+				placeholder: first ? "itemId" : "",
+				defaultValue: "",
+				validate: (value) => {
+					if (value === undefined || value.trim() === "") return undefined;
+					const name = toFieldName(value);
+					if (!IDENTIFIER.test(name)) return "Use letters and digits, starting with a letter.";
+					if (parts.some((part) => part.startsWith(`${name}:`))) return `\`${name}\` is already there.`;
+					return undefined;
+				},
+			}),
+		);
+		if (raw.trim() === "") return parts.join(", ");
+		const name = toFieldName(raw);
+
+		const kind = answered(
+			await prompts.select({
+				message: `What kind of information is ${name}?`,
+				options: KNOWN_TYPES.map((option) => ({ ...option })),
+			}),
+		);
+
+		let type: string = kind;
+		if (kind === "other") {
+			type = answered(
+				await prompts.text({
+					message: `Type the type of ${name}, the way TypeScript writes it (like Player, Vector3, string[])`,
+					placeholder: "Player",
+					validate: (value) => parameterProblem(`${name}: ${value ?? ""}`),
+				}),
+			).trim();
+		}
+		parts.push(`${name}: ${type}`);
+	}
+}

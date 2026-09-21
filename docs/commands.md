@@ -110,6 +110,8 @@ run inside a Rowork project. Details in [How `rowork dev` works](dev-command.md)
 | `--no-sourcemap` | skip the sourcemap watcher |
 | `--port <port>` | port for the Rojo server (default 34872) |
 | `-d, --detach` | run in the background and give the terminal back |
+| `--no-dashboard` | do not start the local web dashboard that comes with `dev` |
+| `--open` | open the dashboard in your browser |
 
 ```bash
 rowork dev -d        # or: rowork -d dev
@@ -316,6 +318,12 @@ does both (`rowork add:networking --event "buyItem:server()"`).
 | `--args <list>` | what it carries, as `name: type` separated by commas |
 | `--link <value>` | a saved value the server changes when it receives this (only for `--to server`) |
 
+In the guided version there is nothing to write in a special syntax. It asks the name, who sends it, and
+then what it carries **one thing at a time**: you name it (`itemId`), then pick its kind from a list
+(text, number, yes/no, or your own), and it asks whether there is anything else. In a script,
+`--args "itemId: string, amount: number"` says the same in one line, and a value that is not a type
+(`itemId: 1`) is refused.
+
 The line is added to `ClientToServerEvents` or `ServerToClientEvents` in
 `src/shared/networking.ts`, and Rowork prints how to listen to it and how to send it.
 For an event the client sends, `make:event` also adds its line to the rate limit list in
@@ -459,7 +467,8 @@ rowork wire
 ## `rowork dashboard`
 
 Opens a local web page for the project: what is installed, every command, and the live output of
-`rowork dev -d`. Only your computer can reach it, and it needs the secret token in the printed
+`rowork dev`. `rowork dev` starts it by itself; this command is for when `dev` is not running, and it
+reuses the dashboard of a running `dev` instead of starting a second one. Only your computer can reach it, and it needs the secret token in the printed
 address. See [The dashboard](dashboard.md) for what it shows and how it is protected.
 
 ```bash

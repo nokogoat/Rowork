@@ -1,28 +1,11 @@
-import { spawn } from "node:child_process";
-
 import pc from "picocolors";
 
 import { RoworkError } from "../cli/errors.js";
+import { runningDashboard } from "../core/background.js";
+import { openBrowser } from "../dashboard/open.js";
 import { startDashboard } from "../dashboard/server.js";
 import { defineCommand } from "../plugins/api.js";
 import { requireProject } from "./make.js";
-
-/** Opens the address in the default browser. Best effort: the address is always printed too. */
-function openBrowser(url: string): void {
-	const [command, args]: [string, string[]] =
-		process.platform === "darwin"
-			? ["open", [url]]
-			: process.platform === "win32"
-				? ["cmd", ["/c", "start", "", url]]
-				: ["xdg-open", [url]];
-	try {
-		const child = spawn(command, args, { stdio: "ignore", detached: true });
-		child.on("error", () => {});
-		child.unref();
-	} catch {
-		// No browser to open: the printed address is enough.
-	}
-}
 
 export const dashboardCommand = defineCommand({
 	name: "dashboard",
@@ -33,6 +16,15 @@ export const dashboardCommand = defineCommand({
 	],
 	async run(context) {
 		const { root } = requireProject(context, "dashboard");
+
+		// `rowork dev` already runs one: open that instead of starting a second server.
+		const existing = runningDashboard(root);
+		if (existing !== undefined) {
+			context.logger.success("The dashboard is already running (started by `rowork dev`).");
+			context.logger.info(`  ${pc.bold(existing.url)}`);
+			if (context.options["open"] !== false) openBrowser(existing.url);
+			return;
+		}
 
 		const rawPort = context.options["port"];
 		const port = typeof rawPort === "string" ? Number(rawPort) : 0;
