@@ -5,9 +5,17 @@
 Rowork is to Roblox what `artisan` is to Laravel: a single CLI that sets up the
 toolchain, runs it, generates code and keeps your architecture coherent.
 
-> Status: early development (v0.0.x), not on npm yet. Project setup, `dev`, `update`,
-> `eject`, six ready-made features (`add`) and file generators (`make`) exist today;
-> the plugin API is at v1 and may still move. See the [roadmap](docs/roadmap.md).
+> ## ⚠️ This is only the very beginning
+>
+> Rowork is at **version 0.0.1**. The goal is big: a real **meta-framework for Roblox**, from the first
+> line of a project to a live game. **What exists today is a small first step towards it**, and most of the
+> vision is not built yet.
+>
+> - **Expect missing features, bugs and breaking changes** without warning.
+> - **It is not on npm yet**, and it has been tried on very few games.
+> - **Do not build a serious game on it yet.** Come and look, try it, and tell us what is wrong.
+>
+> The [roadmap](docs/roadmap.md) says what exists and what is missing, without promises.
 
 ## The problem
 
@@ -28,6 +36,17 @@ is running, nothing keeps file #200 consistent with the architecture of file #1.
 - **Installs the toolchain.** Rokit and Rojo can be installed for you, with the
   download verified by checksum.
 - **Extends.** A plugin system so the community can add its own commands.
+
+## What is not there yet
+
+Rowork is at the start, and a lot is still missing. Today there is **nothing** for:
+
+- **an existing project**: `rowork init` starts a new one, nothing adopts a game that already exists;
+- **changing your saved data** once players already have some (migrations);
+- **tests for your game**, several environments (development, production), feature flags, monitoring;
+- **seeing your interface in a browser** (only the UI Labs plugin inside Studio);
+- **a plugin ecosystem**: the plugin API is tiny and will change, and no plugin exists yet;
+- **Wally packages from TypeScript**, or anything outside roblox-ts, Flamework and Rojo.
 
 ## What Rowork does not do
 
