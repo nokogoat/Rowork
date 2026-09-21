@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Rowork dashboard</title>
+		<link rel="stylesheet" href="/app.css" />
+	</head>
+	<body>
+		<header class="top">
+			<div class="brand">
+				<span class="logo">Rowork</span>
+				<span class="version" id="version"></span>
+			</div>
+			<div class="project" id="project">Loading…</div>
+		</header>
+
+		<nav class="tabs" role="tablist">
+			<button class="tab active" role="tab" data-tab="overview">Overview</button>
+			<button class="tab" role="tab" data-tab="dev">Dev output</button>
+		</nav>
+
+		<main>
+			<section id="overview" class="panel active">
+				<div class="grid">
+					<div class="card">
+						<h2>Features</h2>
+						<p class="hint">Ready-made features. Add one with <code>rowork add</code>.</p>
+						<ul class="list" id="modules"></ul>
+					</div>
+					<div class="card">
+						<h2>Wired together</h2>
+						<p class="hint">Glue Rowork generated between features.</p>
+						<ul class="list" id="integrations"></ul>
+					</div>
+				</div>
+				<div class="card">
+					<h2>Commands</h2>
+					<p class="hint">
+						<span class="badge guided">guided</span> commands ask their questions in the terminal.
+					</p>
+					<div class="commands" id="commands"></div>
+				</div>
+			</section>
+
+			<section id="dev" class="panel">
+				<div class="card">
+					<div class="row">
+						<h2>Dev</h2>
+						<span class="status" id="dev-status"></span>
+					</div>
+					<p class="hint">
+						Output of <code>rowork dev -d</code>, live. Start it in a terminal to see it here.
+					</p>
+					<div class="row">
+						<label class="check"><input type="checkbox" id="follow" checked /> Follow</label>
+						<button class="ghost" id="clear">Clear</button>
+					</div>
+					<pre class="log" id="log" aria-live="polite"></pre>
+				</div>
+			</section>
+		</main>
+
+		<footer>Local only. This page is served by <code>rowork dashboard</code> on your computer.</footer>
+		<script src="/app.js"></script>
+	</body>
+</html>

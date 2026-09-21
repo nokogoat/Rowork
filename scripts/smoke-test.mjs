@@ -6,8 +6,9 @@
  * macOS and Windows: the CI matrix is the only place where the Windows-specific
  * branches of exec.ts and bin/rowork.js are ever exercised.
  */
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { request as httpRequest } from "node:http";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -472,6 +473,86 @@ try {
 	});
 	check(noTools.status === 1, `\`rowork dev\` without tools exited with ${noTools.status}`);
 	check(/Missing tools?: .*rojo/.test(noTools.stderr), "`rowork dev` did not name the missing rojo");
+
+	// The dashboard: a local server that must refuse everything but its own page, and stop cleanly.
+	{
+		const dashboardProject = join(workspace, "DashboardGame");
+		spawnSync(process.execPath, [cli, "init", "DashboardGame", "--path", workspace, "--no-install", "--no-rokit", "--no-git"], { encoding: "utf8" });
+		const child = spawn(process.execPath, [cli, "dashboard", "--no-open", "--port", "0"], { cwd: dashboardProject, stdio: ["ignore", "pipe", "pipe"] });
+		let output = "";
+		child.stdout.on("data", (chunk) => (output += chunk));
+		child.stderr.on("data", (chunk) => (output += chunk));
+		const closed = new Promise((resolve) => child.on("close", resolve));
+
+		let started;
+		for (let waited = 0; waited < 10000 && !(started = /http:\/\/127\.0\.0\.1:(\d+)\/\?token=([a-f0-9]+)/.exec(output)); waited += 100) {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+		check(started !== null && started !== undefined, `the dashboard did not print its address\n${output}`);
+
+		if (started) {
+			const port = Number(started[1]);
+			const token = started[2];
+			const get = (path, headers = {}, method = "GET") =>
+				new Promise((resolve, reject) => {
+					const request = httpRequest({ host: "127.0.0.1", port, path, method, headers }, (response) => {
+						let body = "";
+						response.on("data", (chunk) => (body += chunk));
+						response.on("end", () => resolve({ status: response.statusCode, headers: response.headers, body }));
+					});
+					request.on("error", reject);
+					request.end();
+				});
+
+			check((await get("/")).status === 403, "the dashboard answered without a token");
+			check((await get("/api/info")).status === 403, "the API answered without a token");
+			check((await get("/?token=wrong")).status === 403, "the dashboard accepted a wrong token");
+			check((await get(`/?token=${token}`, { Host: "evil.example.com" })).status === 403, "the dashboard accepted a foreign Host header (DNS rebinding)");
+			check((await get(`/?token=${token}`, {}, "POST")).status === 405, "the dashboard accepted a POST");
+
+			const login = await get(`/?token=${token}`);
+			const cookie = (login.headers["set-cookie"] ?? [])[0]?.split(";")[0];
+			check(login.status === 302 && login.headers.location === "/", "the token was not exchanged for a redirect that removes it from the address");
+			check(/HttpOnly/.test(login.headers["set-cookie"]?.[0] ?? "") && /SameSite=Strict/.test(login.headers["set-cookie"]?.[0] ?? ""), "the session cookie is not HttpOnly and SameSite=Strict");
+
+			const page = await get("/", { Cookie: cookie });
+			check(page.status === 200 && page.body.includes("Rowork dashboard"), "the dashboard page did not load with the cookie");
+			check(/default-src 'self'/.test(page.headers["content-security-policy"] ?? "") && page.headers["x-content-type-options"] === "nosniff", "the security headers are missing");
+			const info = await get("/api/info", { Cookie: cookie });
+			check(info.status === 200 && JSON.parse(info.body).project?.name === "DashboardGame", "/api/info does not describe the project");
+
+			// Live log: what is already in the file, then what is appended.
+			const logDir = join(dashboardProject, ".rowork", "run");
+			mkdirSync(logDir, { recursive: true });
+			writeFileSync(join(logDir, "dev.log"), "compile | before\n");
+			const events = await new Promise((resolve) => {
+				let received = "";
+				const request = httpRequest({ host: "127.0.0.1", port, path: "/api/dev/logs", headers: { Cookie: cookie } }, (response) => {
+					response.on("data", (chunk) => {
+						received += chunk;
+						if (received.includes("after")) {
+							request.destroy();
+							resolve(received);
+						}
+					});
+				});
+				request.on("error", () => resolve(received));
+				request.end();
+				setTimeout(() => appendFileSync(join(logDir, "dev.log"), "compile | after\n"), 700);
+				setTimeout(() => { request.destroy(); resolve(received); }, 6000);
+			});
+			check(events.includes("compile | before") && events.includes("compile | after"), `the live log did not stream the existing and the appended lines\n${events}`);
+
+			// The page must never turn outside text into HTML.
+			const appScript = readFileSync(join(repositoryRoot, "dashboard", "app.js"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+			check(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(|new Function/.test(appScript), "dashboard/app.js builds HTML or evaluates code from outside text");
+		}
+
+		child.kill(process.platform === "win32" ? undefined : "SIGINT");
+		const stopped = await Promise.race([closed.then(() => "closed"), new Promise((resolve) => setTimeout(() => resolve("timeout"), 8000))]);
+		if (stopped === "timeout") child.kill("SIGKILL");
+		check(stopped === "closed", "the dashboard did not stop when asked");
+	}
 } finally {
 	rmSync(workspace, { recursive: true, force: true });
 }

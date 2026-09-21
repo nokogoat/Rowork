@@ -24,6 +24,7 @@ src/
     make-menu.ts         make: the list of everything that can be created
     console.ts           console: interactive prompt (each line is a child process)
     dev-background.ts    dev:stop and dev:logs
+    dashboard.ts         dashboard: starts the local web server
     add.ts               add and add:<module>: one command per module
     studio.ts            studio, studio:setup (Linux)
     next-steps.ts        shared closing message
@@ -38,6 +39,7 @@ src/
     project-index.ts     what exists in the project, read from the files (stats, events)
     modules.ts           install a module and apply integrations: checks first, writes last
     background.ts        dev in the background: detached spawn, pid file, stop
+    info.ts              what Rowork knows about the project, as data (info --json and the dashboard)
     versions.ts          latest versions (Rojo, npm), rokit.toml pin, offline fallback
     github-release.ts    fetch a release, download an asset, verify its checksum
     studio.ts            Studio on Linux: Vinegar, Rojo plugin placement
@@ -53,6 +55,8 @@ src/
   ui/logger.ts           leveled logger, stderr only
   ui/prompt.ts           guided-flow helpers: terminal check, cancel handling
 templates/init/          files copied into a new project
+src/dashboard/          the local web server of `rowork dashboard`
+dashboard/               the page it serves: plain HTML, CSS and JS, no build step
 src/modules/            module definitions (types.ts, one file per module)
 templates/make/          one template per make:* command
 templates/modules/       the files each module copies into a project
@@ -126,6 +130,16 @@ goes in its own files, never patched into a file the user may have edited (the
 integration's events are separate from `networking.ts` for that reason), and a
 failure or a clash never undoes the module that triggered it: the integration stays
 pending and `rowork wire` retries.
+
+**The dashboard is built as if a hostile page will reach it.** It will carry an API key and run
+commands, so from the first line: `127.0.0.1` only; a random token exchanged for an `HttpOnly`,
+`SameSite=Strict` cookie and removed from the address; the `Host` header checked against its own
+address (DNS rebinding); `GET` only; a fixed list of files, so no request names a path; a strict
+Content-Security-Policy. The page puts every outside string on screen with `textContent`, and a
+test fails if the code uses anything that builds HTML from text. `rowork info --json` and the
+dashboard read the same `collectInfo`, so they cannot disagree. The page is plain HTML, CSS and
+JavaScript with no build step: the package stays small, and a heavier front end (a React
+preview) will get its own build when it is needed.
 
 **`dev -d` relaunches itself.** After the foreground checks and the first build,
 the CLI spawns `rowork dev` again with `detached: true` and its output going to a

@@ -5,6 +5,7 @@ import { consoleCommand } from "./console.js";
 import { agentsSyncCommand, infoCommand } from "./info.js";
 import { updateCommand } from "./update.js";
 import { wireCommand } from "./wire.js";
+import { dashboardCommand } from "./dashboard.js";
 import { devCommand } from "./dev.js";
 import { ejectCommand } from "./eject.js";
 import { devLogsCommand, devStopCommand } from "./dev-background.js";
@@ -26,6 +27,7 @@ export const coreCommands: CommandDefinition[] = [
 	initCommand,
 	devCommand,
 	devStopCommand,
+	dashboardCommand,
 	devLogsCommand,
 	makeCommand,
 	makeServiceCommand,

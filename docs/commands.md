@@ -456,6 +456,24 @@ rowork wire --dry-run   # what would be wired, nothing changed
 rowork wire
 ```
 
+## `rowork dashboard`
+
+Opens a local web page for the project: what is installed, every command, and the live output of
+`rowork dev -d`. Only your computer can reach it, and it needs the secret token in the printed
+address. See [The dashboard](dashboard.md) for what it shows and how it is protected.
+
+```bash
+rowork dashboard
+rowork dashboard --no-open --port 4000
+```
+
+| Option | Effect |
+| --- | --- |
+| `--port <port>` | port to listen on (default: any free one) |
+| `--no-open` | print the address without opening a browser |
+
+It runs until you press Ctrl+C.
+
 ## `rowork info`
 
 Shows the project, what is installed and what can be added. With `--json` it prints

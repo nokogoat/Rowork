@@ -42,7 +42,12 @@ have installed; this page is the direction.
 linter, formatter); a weekly run against the latest upstream versions that opens an issue if
 something breaks.
 
+**The dashboard.** `rowork dashboard`: a local web page (only your computer, secret token) showing the
+project and the live output of `dev`. The base for the next two tools.
+
 ## Next
+
+Both are planned as **tabs of the dashboard** (see [The dashboard](dashboard.md)).
 
 - **See the interface outside Roblox.** A preview you can open in a browser, without Studio
   (useful on Linux, where Studio needs Wine). Approximate by nature: it will not match Roblox

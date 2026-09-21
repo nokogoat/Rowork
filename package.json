@@ -24,6 +24,7 @@
   "files": [
     "bin",
     "dist",
+    "dashboard",
     "templates",
     "README.md",
     "LICENSE",
