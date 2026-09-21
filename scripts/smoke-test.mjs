@@ -512,6 +512,55 @@ try {
 		check(unmappedScopes(template, workspace).length === 0, "rojo edit: a scope that is not installed was reported");
 	}
 
+	// Editing the user's files by text: a brace inside a string or a comment is not structure.
+	{
+		const { addFieldToPlayerData } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "schema-edit.js")).href);
+		const { maskNonCode, findClosingBrace } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "source-scan.js")).href);
+		const { addNodeModuleScopes } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "rojo-edit.js")).href);
+
+		const player = (iface, defaults) => `export interface PlayerData {\n${iface}}\n\nexport const DEFAULT_PLAYER_DATA: PlayerData = {\n${defaults}};\n`;
+		const kills = { name: "kills", type: "number", defaultValue: "0" };
+		const cases = [
+			["a } in a string of the defaults", player("\tnickname: string;\n", '\tnickname: "guest}",\n'), player("\tnickname: string;\n\tkills: number;\n", '\tnickname: "guest}",\n\tkills: 0,\n')],
+			["a { in a string of the defaults", player("\tnickname: string;\n", '\tnickname: "{guest",\n'), player("\tnickname: string;\n\tkills: number;\n", '\tnickname: "{guest",\n\tkills: 0,\n')],
+			["a } in a comment of the interface", player("\t// closes with } later\n\tcoins: number;\n", "\tcoins: 0,\n"), player("\t// closes with } later\n\tcoins: number;\n\tkills: number;\n", "\tcoins: 0,\n\tkills: 0,\n")],
+			["a } in a block comment of the defaults", player("\tcoins: number;\n", "\t/* } */\n\tcoins: 0,\n"), player("\tcoins: number;\n\tkills: number;\n", "\t/* } */\n\tcoins: 0,\n\tkills: 0,\n")],
+			["braces in a template literal", player("\ttitle: string;\n", "\ttitle: `a {b} }`,\n"), player("\ttitle: string;\n\tkills: number;\n", "\ttitle: `a {b} }`,\n\tkills: 0,\n")],
+			["an escaped quote in a string", player("\ttitle: string;\n", '\ttitle: "say \\"}\\"",\n'), player("\ttitle: string;\n\tkills: number;\n", '\ttitle: "say \\"}\\"",\n\tkills: 0,\n')],
+		];
+		for (const [name, input, expected] of cases) {
+			let got;
+			try {
+				got = addFieldToPlayerData(input, "PlayerData.ts", kills);
+			} catch (error) {
+				check(false, `source edit (${name}): refused instead of editing (${error.message})`);
+				continue;
+			}
+			check(got === expected, `source edit (${name}): the file is wrong.\nExpected:\n${expected}\nGot:\n${got}`);
+		}
+
+		// The declaration written inside a comment is not the declaration.
+		const decoy = `// export interface PlayerData {\n// }\n${player("\tcoins: number;\n", "\tcoins: 0,\n")}`;
+		const edited = addFieldToPlayerData(decoy, "PlayerData.ts", kills);
+		check(edited.startsWith("// export interface PlayerData {\n// }\n") && edited.includes("\tkills: number;\n}"), "source edit: a declaration inside a comment was edited instead of the real one");
+
+		// The masked copy keeps every index valid.
+		const sample = 'a "x}" /* } */ b // }\n{ c }';
+		const masked = maskNonCode(sample);
+		check(masked.length === sample.length && !masked.slice(0, sample.indexOf("\n")).includes("}"), "scanner: the masked copy changed length or kept a brace from a string or comment");
+		check(findClosingBrace(masked, sample.indexOf("{") + 1) === sample.lastIndexOf("}"), "scanner: the closing brace was not found after masking");
+
+		// Same scanner for the Rojo project file: a comment with a brace inside node_modules.
+		const rojo = '{\n\t"tree": {\n\t\t"rbxts_include": {\n\t\t\t"node_modules": {\n\t\t\t\t// } careful\n\t\t\t\t"@rbxts": {\n\t\t\t\t\t"$path": "node_modules/@rbxts"\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}\n';
+		let rojoResult = "";
+		try {
+			rojoResult = addNodeModuleScopes(rojo, "default.project.json", ["@rbxts-js"]);
+		} catch (error) {
+			check(false, `rojo edit: refused a file with a brace in a comment (${error.message})`);
+		}
+		check(/"@rbxts-js": \{\n\t*"\$path": "node_modules\/@rbxts-js"\n\t*\}\n\t\t\t\}/.test(rojoResult), `rojo edit: the mapping is not inside node_modules when a comment holds a brace:\n${rojoResult}`);
+	}
+
 	// The interface commands: text edits that refuse instead of guessing, and a clear answer without the module.
 	{
 		const { addScreenToApp, addElementToScreen } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "ui-edit.js")).href);
