@@ -61,7 +61,7 @@ try {
 	const shims = join(home, ".rokit", "bin");
 	const exe = process.platform === "win32" ? ".exe" : "";
 	check(existsSync(join(shims, `rokit${exe}`)), "Rokit was not installed");
-	check(existsSync(join(shims, `rojo${exe}`)), "Rojo was not installed by Rokit");
+	check(existsSync(join(shims, `rojo${exe}`)), `Rojo was not installed by Rokit. What \`rowork init\` printed:\n${init.output.slice(-2000)}`);
 
 	// roblox-ts patches one exact TypeScript version. Any other version makes
 	// Flamework warn on every compile, and can break the transformer outright.
