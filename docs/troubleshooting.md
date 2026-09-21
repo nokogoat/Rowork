@@ -108,6 +108,35 @@ installed folder is missing from the project. To fix a project created before th
 }
 ```
 
+## This project's interface predates screens
+
+`rowork make:screen` and `rowork make:ui` add lines to `App.tsx` and place `ScreenGui`s, so they need two things a
+project created before screens existed does not have. Rowork stops and writes nothing. Make these two changes:
+
+`src/client/controllers/UiController.tsx`: draw through a portal instead of into one ScreenGui.
+
+```tsx
+import { createPortal, createRoot } from "@rbxts/react-roblox";
+// ...
+const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui");
+createRoot(new Instance("Folder")).render(createPortal(<App />, playerGui));
+```
+
+`src/client/ui/App.tsx`: return a fragment of screens, each a component that returns a `<screengui key="Name">`,
+and keep a marker line after them.
+
+```tsx
+return (
+	<>
+		<HomeScreen />
+		{/* rowork:screens */}
+	</>
+);
+```
+
+Each screen also needs `{/* rowork:elements */}` inside its frame for `make:ui --in` to work. A new project has all
+of this; compare with one made by `rowork start`.
+
 ## The Rojo plugin cannot connect in Studio
 
 - Is `rowork dev` still running, with the `rojo` task alive?

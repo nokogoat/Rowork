@@ -148,6 +148,8 @@ command refuses and prints its scripted form.
 | `rowork make` | what to create, from a list, then that command's own questions |
 | `rowork make:stat` | the value, its kind, its starting value, leaderboard, service |
 | `rowork make:event` | the message, who sends it, what it carries |
+| `rowork make:screen` | the name (adds the UI module first if it is missing) |
+| `rowork make:ui` | the name, the kind of element, the screen to put it in |
 | `rowork make:component` | name, server or client, tag |
 | `rowork make:service`, `make:controller` | name |
 | `rowork add` | which module, then that module's own questions |
@@ -331,6 +333,40 @@ For an event the client sends, `make:event` also adds its line to the rate limit
 the event is still added and a warning says it is not limited). A name already used in either
 direction is refused (both would collide in `Events`),
 and the argument list is validated because it is written into code.
+
+## `rowork make:screen` and `rowork make:ui`
+
+Build your interface without writing the plumbing. They need the [`ui` module](modules.md#ui-your-interface-in-react-with-a-preview-in-studio);
+guided, they offer to install it, scripted they tell you to run `rowork add:ui`.
+
+A **screen** is a `ScreenGui`: one full-screen layer (a shop, a settings menu, a HUD). An **element** is a
+reusable piece inside it (a button, a health bar). Each screen and element is its own file, so it can be
+opened, hidden and changed alone.
+
+```bash
+rowork make:screen Shop                                  # src/client/ui/screens/ShopScreen.tsx, shown by App
+rowork make:ui buyButton --kind button --in Shop         # src/client/ui/BuyButton.tsx (+ a preview), placed in Shop
+rowork make:ui                                           # guided: name, kind, which screen
+```
+
+- `make:screen` creates the screen and **adds it to `App.tsx`** for you. Press Play in Studio: a placeholder title
+  shows at the top; delete it when you add your own.
+- `make:ui` creates the element and a `.story.tsx` next to it (its preview in the UI Labs plugin), and with
+  `--in <screen>` places `<Name />` inside that screen. Every prop is optional, so a fresh element compiles as soon
+  as it is placed. Kinds: `button` (default), `label`, `panel` (a rounded box that holds other elements), `image`
+  (use `Assets.<name>` from [`rowork assets`](#rowork-assets)).
+- Both add their line **before a marker comment** (`{/* rowork:screens */}` in `App.tsx`,
+  `{/* rowork:elements */}` in each screen). Keep the markers: they are how Rowork knows where to add. If one is
+  missing, the command stops and writes nothing.
+- The new files are run through your project's Prettier when it has one, so a long name never makes
+  `format:check` fail.
+- An interface made before screens existed (its `UiController` does not use `createPortal`, its `App` has no marker)
+  is refused with the two changes to make; see [troubleshooting](troubleshooting.md#this-projects-interface-predates-screens).
+
+| Option | Effect |
+| --- | --- |
+| `--kind <kind>` | `make:ui`: `button` (default), `label`, `panel` or `image` |
+| `--in <screen>` | `make:ui`: put it in this screen (`Home`, `Shop`...) |
 
 ## `rowork console`
 

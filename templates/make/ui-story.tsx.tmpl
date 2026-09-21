@@ -1,0 +1,13 @@
+import React from "@rbxts/react";
+import ReactRoblox from "@rbxts/react-roblox";
+import { CreateReactStory } from "@rbxts/ui-labs";
+import { {{ name }} } from "./{{ name }}";
+
+/**
+ * A story shows one component on its own, inside Studio, without running the game
+ * (open the UI Labs plugin). `controls` become fields you can change live.
+ */
+export = CreateReactStory(
+	{ react: React, reactRoblox: ReactRoblox, controls: {{ controls }} },
+	(props) => <{{ name }} {{ binding }} />,
+);

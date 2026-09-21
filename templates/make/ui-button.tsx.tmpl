@@ -1,0 +1,22 @@
+import React from "@rbxts/react";
+
+interface {{ name }}Props {
+	text?: string;
+	onClick?: () => void;
+}
+
+/**
+ * A button. `text` is what it says and `onClick` runs when it is pressed. Both are
+ * optional so `<{{ name }} />` works as soon as it is placed; a game rule never goes
+ * here (the client can be tampered with): send an event and let the server decide.
+ */
+export function {{ name }}({ text = "{{ name }}", onClick }: {{ name }}Props) {
+	return (
+		<textbutton
+			Size={UDim2.fromOffset(200, 50)}
+			Text={text}
+			TextScaled
+			Event={{ Activated: () => onClick?.() }}
+		/>
+	);
+}

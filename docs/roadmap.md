@@ -34,6 +34,8 @@ have installed; this page is the direction.
 - `make:service`, `make:controller`, `make:component`, registered with Flamework.
 - `make:stat` adds a saved value everywhere it must be; `make:event` adds a typed message.
   Both offer to **link** what you create to what already exists ("link it to...?").
+- `make:screen` creates a `ScreenGui` and shows it from `App`; `make:ui` creates a button, text, panel or image
+  with its Studio preview and places it in a screen.
 
 **Made for humans and AIs.** A generated `AGENTS.md` kept current by `rowork add`,
 `rowork info --json`, every command with a scripted form (see [Rowork and AI](ai.md)).

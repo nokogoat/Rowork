@@ -512,6 +512,37 @@ try {
 		check(unmappedScopes(template, workspace).length === 0, "rojo edit: a scope that is not installed was reported");
 	}
 
+	// The interface commands: text edits that refuse instead of guessing, and a clear answer without the module.
+	{
+		const { addScreenToApp, addElementToScreen } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "ui-edit.js")).href);
+		const app = 'import React from "@rbxts/react";\nimport {\n\tHomeScreen,\n} from "./screens/HomeScreen";\n\nexport function App() {\n\treturn (\n\t\t<>\n\t\t\t<HomeScreen />\n\t\t\t{/* rowork:screens */}\n\t\t</>\n\t);\n}\n';
+		const edited = addScreenToApp(app, "App.tsx", "ShopScreen", "./screens/ShopScreen");
+		check(edited.includes('\t\t\t<ShopScreen />\n\t\t\t{/* rowork:screens */}'), "ui edit: the screen is not listed just before the marker, at its indentation");
+		check(edited.includes('import { ShopScreen } from "./screens/ShopScreen";\n\nexport function App'), "ui edit: the import is not after the last (multi-line) import");
+		const refuses = (fn) => {
+			try {
+				fn();
+				return false;
+			} catch {
+				return true;
+			}
+		};
+		check(refuses(() => addScreenToApp(edited, "App.tsx", "ShopScreen", "./screens/ShopScreen")), "ui edit: a screen listed twice was not refused");
+		check(refuses(() => addScreenToApp(app.replace("{/* rowork:screens */}", ""), "App.tsx", "ShopScreen", "./s")), "ui edit: a missing marker was not refused");
+		check(refuses(() => addElementToScreen("export function A() { return <frame />; }", "A.tsx", "Btn", "../Btn")), "ui edit: an element with no marker was not refused");
+		const placed = addElementToScreen('import React from "@rbxts/react";\n\nx\n\t\t\t{/* rowork:elements */}\n', "S.tsx", "Btn", "../Btn");
+		check(placed.includes("\t\t\t<Btn />\n\t\t\t{/* rowork:elements */}") && placed.includes('import { Btn } from "../Btn";'), "ui edit: the element is not placed before its marker");
+
+		// Without the ui module: the scripted forms say the one command that fixes it, and write nothing.
+		const bare = join(workspace, "SmokeGame");
+		for (const args of [["make:screen", "shop"], ["make:ui", "thing"]]) {
+			const before = existsSync(join(bare, "src", "client", "ui"));
+			const refused = spawnSync(process.execPath, [cli, ...args], { cwd: bare, encoding: "utf8" });
+			check(refused.status === 1 && /add:ui/.test(refused.stdout + refused.stderr), `\`rowork ${args.join(" ")}\` without the ui module should refuse and name \`rowork add:ui\``);
+			check(existsSync(join(bare, "src", "client", "ui")) === before, `\`rowork ${args.join(" ")}\` wrote files while refusing`);
+		}
+	}
+
 	// The dashboard: a local server that must refuse everything but its own page, and stop cleanly.
 	{
 		const dashboardProject = join(workspace, "DashboardGame");

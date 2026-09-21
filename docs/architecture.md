@@ -20,6 +20,7 @@ src/
     make.ts              make:service, make:controller, make:component
     make-stat.ts         make:stat (a saved value, in every place it must be)
     make-event.ts        make:event (a typed message in the networking file)
+    make-ui.ts           make:screen and make:ui (a ScreenGui, an element, placed in a screen)
     links.ts             "link it to...?": prompts, and the generated handler and injections
     make-menu.ts         make: the list of everything that can be created
     console.ts           console: interactive prompt (each line is a child process)

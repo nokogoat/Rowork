@@ -1,21 +1,21 @@
 import { Controller, OnStart } from "@flamework/core";
 import React from "@rbxts/react";
-import { createRoot } from "@rbxts/react-roblox";
+import { createPortal, createRoot } from "@rbxts/react-roblox";
 import { App } from "{{ appImport }}";
 
 const Players = game.GetService("Players");
 
-/** Puts the React interface on the player's screen when the game starts. */
+/**
+ * Puts the React interface on the player's screen when the game starts.
+ *
+ * `App` returns ScreenGuis, which only work inside a player's PlayerGui. React draws into
+ * an instance it is given, so a throwaway Folder is the root and `createPortal` sends
+ * what `App` draws to the PlayerGui.
+ */
 @Controller()
 export class UiController implements OnStart {
 	onStart(): void {
 		const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui");
-
-		const screen = new Instance("ScreenGui");
-		screen.Name = "App";
-		screen.ResetOnSpawn = false;
-		screen.Parent = playerGui;
-
-		createRoot(screen).render(<App />);
+		createRoot(new Instance("Folder")).render(createPortal(<App />, playerGui));
 	}
 }

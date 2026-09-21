@@ -133,6 +133,18 @@ try {
 		["make:event", "spellCast", "--to", "client", "--args", "spellId: string, caster: number"],
 		["make:event", "openChest", "--to", "server", "--link", "kills"],
 		["make:service", "vault", "--uses", "kills,coins"],
+		// The interface: screens are ScreenGuis listed by App, elements are placed inside a screen.
+		["make:screen", "shop"],
+		["make:screen", "settings screen"],
+		["make:ui", "buyButton", "--kind", "button", "--in", "Shop"],
+		["make:ui", "coinLabel", "--kind", "label", "--in", "shop"],
+		["make:ui", "itemPanel", "--kind", "panel", "--in", "Shop"],
+		["make:ui", "logo", "--kind", "image", "--in", "Settings"],
+		["make:ui", "loose"],
+		// Long names are where a formatter and a generator disagree first.
+		["make:screen", "aVeryLongScreenNameForTheFormatterToWrapAround"],
+		["make:ui", "anExtremelyLongElementNameForTheFormatterToWrapAround", "--kind", "button", "--in", "aVeryLongScreenNameForTheFormatterToWrapAround"],
+		["make:ui", "anotherExtremelyLongElementNameForTheFormatterToWrap", "--kind", "panel"],
 	]) {
 		const made = run(process.execPath, [cli, ...args], project);
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
@@ -171,6 +183,21 @@ try {
 		const mapped = projectFile.tree?.ReplicatedStorage?.rbxts_include?.node_modules ?? {};
 		check(existsSync(join(project, "node_modules", "@rbxts-js")), "@rbxts/react did not install @rbxts-js");
 		check(mapped["@rbxts-js"]?.["$path"] === "node_modules/@rbxts-js", "the ui module did not map @rbxts-js into the game");
+	}
+
+	// What the interface commands left behind: screens listed by App, elements placed, previews written.
+	{
+		const app = readFileSync(join(project, "src", "client", "ui", "App.tsx"), "utf8");
+		check(/<ShopScreen \/>/.test(app) && /<SettingsScreen \/>/.test(app), "App does not show the new screens");
+		check(app.indexOf("<ShopScreen />") < app.indexOf("rowork:screens"), "a screen was added after the marker");
+		const shop = readFileSync(join(project, "src", "client", "ui", "screens", "ShopScreen.tsx"), "utf8");
+		check(/<BuyButton \/>/.test(shop) && /<CoinLabel \/>/.test(shop) && /<ItemPanel \/>/.test(shop), "the Shop screen does not place its elements");
+		check(/import \{ BuyButton \} from "\.\.\/BuyButton";/.test(shop), "the Shop screen does not import the element");
+		for (const file of ["BuyButton", "CoinLabel", "ItemPanel", "Logo", "Loose"]) {
+			check(existsSync(join(project, "src", "client", "ui", `${file}.tsx`)), `no ${file}.tsx`);
+			check(existsSync(join(project, "src", "client", "ui", `${file}.story.tsx`)), `no ${file}.story.tsx`);
+		}
+		check(!/<Loose/.test(app + shop), "an element created without --in was placed anyway");
 	}
 
 	console.log("compiling...");

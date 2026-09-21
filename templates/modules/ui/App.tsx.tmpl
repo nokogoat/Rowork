@@ -1,19 +1,19 @@
-import React, { useState } from "@rbxts/react";
-import { Button } from "./Button";
+import React from "@rbxts/react";
+import { HomeScreen } from "./screens/HomeScreen";
 
 /**
- * The root of your interface: everything on screen starts here.
+ * The root of your interface. Every screen of the game is listed here, and
+ * `rowork make:screen` adds the new ones to this list for you.
  *
- * A component is a function that returns what to draw. `useState` keeps a value
- * that redraws the interface when it changes. The lowercase tags (frame,
- * textbutton, ...) are Roblox instances; your own components start with a capital.
+ * A screen is a component that returns a `screengui`; `<>` ... `</>` groups them
+ * without adding anything to the game. The lowercase tags (`screengui`, `frame`,
+ * `textbutton`...) are Roblox instances; your own components start with a capital.
  */
 export function App() {
-	const [count, setCount] = useState(0);
-
 	return (
-		<frame Size={UDim2.fromScale(1, 1)} BackgroundTransparency={1}>
-			<Button text={`Clicked ${count} times`} onClick={() => setCount(count + 1)} />
-		</frame>
+		<>
+			<HomeScreen />
+			{/* rowork:screens */}
+		</>
 	);
 }

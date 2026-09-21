@@ -122,6 +122,9 @@ if (!reportOnly && failures.length === 0) {
 			["add:ui", "--no-plugin"],
 			["make:service", "Ledger"],
 			["make:component", "Door", "--side", "client"],
+			["make:screen", "Shop"],
+			["make:ui", "buyButton", "--kind", "button", "--in", "Shop"],
+			["make:ui", "itemPanel", "--kind", "panel", "--in", "Shop"],
 		]) {
 			const step = run(process.execPath, [cli, ...args], { cwd: project, env, shell: false });
 			if (step.status !== 0) throw new Error(`rowork ${args.join(" ")} failed:\n${step.output}`);

@@ -45,7 +45,8 @@ With `--no-examples` the example files are omitted and each directory keeps a
 | server-side logic (data, rules, anti-cheat) | `src/server/services/` (`rowork make:service`) |
 | client-side logic (input, camera, UI) | `src/client/controllers/` (`rowork make:controller`) |
 | behaviour attached to tagged instances | `src/<side>/components/` (`rowork make:component`) |
-| a screen or a component of your interface | `src/client/ui/` (`rowork add:ui`), one component per file |
+| a screen of your interface (a `ScreenGui`) | `src/client/ui/screens/` (`rowork make:screen`) |
+| an element of your interface (button, panel...) | `src/client/ui/` (`rowork make:ui`), one component per file |
 | a saved value (kills, coins) | `src/shared/data/PlayerData.ts` (`rowork make:stat`) |
 | a client/server message | `src/shared/networking.ts` (`rowork make:event`) |
 | types, constants, helpers used by both | `src/shared/` |

@@ -21,7 +21,8 @@ is running, nothing keeps file #200 consistent with the architecture of file #1.
 - **Generates.** `rowork start` walks you through creating a project;
   `rowork init` does it without questions. `make:service`, `make:controller`
   and `make:component` create Flamework classes and register them; `make:stat` and
-  `make:event` extend your saved data and networking without a forgotten line.
+  `make:event` extend your saved data and networking without a forgotten line, and `make:screen` and `make:ui`
+  build your interface without plumbing.
 - **Orchestrates.** `rowork dev` runs the roblox-ts compiler, the Rojo server
   and a sourcemap watcher together, with unified logs and a clean shutdown.
 - **Installs the toolchain.** Rokit and Rojo can be installed for you, with the

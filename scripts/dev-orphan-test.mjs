@@ -23,6 +23,18 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+// A port nobody is using. `dev` refuses a busy default port (34872), which is exactly where a real
+// `rowork dev` of a contributor is running: the scenarios must not depend on it being free.
+const testPort = String(
+	await new Promise((resolve) => {
+		const probe = createServer();
+		probe.listen(0, "127.0.0.1", () => {
+			const { port } = probe.address();
+			probe.close(() => resolve(port));
+		});
+	}),
+);
 const cli = join(repositoryRoot, "bin", "rowork.js");
 
 const BACKSLASH = String.fromCharCode(92);
@@ -131,7 +143,7 @@ let output = "";
 let exitCode = null;
 
 try {
-	const child = spawn(process.execPath, [cli, "dev", "--no-sourcemap"], {
+	const child = spawn(process.execPath, [cli, "dev", "--no-sourcemap", "--port", testPort], {
 		cwd: project,
 		stdio: ["ignore", "pipe", "pipe"],
 	});
@@ -174,7 +186,7 @@ try {
 	// Closing a window does not exist on Windows, so this is POSIX only.
 	if (process.platform !== "win32") {
 		writeFileSync(heartbeat, "");
-		const hangup = spawn(process.execPath, [cli, "dev", "--no-sourcemap"], {
+		const hangup = spawn(process.execPath, [cli, "dev", "--no-sourcemap", "--port", testPort], {
 			cwd: project,
 			env: { ...process.env, FAKE_ROJO_STAY: "1" },
 			stdio: ["ignore", "pipe", "pipe"],
@@ -242,7 +254,7 @@ try {
 			spawnSync(process.execPath, [cli, ...args], { cwd: project, env, encoding: "utf8", timeout: 30000 });
 		const pidFile = join(project, ".rowork", "run", "dev.pid");
 
-		const started = cliRun("-d", "dev", "--no-sourcemap");
+		const started = cliRun("-d", "dev", "--no-sourcemap", "--port", testPort);
 		check(started.status === 0, `scenario 4: dev -d exited with ${started.status}\n${started.stderr}`);
 		check(existsSync(pidFile), "scenario 4: no pid file after dev -d");
 
@@ -273,7 +285,7 @@ try {
 			check(info.project?.dev?.mode === "background", "scenario 4: the dashboard does not know dev runs in the background");
 		}
 
-		const second = cliRun("dev", "-d", "--no-sourcemap");
+		const second = cliRun("dev", "-d", "--no-sourcemap", "--port", testPort);
 		check(second.status === 1 && /already running/.test(plain(second.stderr)), "scenario 4: a second dev -d was not refused");
 
 		const stopped = cliRun("dev:stop");
@@ -291,7 +303,7 @@ try {
 		check(statSync(heartbeat).size === afterStop, "scenario 4: tasks kept running after dev:stop");
 
 		// --no-dashboard: no server, no record, no address.
-		const quiet = cliRun("dev", "-d", "--no-sourcemap", "--no-dashboard");
+		const quiet = cliRun("dev", "-d", "--no-sourcemap", "--no-dashboard", "--port", testPort);
 		check(quiet.status === 0 && !/Dashboard: http/.test(plain(quiet.stderr)), "scenario 4: --no-dashboard still printed a dashboard address");
 		check(!existsSync(dashboardFile), "scenario 4: --no-dashboard still wrote a dashboard record");
 		cliRun("dev:stop");

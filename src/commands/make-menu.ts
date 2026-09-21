@@ -2,6 +2,7 @@ import { defineCommand, type CommandDefinition } from "../plugins/api.js";
 import { answered, prompts, requireInteractive } from "../ui/prompt.js";
 import { makeEventCommand } from "./make-event.js";
 import { makeStatCommand } from "./make-stat.js";
+import { makeScreenCommand, makeUiCommand } from "./make-ui.js";
 import { makeComponentCommand, makeControllerCommand, makeServiceCommand, requireProject } from "./make.js";
 
 interface Choice {
@@ -16,7 +17,9 @@ const CHOICES: Choice[] = [
 	{ command: makeEventCommand, label: "Event", hint: "a typed message between client and server" },
 	{ command: makeServiceCommand, label: "Service", hint: "server-side logic: data, rules, spawning" },
 	{ command: makeControllerCommand, label: "Controller", hint: "client-side logic: input, camera, effects" },
-	{ command: makeComponentCommand, label: "Component", hint: "behaviour attached to tagged objects: doors, pickups" },
+	{ command: makeScreenCommand, label: "Screen", hint: "a full-screen layer of the interface (a ScreenGui), shown by App" },
+	{ command: makeUiCommand, label: "UI element", hint: "a button, text, panel or image, with its Studio preview" },
+	{ command: makeComponentCommand, label: "Component", hint: "behaviour for objects you tag in Studio: doors, pickups" },
 ];
 
 export const makeCommand = defineCommand({
@@ -25,7 +28,7 @@ export const makeCommand = defineCommand({
 	description: "Create a file in the right place and connect it where it is needed (choose from a list).",
 	async run(context) {
 		requireProject(context, "make");
-		requireInteractive("make", "rowork make:service <name>, make:controller <name>, make:component <name>, make:stat <name> or make:event <name>");
+		requireInteractive("make", "rowork make:service <name>, make:controller <name>, make:component <name>, make:stat <name>, make:event <name>, make:screen <name> or make:ui <name>");
 
 		prompts.intro("rowork make");
 		const chosen = answered(

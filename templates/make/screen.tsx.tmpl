@@ -1,0 +1,35 @@
+import React from "@rbxts/react";
+
+/**
+ * The {{ name }} screen.
+ *
+ * A screen is a ScreenGui: one full-screen layer of your interface. `App` shows it
+ * (Rowork listed it there for you), and each screen is separate so it can be shown,
+ * hidden and ordered on its own.
+ *
+ * - `key` is the name the ScreenGui gets in the game (PlayerGui > {{ name }}), so scripts can find it.
+ * - `ResetOnSpawn={false}` keeps it when the character respawns.
+ * - `DisplayOrder` (add it to the ScreenGui) puts a screen in front of another: higher is in front.
+ * - `Enabled` shows or hides the whole screen, e.g. from a `useState` in this component.
+ *
+ * Add elements with `rowork make:ui <name> --in {{ name }}`, or write them between the frame tags.
+ */
+export function {{ className }}() {
+	return (
+		<screengui key="{{ name }}" ResetOnSpawn={false} ZIndexBehavior={Enum.ZIndexBehavior.Sibling}>
+			<frame Size={UDim2.fromScale(1, 1)} BackgroundTransparency={1}>
+				{/* A placeholder, so you can see the screen work: delete it once you add your own. */}
+				<textlabel
+					Size={UDim2.fromOffset(300, 50)}
+					Position={UDim2.fromScale(0.5, 0.1)}
+					AnchorPoint={new Vector2(0.5, 0)}
+					BackgroundColor3={Color3.fromRGB(30, 30, 35)}
+					TextColor3={Color3.fromRGB(255, 255, 255)}
+					Text="{{ name }}"
+					TextScaled
+				/>
+				{{ elementsMarker }}
+			</frame>
+		</screengui>
+	);
+}

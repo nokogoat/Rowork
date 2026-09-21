@@ -266,12 +266,18 @@ It asks no question. `--no-plugin` skips the Studio plugin.
 
 | File / change | Role |
 | --- | --- |
-| `src/client/ui/App.tsx` | the root of your interface: everything on screen starts here |
-| `src/client/ui/Button.tsx` | an example component, to copy |
+| `src/client/ui/App.tsx` | the root of your interface: it lists every screen |
+| `src/client/ui/screens/HomeScreen.tsx` | an example **screen**: a `ScreenGui` with a button. Add more with `rowork make:screen` |
+| `src/client/ui/Button.tsx` | an example **element**, to copy. Add more with `rowork make:ui` |
 | `src/client/ui/Button.story.tsx` | its **story**: the component alone in UI Labs, with fields you can change live |
-| `src/client/controllers/UiController.tsx` | mounts `App` on the player's screen when the game starts |
+| `src/client/controllers/UiController.tsx` | draws `App` into the player's `PlayerGui` when the game starts (through a portal, because screens are `ScreenGui`s) |
 | `tsconfig.json` | the JSX settings roblox-ts needs: `React.createElement` and `React.Fragment` |
 | `default.project.json` | maps `node_modules/@rbxts-js` into the game: React is built on those packages, and without them the interface never starts |
+
+**Screens and elements.** Your interface is a list of screens (`ScreenGui`s) that `App` shows, each holding
+elements. `rowork make:screen Shop` and `rowork make:ui buyButton --in Shop` create them and connect them (see
+[commands](commands.md#rowork-makescreen-and-rowork-makeui)); you never edit `App.tsx` to add one. Press Play
+in Studio to see the screens, and open UI Labs to see one element alone.
 
 A component is a function that returns what to draw. Lowercase tags (`frame`, `textbutton`, ...)
 are Roblox instances; your own components start with a capital letter. `useState` keeps a value

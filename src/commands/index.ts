@@ -15,6 +15,7 @@ import { initCommand } from "./init.js";
 import { makeCommand } from "./make-menu.js";
 import { makeEventCommand } from "./make-event.js";
 import { makeStatCommand } from "./make-stat.js";
+import { makeScreenCommand, makeUiCommand } from "./make-ui.js";
 import { makeComponentCommand, makeControllerCommand, makeServiceCommand } from "./make.js";
 import { startCommand } from "./start.js";
 import { studioCommand, studioSetupCommand } from "./studio.js";
@@ -39,6 +40,8 @@ export const coreCommands: CommandDefinition[] = [
 	makeComponentCommand,
 	makeStatCommand,
 	makeEventCommand,
+	makeScreenCommand,
+	makeUiCommand,
 	studioCommand,
 	studioSetupCommand,
 	consoleCommand,

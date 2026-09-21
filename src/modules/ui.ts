@@ -12,7 +12,8 @@ export const uiModule: ModuleDefinition = {
 	agentGuide: [
 		"The interface is React (`@rbxts/react`), in `src/client/ui/`. One component per file: a function that returns JSX. Lowercase tags (`frame`, `textbutton`, `textlabel`...) are Roblox instances; your own components start with a capital. Use hooks (`useState`, `useEffect`); do not create or change Instances by hand inside a component.",
 		"Roblox events in JSX use `Event={{ Activated: () => ... }}`; properties are the Roblox property names (`Size`, `Position`, `BackgroundColor3`...).",
-		"For each component add a `Name.story.tsx` next to it (see `Button.story.tsx`): it shows the component alone in Studio through the UI Labs plugin. `UiController` mounts `App` on the player's screen; new screens are components used by `App`.",
+		"The interface is made of screens and elements. A **screen** is a component that returns a `screengui` (`src/client/ui/screens/<Name>Screen.tsx`); `App` lists them between the `{/* rowork:screens */}` marker, and `UiController` draws `App` into the player's PlayerGui. An **element** is a reusable component (`src/client/ui/<Name>.tsx`) with a `.story.tsx` next to it that shows it alone in Studio through the UI Labs plugin.",
+		"Create them with `rowork make:screen <name>` and `rowork make:ui <name> --kind button|label|panel|image --in <Screen>`: they put the file in the right place and add it to `App` or to the screen for you. Do not edit `App.tsx` by hand to add a screen, and keep the `{/* rowork:screens */}` and `{/* rowork:elements */}` markers: they are how Rowork knows where to add.",
 		"The interface reads data from the server: with the `player-data` and `networking` modules, use `PlayerDataController` (`get()`, `onChanged`) rather than asking again. Never trust the client for game rules: a button sends an event, the server decides.",
 	],
 	plan({ config }: PlanInput): ModulePlan {
@@ -20,6 +21,7 @@ export const uiModule: ModuleDefinition = {
 		return {
 			files: [
 				{ template: "ui/App.tsx", directory: ui, fileName: "App.tsx", variables: {} },
+				{ template: "ui/screens/HomeScreen.tsx", directory: `${ui}/screens`, fileName: "HomeScreen.tsx", variables: {} },
 				{ template: "ui/Button.tsx", directory: ui, fileName: "Button.tsx", variables: {} },
 				{ template: "ui/Button.story.tsx", directory: ui, fileName: "Button.story.tsx", variables: {} },
 				{
@@ -35,8 +37,8 @@ export const uiModule: ModuleDefinition = {
 			// React is built on the @rbxts-js packages: if the game does not contain them, the interface never starts.
 			nodeModuleScopes: ["@rbxts-js"],
 			notes: [
-				`Your interface starts in ${ui}/App.tsx. \`npm run build\` compiles it; UiController puts it on screen.`,
-				"To see a component without running the game, open the UI Labs plugin in Studio: it lists every *.story.tsx.",
+				`Your interface is a list of screens: ${ui}/App.tsx shows them, and UiController puts them on the player's screen. Try it: Play in Studio.`,
+				"Add a screen with `rowork make:screen`, and buttons, text, panels or images with `rowork make:ui`. To see one element without running the game, open the UI Labs plugin in Studio: it lists every *.story.tsx.",
 			],
 		};
 	},

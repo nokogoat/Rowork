@@ -1,0 +1,11 @@
+import React from "@rbxts/react";
+
+interface {{ name }}Props {
+	/** An image id, e.g. `Assets.logo` from `rowork assets` (see src/shared/assets.ts). */
+	image?: string;
+}
+
+/** An image. Upload files with `rowork assets` and pass `Assets.<name>` as `image`. */
+export function {{ name }}({ image = "" }: {{ name }}Props) {
+	return <imagelabel Image={image} Size={UDim2.fromOffset(120, 120)} BackgroundTransparency={1} />;
+}
