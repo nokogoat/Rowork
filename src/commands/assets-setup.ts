@@ -60,11 +60,14 @@ export function saveCreator(root: string, creator: Creator): void {
 }
 
 const STEPS = [
-	`1. Open ${KEY_HELP_URL} and click "Create API Key".`,
-	"2. Name it (for example Rowork), then under Access Permissions pick the API system \"assets\".",
-	"3. Tick asset:read and asset:write, and nothing else. Remove any other system Roblox adds.",
-	"4. Under Security, restrict it to your IP address, and set an expiry date.",
+	`1. Open ${KEY_HELP_URL}, click "Create API Key" and give it a name (for example Rowork).`,
+	'2. Under "Access Permissions", open "Select API System" and pick "assets".',
+	"3. Tick asset:read and asset:write. Nothing else: do not add legacy-assets or asset-permissions,",
+	"   a key with fewer rights does less damage if it ever leaks.",
+	'4. Under "Security", restrict it to your IP address and set an expiry date.',
 	'5. Click "Save & Generate Key", then copy the key: Roblox shows it only once.',
+	"",
+	"Then paste it below. You will also be asked for your Roblox user id (the number in your profile address).",
 ].join("\n");
 
 /**

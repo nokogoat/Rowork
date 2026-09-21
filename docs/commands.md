@@ -506,16 +506,16 @@ rowork assets --creator user:123456 --yes      # script / CI form (group:123456 
 | `--dry-run` | show the plan and change nothing |
 | `--yes` | do not ask for confirmation (required outside a terminal) |
 
-**Not yet proved against Roblox itself.** The tests run against a fake local server (the real service needs a
-real key). To be confirmed with a real key: the pending-upload answers, real limits, and that the id of an
-uploaded image works in an `ImageLabel` in a running game.
+**What is proved against Roblox itself.** An image uploaded with `rowork assets` shows in an `ImageLabel` in a
+running game (checked in Studio), and `assets:setup` accepts a real key. Still to be confirmed with a real key:
+sounds, models, uploads to a group, and the real limits.
 
 ## `rowork assets:setup`
 
 Sets up what `rowork assets` needs: a Roblox API key and the owner of the uploads. Guided, done once.
 
 1. It lists what to click in the Creator Hub (create a key, API system `assets`, `asset:read` and `asset:write`
-   and nothing else, your IP address, an expiry date) and offers to open the page.
+   and nothing else, so no `legacy-assets`, your IP address, an expiry date) and offers to open the page.
 2. You paste the key into a hidden field.
 3. Rowork asks Roblox whether it accepts the key (a read that creates nothing) and only then stores it in
    `.env`. It first makes sure `.gitignore` lists `.env`, and keeps the other lines of the file.
