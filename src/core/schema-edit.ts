@@ -1,4 +1,5 @@
 import { RoworkError } from "../cli/errors.js";
+import { findClosingBrace, maskNonCode } from "./source-scan.js";
 
 /**
  * Small, careful edits to files the user owns.
@@ -18,20 +19,18 @@ interface Block {
 	end: number;
 }
 
-/** Finds `{ ... }` after `opening`, matching nested braces. */
+/**
+ * Finds `{ ... }` after `opening`, matching nested braces. Strings and comments are ignored
+ * (see `source-scan.ts`), both when looking for `opening` and when counting braces.
+ */
 export function findBlock(source: string, opening: RegExp): Block | undefined {
-	const match = opening.exec(source);
+	const code = maskNonCode(source);
+	const match = opening.exec(code);
 	if (match === null) return undefined;
 
 	const start = match.index + match[0].length;
-	let depth = 1;
-	for (let index = start; index < source.length; index += 1) {
-		const character = source[index];
-		if (character === "{") depth += 1;
-		if (character === "}") depth -= 1;
-		if (depth === 0) return { start, end: index };
-	}
-	return undefined;
+	const end = findClosingBrace(code, start);
+	return end === undefined ? undefined : { start, end };
 }
 
 function unrecognized(file: string, what: string): RoworkError {

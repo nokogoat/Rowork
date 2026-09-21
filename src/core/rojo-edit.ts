@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { RoworkError } from "../cli/errors.js";
+import { findClosingBrace, maskNonCode } from "./source-scan.js";
 
 /**
  * npm scopes that some packages need inside the game, and that the project template
@@ -14,24 +15,6 @@ export const OPTIONAL_SCOPES = ["@rbxts-js"];
 /** The scopes among `scopes` that are installed but not mapped in the Rojo project. */
 export function unmappedScopes(projectSource: string, projectRoot: string, scopes: string[] = OPTIONAL_SCOPES): string[] {
 	return scopes.filter((scope) => existsSync(join(projectRoot, "node_modules", scope)) && !projectSource.includes(`"${scope}"`));
-}
-
-/** The index of the `}` that closes the `{` at `open`, skipping over strings. */
-function matchingBrace(source: string, open: number): number {
-	let depth = 0;
-	for (let i = open; i < source.length; i += 1) {
-		const char = source[i];
-		if (char === '"') {
-			i += 1;
-			while (i < source.length && source[i] !== '"') i += source[i] === "\\" ? 2 : 1;
-		} else if (char === "{") {
-			depth += 1;
-		} else if (char === "}") {
-			depth -= 1;
-			if (depth === 0) return i;
-		}
-	}
-	return -1;
 }
 
 /**
@@ -57,7 +40,7 @@ export function addNodeModuleScopes(source: string, file: string, scopes: string
 		const modules = include < 0 ? -1 : result.indexOf('"node_modules"', include);
 		const open = modules < 0 ? -1 : result.indexOf("{", modules);
 		if (open < 0) return fail();
-		const close = matchingBrace(result, open);
+		const close = findClosingBrace(maskNonCode(result), open + 1) ?? -1;
 		if (close < 0) return fail();
 
 		const body = result.slice(open + 1, close);
