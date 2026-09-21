@@ -373,11 +373,11 @@ rowork make:ui                                           # guided: name, kind, w
 An interactive Rowork prompt, so you type commands without retyping `rowork`:
 
 ```
-Zomblood > make
-Zomblood > make:stat
-Zomblood > dev
-Zomblood > help
-Zomblood > exit
+MyGame > make
+MyGame > make:stat
+MyGame > dev
+MyGame > help
+MyGame > exit
 ```
 
 - **Everything works as usual**: type `make:stat`, `dev --port 34873`, or even

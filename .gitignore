@@ -20,6 +20,6 @@ Thumbs.db
 *.pem
 /TestGame/
 
-# The maintainer's private working notes and the game used as a test bench: not part of the project.
+# Local-only files: private notes and a scratch project used for testing.
 /CLAUDE.md
 /Zomblood/
