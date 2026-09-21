@@ -10,8 +10,8 @@ Rowork is not published yet. The name `rowork` was free when this was written
 
 Already checked, and worth re-checking if the package layout changes:
 
-- `npm pack --dry-run` lists only `bin/`, `dist/`, `templates/`, `README.md`,
-  `LICENSE` and `package.json`: no sources, tests, CI files, source maps or
+- `npm pack --dry-run` lists only `bin/`, `dashboard/`, `dist/`, `templates/`,
+  `README.md`, `LICENSE` and `package.json` (about 185 files, 125 kB): no sources, tests, CI files, source maps or
   private files. Look at the list before every release.
 - The tarball works on its own. From a scratch directory:
 
@@ -26,15 +26,28 @@ Already checked, and worth re-checking if the package layout changes:
 
 ## Publishing
 
-From a clean, up-to-date `main`:
+`main` is protected (a pull request and the `ci-success` check are required, and
+nobody can push to it directly), so `npm version` cannot commit and push the version
+bump itself. The bump goes through a pull request, then you publish from the merged
+`main`:
 
 ```bash
+# 1. The version bump, through a pull request
+git checkout main && git pull
+git checkout -b release/0.1.0
+npm version 0.1.0 --no-git-tag-version     # edits package.json and package-lock.json only
+git commit -am "chore: release 0.1.0"
+git push -u origin release/0.1.0
+gh pr create --fill                        # wait for ci-success, then merge it
+
+# 2. Publish from the merged main
 git checkout main && git pull
 npm ci
-npm login                # your account; 2FA required
-npm version 0.1.0        # or patch/minor; creates the commit and the tag
-npm publish              # prepublishOnly runs build + every test first
-git push --follow-tags
+npm login                                  # your account; 2FA required
+npm publish                                # prepublishOnly runs build + every test first
+
+# 3. Tag what was published
+git tag v0.1.0 && git push origin v0.1.0
 ```
 
 - `prepublishOnly` runs the full test suite (build, smoke, orphan, integration),
@@ -58,10 +71,13 @@ git push --follow-tags
 npm is restricting tokens that bypass two-factor authentication. When releases
 become routine, publish from GitHub Actions with npm's trusted publishing (OIDC),
 which needs no long-lived token and adds provenance, instead of publishing from a
-laptop.
+laptop. After the first manual publish, add a trusted publisher for this repository in the
+package's settings on npmjs.com, then publish from a workflow instead.
 
-## Opening the repository
+## The repository
 
-Publishing to npm does not make the GitHub repository public; that is a separate
-step. The history becomes public with it (check it for secrets and personal data first), and the `main` ruleset (require a pull request and
-the `ci-success` check) must be created at that moment.
+The GitHub repository is public and `main` is protected by a ruleset (a pull request and
+the `ci-success` check are required; deleting or force-pushing `main` is forbidden). Never
+put a secret, a personal note or a test project in a commit: a
+[gitleaks](https://github.com/gitleaks/gitleaks) hook is described in
+[Contributing](contributing.md).
