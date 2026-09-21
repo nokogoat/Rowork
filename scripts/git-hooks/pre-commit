@@ -1,0 +1,16 @@
+#!/bin/sh
+# Refuses a commit that contains a secret (an API key, a token...).
+#
+# Why: this repository's history becomes public one day, and a secret that was ever
+# committed must be treated as leaked, even if a later commit removes it.
+#
+# Turn it on once, in this repository:  git config core.hooksPath scripts/git-hooks
+# Install gitleaks:  https://github.com/gitleaks/gitleaks  (Arch: pacman -S gitleaks)
+# A real false alarm: add it to .gitleaks.toml. Skip once (rarely!): git commit --no-verify
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+	echo "pre-commit: gitleaks is not installed, so this commit was NOT scanned for secrets."
+	exit 0
+fi
+
+exec gitleaks git --pre-commit --staged --redact --no-banner

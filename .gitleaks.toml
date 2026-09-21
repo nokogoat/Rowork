@@ -1,0 +1,10 @@
+title = "Rowork secret scanning"
+
+# Start from gitleaks' own rules, and only add what is a known false alarm.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "The made-up API key of the assets test: it is only ever sent to a fake server on this computer."
+paths = ['''scripts/assets-test\.mjs''']
+regexes = ['''test-key-SECRET-9f3a1c''']

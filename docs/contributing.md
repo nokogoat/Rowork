@@ -47,6 +47,20 @@ directory: it never touches your own `~/.rokit` or shell profile.
 - **Public-safe history.** No tokens, keys, cookies or personal paths in any
   commit: the history is public once the repository is.
 
+## Keeping secrets out
+
+This repository's history is going to be public, and a secret that was ever committed must be treated as leaked
+even if a later commit deletes it. A [gitleaks](https://github.com/gitleaks/gitleaks) check runs before each commit:
+
+```bash
+git config core.hooksPath scripts/git-hooks   # once, in your clone
+gitleaks git --redact .                        # scan the whole history by hand
+```
+
+Install gitleaks with your package manager (Arch: `pacman -S gitleaks`) or from its releases page. Without it the
+hook only warns that the commit was not scanned. The rules are gitleaks' own; `.gitleaks.toml` lists the known
+false alarms (the made-up key of the assets test). Never add a real secret there: rotate it instead.
+
 ## Staying current
 
 Rowork writes down no tool version, except an offline fallback for Rojo in
