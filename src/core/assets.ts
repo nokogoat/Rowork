@@ -13,11 +13,11 @@ export const DEFAULT_FOLDER = "assets";
 
 /** What each file extension is uploaded as, from Roblox's list of supported formats. */
 const KINDS: Record<string, { type: AssetType; contentType: string }> = {
-	".png": { type: "Decal", contentType: "image/png" },
-	".jpg": { type: "Decal", contentType: "image/jpeg" },
-	".jpeg": { type: "Decal", contentType: "image/jpeg" },
-	".bmp": { type: "Decal", contentType: "image/bmp" },
-	".tga": { type: "Decal", contentType: "image/x-tga" },
+	".png": { type: "Image", contentType: "image/png" },
+	".jpg": { type: "Image", contentType: "image/jpeg" },
+	".jpeg": { type: "Image", contentType: "image/jpeg" },
+	".bmp": { type: "Image", contentType: "image/bmp" },
+	".tga": { type: "Image", contentType: "image/x-tga" },
 	".mp3": { type: "Audio", contentType: "audio/mpeg" },
 	".ogg": { type: "Audio", contentType: "audio/ogg" },
 	".wav": { type: "Audio", contentType: "audio/wav" },
@@ -129,7 +129,9 @@ export interface PlannedAsset {
 export function planAssets(files: AssetFile[], lock: Lock): PlannedAsset[] {
 	return files.map((file) => {
 		const known = lock.assets[file.relative];
-		if (known === undefined || known.sha256 !== file.sha256) return { file, action: "upload" };
+		// A different type means it was uploaded the old way (images used to go up as Decals,
+		// whose id does not reliably load in an ImageLabel): send it again as what it is now.
+		if (known === undefined || known.sha256 !== file.sha256 || known.type !== file.type) return { file, action: "upload" };
 		if (known.assetId === undefined && known.operation !== undefined) return { file, action: "resume" };
 		return { file, action: known.assetId === undefined ? "upload" : "unchanged" };
 	});

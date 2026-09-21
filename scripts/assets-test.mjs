@@ -140,7 +140,7 @@ try {
 	const posts = requests.filter((r) => r.method === "POST");
 	check(posts.length === 2, `upload: expected 2 uploads, got ${posts.length}`);
 	check([...operations.values()].every((o) => o.request?.creationContext?.creator?.userId === "42"), "upload: the creator was not sent as userId");
-	check([...operations.values()].every((o) => o.request?.assetType === "Decal"), "upload: a png was not sent as a Decal");
+	check([...operations.values()].every((o) => o.request?.assetType === "Image"), "upload: a png was not sent as an Image (a Decal id does not load in an ImageLabel)");
 	check(existsSync(lockPath), "upload: no lock file");
 	check(existsSync(modulePath), "upload: no shared/assets.ts");
 	if (existsSync(modulePath)) {
@@ -184,6 +184,21 @@ try {
 	check(!/no: "rbxassetid/.test(readFileSync(modulePath, "utf8")), "moderation: `Rejected` reached assets.ts");
 	rmSync(join(assets, "no.png"));
 	rmSync(join(assets, "real.png"));
+
+	// 7c. An image recorded as a Decal by an older Rowork is sent again as an Image, once.
+	{
+		const lock = JSON.parse(readFileSync(lockPath, "utf8"));
+		lock.assets["logo.png"].type = "Decal";
+		writeFileSync(lockPath, JSON.stringify(lock));
+		before = requests.length;
+		await run(project, ["assets", "--yes"], { ROWORK_ROBLOX_API_KEY: KEY });
+		const sent = requests.slice(before).filter((r) => r.method === "POST");
+		check(sent.length === 1, `old Decal: expected one new upload, got ${sent.length}`);
+		check(JSON.parse(readFileSync(lockPath, "utf8")).assets["logo.png"].type === "Image", "old Decal: the lock still says Decal");
+		before = requests.length;
+		await run(project, ["assets", "--yes"], { ROWORK_ROBLOX_API_KEY: KEY });
+		check(requests.length === before, "old Decal: it was uploaded again on the next run");
+	}
 
 	// 8. A file removed from the folder disappears from the generated module.
 	rmSync(join(assets, "bad.png"));

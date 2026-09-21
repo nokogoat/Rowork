@@ -15,8 +15,12 @@ import { RoworkError } from "../cli/errors.js";
 
 const DEFAULT_BASE = "https://apis.roblox.com";
 
-/** What Roblox calls the kinds of asset this client can create. */
-export type AssetType = "Decal" | "Audio" | "Model";
+/**
+ * What Roblox calls the kinds of asset this client can create. Images go up as `Image`,
+ * not `Decal`: the id of a Decal does not reliably load in an `ImageLabel` in a running
+ * game. `Decal` stays in the type only because older lock files recorded it.
+ */
+export type AssetType = "Image" | "Decal" | "Audio" | "Model";
 
 export interface Creator {
 	type: "user" | "group";

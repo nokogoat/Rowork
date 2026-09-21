@@ -146,9 +146,9 @@ try {
 		const lock = {
 			version: 1,
 			assets: {
-				"icons/sword.png": { sha256: "a", type: "Decal", assetId: "1001", moderation: "MODERATION_STATE_APPROVED" },
+				"icons/sword.png": { sha256: "a", type: "Image", assetId: "1001", moderation: "MODERATION_STATE_APPROVED" },
 				"sounds/hit-1.ogg": { sha256: "b", type: "Audio", assetId: "1002" },
-				"logo.png": { sha256: "c", type: "Decal", assetId: "1003" },
+				"logo.png": { sha256: "c", type: "Image", assetId: "1003" },
 			},
 		};
 		const { source } = renderAssetsModule(lock, new Set(Object.keys(lock.assets)));

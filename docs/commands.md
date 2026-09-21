@@ -481,6 +481,9 @@ Drop images (`png`, `jpg`, `bmp`, `tga`), sounds (`mp3`, `ogg`, `wav`, `flac`) o
 - **A file is uploaded once.** `assets.lock.json` (commit it) remembers the content hash and the asset id of
   each file, so running the command again sends nothing that did not change. A changed image becomes a new
   asset: Roblox cannot update an image in place.
+- **Images are uploaded as `Image` assets, not `Decal`.** The API also accepts `Decal`, but the id of a Decal
+  does not reliably load in an `ImageLabel` in a running game. A project uploaded by an older Rowork (images
+  recorded as Decals in `assets.lock.json`) sends each image again, once, as an `Image`.
 - **Roblox moderates every upload**, and answers later. A file still being checked, or refused, is left out of
   `Assets` and reported; run the command again to pick it up.
 - **It needs an Open Cloud API key.** Roblox requires one to upload, and it cannot be built into Rowork
@@ -505,7 +508,7 @@ rowork assets --creator user:123456 --yes      # script / CI form (group:123456 
 
 **Not yet proved against Roblox itself.** The tests run against a fake local server (the real service needs a
 real key). To be confirmed with a real key: the pending-upload answers, real limits, and that the id of an
-uploaded image works in an `ImageLabel`.
+uploaded image works in an `ImageLabel` in a running game.
 
 ## `rowork assets:setup`
 
