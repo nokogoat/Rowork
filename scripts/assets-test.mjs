@@ -31,7 +31,7 @@ const check = (condition, message) => {
 const requests = [];
 const operations = new Map();
 /** Set by a scenario to change what the fake answers. */
-const behaviour = { moderation: "MODERATION_STATE_APPROVED", pendingReads: 1 };
+const behaviour = { moderation: "MODERATION_STATE_APPROVED", pendingReads: 1, denyVideo: false };
 let nextAsset = 1000;
 
 const server = createServer((request, response) => {
@@ -50,6 +50,9 @@ const server = createServer((request, response) => {
 		if (request.method === "POST" && request.url === "/assets/v1/assets") {
 			const text = body.toString("latin1");
 			const meta = /name="request"\r\n\r\n([^\r]*)/.exec(text);
+			if (behaviour.denyVideo && /"assetType":"Video"/.test(text)) {
+				return send(403, { code: "PERMISSION_DENIED", message: "User 42 is unauthorized to create an Video asset as User 42. Recourse options: [IdVerification]" });
+			}
 			const id = `op${operations.size + 1}`;
 			operations.set(id, { reads: 0, assetId: String(nextAsset++), request: meta === null ? null : JSON.parse(meta[1]) });
 			return send(200, { path: `operations/${id}` });
@@ -185,6 +188,8 @@ try {
 	rmSync(join(assets, "no.png"));
 	rmSync(join(assets, "real.png"));
 
+	behaviour.moderation = "MODERATION_STATE_APPROVED";
+
 	// 7c. An image recorded as a Decal by an older Rowork is sent again as an Image, once.
 	{
 		const lock = JSON.parse(readFileSync(lockPath, "utf8"));
@@ -199,6 +204,30 @@ try {
 		await run(project, ["assets", "--yes"], { ROWORK_ROBLOX_API_KEY: KEY });
 		check(requests.length === before, "old Decal: it was uploaded again on the next run");
 	}
+
+	// 7d. A video is uploaded as a Video, with its own content type, and named in Assets like the rest.
+	writeFileSync(join(assets, "clip.mp4"), Buffer.from([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32]));
+	before = requests.length;
+	result = await run(project, ["assets", "--yes"], { ROWORK_ROBLOX_API_KEY: KEY });
+	const videoPost = requests.slice(before).find((r) => r.method === "POST");
+	check(videoPost !== undefined && /"assetType":"Video"/.test(videoPost.body.toString("latin1")), "video: an mp4 was not sent as a Video");
+	check(videoPost !== undefined && /Content-Type: video\/mp4/i.test(videoPost.body.toString("latin1")), "video: an mp4 was not sent as video/mp4");
+	check(/clip: "rbxassetid/.test(readFileSync(modulePath, "utf8")), "video: the video is not in assets.ts");
+	rmSync(join(assets, "clip.mp4"));
+
+	// 7e. Roblox refusing a video because the account is not ID-verified is not the key's fault, and does not
+	// stop the other files.
+	behaviour.denyVideo = true;
+	writeFileSync(join(assets, "clip.mp4"), Buffer.from([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x33]));
+	writeFileSync(join(assets, "after.png"), png(11));
+	result = await run(project, ["assets", "--yes"], { ROWORK_ROBLOX_API_KEY: KEY });
+	check(result.status === 1, "denied video: the run should end with an error");
+	check(/ID-verified/.test(result.output), `denied video: the ID verification reason was not shown\n${result.output}`);
+	check(!/refused the API key/.test(result.output), "denied video: the key was blamed");
+	check(/after: "rbxassetid/.test(readFileSync(modulePath, "utf8")), "denied video: the other file was not uploaded");
+	behaviour.denyVideo = false;
+	rmSync(join(assets, "clip.mp4"));
+	rmSync(join(assets, "after.png"));
 
 	// 8. A file removed from the folder disappears from the generated module.
 	rmSync(join(assets, "bad.png"));

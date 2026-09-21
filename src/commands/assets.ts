@@ -9,6 +9,7 @@ import {
 	KEY_NAME,
 	LOCK_FILE,
 	MAX_MODEL_BYTES,
+	MAX_VIDEO_BYTES,
 	assetsFolder,
 	humanSize,
 	planAssets,
@@ -47,7 +48,7 @@ export const assetsCommand = defineCommand({
 		if (files.length === 0 && Object.keys(readLock(root).assets).length === 0) {
 			mkdirSync(folderPath, { recursive: true });
 			writeFileSync(join(folderPath, ".gitkeep"), "", { flag: "a" });
-			logger.info(`Nothing to upload yet. Drop images (png, jpg), sounds (mp3, ogg, wav, flac) or models (fbx, glb, rbxm) in ${pc.bold(`${folder}/`)}, then run \`rowork assets\` again.`);
+			logger.info(`Nothing to upload yet. Drop images (png, jpg), sounds (mp3, ogg, wav, flac), models (fbx, glb, rbxm) or videos (mp4, mov) in ${pc.bold(`${folder}/`)}, then run \`rowork assets\` again.`);
 			return;
 		}
 
@@ -117,6 +118,9 @@ export const assetsCommand = defineCommand({
 				if (action === "upload" && file.type === "Model" && file.size > MAX_MODEL_BYTES) {
 					throw new RoworkError(`${file.relative} is ${humanSize(file.size)}: Roblox accepts models up to 20 MB.`);
 				}
+				if (action === "upload" && file.type === "Video" && file.size > MAX_VIDEO_BYTES) {
+					throw new RoworkError(`${file.relative} is ${humanSize(file.size)}: Roblox accepts videos up to 3.75 GB.`);
+				}
 
 				let operation = lock.assets[file.relative]?.operation;
 				if (action === "upload") {
@@ -159,6 +163,7 @@ export const assetsCommand = defineCommand({
 				if (error instanceof RoworkError && /refused the API key/.test(error.message)) throw error;
 				failures += 1;
 				logger.error(`${file.relative}: ${message}`);
+				if (error instanceof RoworkError && error.hint !== undefined) logger.info(`  ${cloud.redact(error.hint)}`);
 			}
 		}
 

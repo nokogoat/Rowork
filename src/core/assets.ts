@@ -27,10 +27,15 @@ const KINDS: Record<string, { type: AssetType; contentType: string }> = {
 	".glb": { type: "Model", contentType: "model/gltf-binary" },
 	".rbxm": { type: "Model", contentType: "model/x-rbxm" },
 	".rbxmx": { type: "Model", contentType: "model/x-rbxmx" },
+	".mp4": { type: "Video", contentType: "video/mp4" },
+	".mov": { type: "Video", contentType: "video/quicktime" },
 };
 
 /** Roblox's documented ceiling for a model upload. */
 export const MAX_MODEL_BYTES = 20 * 1024 * 1024;
+
+/** And for a video (also at most 5 minutes and 4096x2160; uploading needs an ID-verified account aged 13 or more). */
+export const MAX_VIDEO_BYTES = 3.75 * 1024 * 1024 * 1024;
 
 export interface AssetFile {
 	/** Path inside the assets folder, with `/` on every system. */

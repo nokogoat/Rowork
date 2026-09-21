@@ -20,7 +20,7 @@ const DEFAULT_BASE = "https://apis.roblox.com";
  * not `Decal`: the id of a Decal does not reliably load in an `ImageLabel` in a running
  * game. `Decal` stays in the type only because older lock files recorded it.
  */
-export type AssetType = "Image" | "Decal" | "Audio" | "Model";
+export type AssetType = "Image" | "Decal" | "Audio" | "Model" | "Video";
 
 export interface Creator {
 	type: "user" | "group";
@@ -67,6 +67,17 @@ export class OpenCloud {
 		this.base = base;
 	}
 
+	/** Roblox's own explanation of a 403, when it sends one (`PERMISSION_DENIED` with a message). */
+	private async readDenial(response: Response): Promise<string | undefined> {
+		try {
+			const body = (await response.json()) as { code?: unknown; message?: unknown };
+			if (body.code === "PERMISSION_DENIED" && typeof body.message === "string") return this.redact(body.message.slice(0, 300));
+		} catch {
+			// Not JSON: nothing more to say than "refused".
+		}
+		return undefined;
+	}
+
 	/** Removes the key from a piece of text before it can be shown. */
 	redact(text: string): string {
 		return this.apiKey === "" ? text : text.split(this.apiKey).join("***");
@@ -94,9 +105,19 @@ export class OpenCloud {
 				continue;
 			}
 			if (response.status === 401 || response.status === 403) {
-				throw new RoworkError("Roblox refused the API key.", {
-					hint: "Check that it is valid, has not expired, has the Assets API permission with read and write, and that its IP restrictions allow this computer.",
-				});
+				const keyHint =
+					"Check that it is valid, has not expired, has the Assets API permission with read and write, and that its IP restrictions allow this computer.";
+				// A 403 can also be Roblox refusing THIS upload for THIS account (a video needs an ID-verified account):
+				// it says so in the body, and blaming the key would send people to fix the wrong thing.
+				const denied = response.status === 403 ? await this.readDenial(response) : undefined;
+				if (denied !== undefined) {
+					throw new RoworkError(denied, {
+						hint: /IdVerification/i.test(denied)
+							? "Roblox requires your account to be ID-verified for this kind of upload (videos, and more than 10 sounds a month). Verify your identity in your Roblox account settings, then run the command again."
+							: `If that does not explain it: ${keyHint}`,
+					});
+				}
+				throw new RoworkError("Roblox refused the API key.", { hint: keyHint });
 			}
 			if (!response.ok) {
 				const body = this.redact((await response.text()).slice(0, 300));

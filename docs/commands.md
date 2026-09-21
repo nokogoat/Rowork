@@ -475,8 +475,8 @@ import { Assets } from "../../shared/assets"; // the path depends on where your 
 image.Image = Assets.icons.sword; // assets/icons/sword.png
 ```
 
-Drop images (`png`, `jpg`, `bmp`, `tga`), sounds (`mp3`, `ogg`, `wav`, `flac`) or models (`fbx`, `gltf`, `glb`,
-`rbxm`) in `assets/`, then run `rowork assets`. Names come from the file path (`hit-1.ogg` becomes `hit1`).
+Drop images (`png`, `jpg`, `bmp`, `tga`), sounds (`mp3`, `ogg`, `wav`, `flac`), models (`fbx`, `gltf`, `glb`,
+`rbxm`) or videos (`mp4`, `mov`) in `assets/`, then run `rowork assets`. Names come from the file path (`hit-1.ogg` becomes `hit1`).
 
 - **A file is uploaded once.** `assets.lock.json` (commit it) remembers the content hash and the asset id of
   each file, so running the command again sends nothing that did not change. A changed image becomes a new
@@ -493,6 +493,12 @@ Drop images (`png`, `jpg`, `bmp`, `tga`), sounds (`mp3`, `ogg`, `wav`, `flac`) o
 - **It needs to know who owns the assets** (your account or a group). It asks once and remembers the answer in
   `rowork.json`.
 - Audio is limited by Roblox to 10 uploads a month until your identity is verified, 100 after.
+- **Videos** (up to 5 minutes and 4096x2160) need a Roblox account that is 13 or older and **ID-verified**, with
+  at most 20 uploads a day. Without that, Roblox refuses with `PERMISSION_DENIED ... [IdVerification]` and
+  Rowork says so (it does not blame the key) while still uploading your other files. Use the id in a
+  `VideoFrame`: `video.Video = Assets.intro`.
+- **A refusal says why.** Roblox's own explanation is shown for the file concerned, and only a real 401 (or a
+  403 without explanation) is reported as a key problem.
 
 ```bash
 rowork assets                                  # guided: sets up the key if needed, confirms before uploading
