@@ -32,6 +32,8 @@ export const uiModule: ModuleDefinition = {
 			register: [{ side: "client", directory: config.paths.controllers }],
 			// roblox-ts turns JSX into calls to this factory: it must be React's.
 			compilerOptions: { jsx: "react", jsxFactory: "React.createElement", jsxFragmentFactory: "React.Fragment" },
+			// React is built on the @rbxts-js packages: if the game does not contain them, the interface never starts.
+			nodeModuleScopes: ["@rbxts-js"],
 			notes: [
 				`Your interface starts in ${ui}/App.tsx. \`npm run build\` compiles it; UiController puts it on screen.`,
 				"To see a component without running the game, open the UI Labs plugin in Studio: it lists every *.story.tsx.",

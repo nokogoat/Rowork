@@ -271,6 +271,7 @@ It asks no question. `--no-plugin` skips the Studio plugin.
 | `src/client/ui/Button.story.tsx` | its **story**: the component alone in UI Labs, with fields you can change live |
 | `src/client/controllers/UiController.tsx` | mounts `App` on the player's screen when the game starts |
 | `tsconfig.json` | the JSX settings roblox-ts needs: `React.createElement` and `React.Fragment` |
+| `default.project.json` | maps `node_modules/@rbxts-js` into the game: React is built on those packages, and without them the interface never starts |
 
 A component is a function that returns what to draw. Lowercase tags (`frame`, `textbutton`, ...)
 are Roblox instances; your own components start with a capital letter. `useState` keeps a value
@@ -294,6 +295,12 @@ its GitHub release and checked against the checksum GitHub publishes.
 layout stay. A project created before this module has the old Roact setting there, which is
 replaced. If you set something else yourself, it is left alone and the command stops before writing
 anything.
+
+**`default.project.json`** is yours too, and edited as text: one entry is added next to `@rbxts` and
+`@flamework`, everything else stays. If the file no longer looks like the template, Rowork stops
+before writing anything and prints the entry to add. `rowork dev` warns when an installed package
+folder such as `@rbxts-js` is not mapped (see
+[troubleshooting](troubleshooting.md#infinite-yield-possible-on-rbxts-js-and-no-interface)).
 
 **With the other modules.** Read the player's saved data from `PlayerDataController` in your
 components rather than asking the server again, and let a button send an event: the server decides

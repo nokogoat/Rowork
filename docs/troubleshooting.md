@@ -94,6 +94,20 @@ npm install --save-dev typescript@$(node -p "require('roblox-ts/package.json').d
 
 It is interactive. In a script, a pipe or CI, use `rowork init <name>`.
 
+## `Infinite yield possible on ...WaitForChild("@rbxts-js")`, and no interface
+
+`@rbxts/react` is built on the `@rbxts-js` packages, and Studio only has what
+`default.project.json` maps. When that folder is not mapped the interface never starts and the only
+sign is this warning in the Output window. The `ui` module maps it, and `rowork dev` warns when an
+installed folder is missing from the project. To fix a project created before that, add this next to
+`"@rbxts"` under `"rbxts_include"` > `"node_modules"`:
+
+```json
+"@rbxts-js": {
+  "$path": "node_modules/@rbxts-js"
+}
+```
+
 ## The Rojo plugin cannot connect in Studio
 
 - Is `rowork dev` still running, with the `rojo` task alive?

@@ -17,6 +17,8 @@ export interface ModulePlan {
 	register: { side: "server" | "client"; directory: string }[];
 	/** tsconfig.json `compilerOptions` to set (JSX, for the UI module). See `core/tsconfig-edit.ts`. */
 	compilerOptions?: Record<string, string>;
+	/** npm scopes to map into the game in default.project.json (`@rbxts-js` for React). See `core/rojo-edit.ts`. */
+	nodeModuleScopes?: string[];
 	/** npm scripts to add to package.json. One that already exists is never overwritten. */
 	scripts?: Record<string, string>;
 	/** Short lines printed after installation: what was added, what to do next. */

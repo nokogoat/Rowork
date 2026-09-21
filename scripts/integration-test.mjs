@@ -164,6 +164,15 @@ try {
 	check(JSON.parse(readFileSync(join(project, "rowork.json"), "utf8")).modules?.includes("lint"), "the linter is not recorded in rowork.json");
 	check(existsSync(join(project, ".prettierrc.json")) && JSON.parse(readFileSync(join(project, "rowork.json"), "utf8")).modules?.includes("format"), "a new project does not include the formatter");
 
+	// The UI module maps @rbxts-js into the game (React needs it). Checked on the real file, with the
+	// real installed packages: this is what a missing mapping ("Infinite yield ... @rbxts-js") looked like.
+	{
+		const projectFile = JSON.parse(readFileSync(join(project, "default.project.json"), "utf8"));
+		const mapped = projectFile.tree?.ReplicatedStorage?.rbxts_include?.node_modules ?? {};
+		check(existsSync(join(project, "node_modules", "@rbxts-js")), "@rbxts/react did not install @rbxts-js");
+		check(mapped["@rbxts-js"]?.["$path"] === "node_modules/@rbxts-js", "the ui module did not map @rbxts-js into the game");
+	}
+
 	console.log("compiling...");
 	const compile = run(process.execPath, [join(project, "node_modules", "roblox-ts", "out", "CLI", "cli.js")], project);
 

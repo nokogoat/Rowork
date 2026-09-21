@@ -1,4 +1,4 @@
-import { createWriteStream, existsSync, mkdirSync } from "node:fs";
+import { createWriteStream, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import pc from "picocolors";
@@ -22,6 +22,7 @@ import {
 } from "../core/background.js";
 import { openBrowser } from "../dashboard/open.js";
 import { startDashboard, type RunningDashboard } from "../dashboard/server.js";
+import { unmappedScopes } from "../core/rojo-edit.js";
 import { findStoreRojoPlugin, needsStudioSetup, warnAboutStorePlugin } from "../core/studio.js";
 import { readRojoPin, rojoIsAtLeast } from "../core/versions.js";
 import { findMissing, isPortFree, pathWithLocalBinaries, installAdvice, type ToolRequirement } from "../core/toolchain.js";
@@ -109,6 +110,19 @@ export const devCommand = defineCommand({
 				`Missing tool${missing.length > 1 ? "s" : ""}: ${missing.map((tool) => tool.command).join(", ")}.`,
 				{ hint: installAdvice(missing) },
 			);
+		}
+
+		// A package folder that is installed but not mapped in the Rojo project never reaches the game.
+		// Studio only says "Infinite yield possible", and a React interface silently never starts.
+		const rojoFile = context.config?.paths.rojoProject ?? "default.project.json";
+		try {
+			const unmapped = unmappedScopes(readFileSync(join(projectRoot, rojoFile), "utf8"), projectRoot);
+			for (const scope of unmapped) {
+				context.logger.warn(`${rojoFile} does not map ${scope}, so the game will not contain it (Studio waits for it forever, and a React interface never appears).`);
+				context.logger.info(`  Add next to "@rbxts", under "rbxts_include" > "node_modules": "${scope}": { "$path": "node_modules/${scope}" }`);
+			}
+		} catch {
+			// A project file we cannot read is Rojo's error to report, not this check's.
 		}
 
 		// Rojo's own report of a busy port is a 15-line "Rojo crashed" that also

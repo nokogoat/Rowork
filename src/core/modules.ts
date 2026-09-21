@@ -7,6 +7,7 @@ import { coreIntegrations } from "../modules/integrations.js";
 import type { ModuleDefinition, ModulePlan } from "../modules/types.js";
 import type { CommandContext, Logger, RoworkConfig } from "../plugins/api.js";
 import { syncAgentDocs } from "./agent-docs.js";
+import { addNodeModuleScopes } from "./rojo-edit.js";
 import { setCompilerOptions } from "./tsconfig-edit.js";
 import { CONFIG_FILENAME, loadConfig, resolveProjectPath } from "./config.js";
 import { run as runBinary } from "./exec.js";
@@ -77,6 +78,19 @@ export async function installModule(
 		newTsconfig = { path, source: setCompilerOptions(current, "tsconfig.json", plan.compilerOptions) };
 	}
 
+	// Same for default.project.json: computed now, written with the rest.
+	let newProject: { path: string; source: string } | undefined;
+	if (plan.nodeModuleScopes !== undefined) {
+		const path = join(root, config.paths.rojoProject);
+		let current: string;
+		try {
+			current = readFileSync(path, "utf8");
+		} catch {
+			throw new RoworkError(`Cannot read ${config.paths.rojoProject}.`, { hint: "This module needs to map a package folder there." });
+		}
+		newProject = { path, source: addNodeModuleScopes(current, config.paths.rojoProject, plan.nodeModuleScopes) };
+	}
+
 	logger.info(`Adding the ${definition.title} module`);
 
 	if (definition.dependencies !== undefined && context.options["install"] !== false) {
@@ -93,6 +107,11 @@ export async function installModule(
 	if (newTsconfig !== undefined && newTsconfig.source !== readFileSync(newTsconfig.path, "utf8")) {
 		writeFileSync(newTsconfig.path, newTsconfig.source, "utf8");
 		logger.step(`tsconfig.json: set ${Object.keys(plan.compilerOptions ?? {}).join(", ")}`);
+	}
+
+	if (newProject !== undefined && newProject.source !== readFileSync(newProject.path, "utf8")) {
+		writeFileSync(newProject.path, newProject.source, "utf8");
+		logger.step(`${config.paths.rojoProject}: mapped ${(plan.nodeModuleScopes ?? []).join(", ")} into the game`);
 	}
 
 	recordModule(root, definition.name);

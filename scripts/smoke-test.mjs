@@ -11,7 +11,7 @@ import { request as httpRequest } from "node:http";
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const cli = join(repositoryRoot, "bin", "rowork.js");
@@ -473,6 +473,44 @@ try {
 	});
 	check(noTools.status === 1, `\`rowork dev\` without tools exited with ${noTools.status}`);
 	check(/Missing tools?: .*rojo/.test(noTools.stderr), "`rowork dev` did not name the missing rojo");
+
+	// Mapping @rbxts-js into the game: React needs it, and without it the interface never starts.
+	{
+		const { addNodeModuleScopes, unmappedScopes } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "rojo-edit.js")).href);
+		const template = readFileSync(join(workspace, "SmokeGame", "default.project.json"), "utf8");
+		const edited = addNodeModuleScopes(template, "default.project.json", ["@rbxts-js"]);
+		let parsed;
+		try {
+			parsed = JSON.parse(edited);
+		} catch (error) {
+			check(false, `rojo edit: the result is not valid JSON (${error.message})\n${edited}`);
+		}
+		const mapped = parsed?.tree?.ReplicatedStorage?.rbxts_include?.node_modules;
+		check(mapped?.["@rbxts-js"]?.["$path"] === "node_modules/@rbxts-js", "rojo edit: @rbxts-js is not mapped where @rbxts is");
+		check(mapped?.["@rbxts"]?.["$path"] === "node_modules/@rbxts" && mapped?.["@flamework"] !== undefined, "rojo edit: an existing mapping was lost");
+		check(addNodeModuleScopes(edited, "default.project.json", ["@rbxts-js"]) === edited, "rojo edit: applying it twice changed the file");
+
+		// A file with comments and other things: everything else stays as it was.
+		const withComment = template.replace('"name": "SmokeGame",', '// my own note\n  "name": "SmokeGame",');
+		const kept = addNodeModuleScopes(withComment, "default.project.json", ["@rbxts-js"]);
+		check(kept.includes("// my own note"), "rojo edit: a comment was lost");
+
+		// A file that no longer has the expected shape is refused, not guessed at.
+		let refused = false;
+		try {
+			addNodeModuleScopes('{ "name": "x", "tree": { "$className": "DataModel" } }', "default.project.json", ["@rbxts-js"]);
+		} catch {
+			refused = true;
+		}
+		check(refused, "rojo edit: an unrecognised project file was not refused");
+
+		// The check `rowork dev` uses: installed but unmapped is reported, mapped is not.
+		const fake = mkdtempSync(join(workspace, "scope-"));
+		mkdirSync(join(fake, "node_modules", "@rbxts-js"), { recursive: true });
+		check(unmappedScopes(template, fake).join() === "@rbxts-js", "rojo edit: an installed, unmapped scope was not reported");
+		check(unmappedScopes(edited, fake).length === 0, "rojo edit: a mapped scope was reported");
+		check(unmappedScopes(template, workspace).length === 0, "rojo edit: a scope that is not installed was reported");
+	}
 
 	// The dashboard: a local server that must refuse everything but its own page, and stop cleanly.
 	{
