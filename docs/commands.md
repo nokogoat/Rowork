@@ -483,16 +483,16 @@ Drop images (`png`, `jpg`, `bmp`, `tga`), sounds (`mp3`, `ogg`, `wav`, `flac`) o
   asset: Roblox cannot update an image in place.
 - **Roblox moderates every upload**, and answers later. A file still being checked, or refused, is left out of
   `Assets` and reported; run the command again to pick it up.
-- **It needs an Open Cloud API key.** Create one in the Creator Hub (Open Cloud, API keys) with the Assets API
-  permission, read and write, and nothing else; restrict it to your IP address and set an expiry date. Give it
-  to Rowork through the `ROWORK_ROBLOX_API_KEY` environment variable, or in a `.env` file at the project root.
-  Rowork never prints the key, never writes it anywhere, and **refuses to use a `.env` that git would commit**.
+- **It needs an Open Cloud API key.** Roblox requires one to upload, and it cannot be built into Rowork
+  (everyone would then upload to the same account). `rowork assets:setup` walks you through it, once, and
+  `rowork assets` starts it by itself when the key is missing. Rowork never prints the key, never writes it
+  anywhere but `.env`, and **refuses to use a `.env` that git would commit**.
 - **It needs to know who owns the assets** (your account or a group). It asks once and remembers the answer in
   `rowork.json`.
 - Audio is limited by Roblox to 10 uploads a month until your identity is verified, 100 after.
 
 ```bash
-rowork assets                                  # guided: asks who owns the assets, confirms before uploading
+rowork assets                                  # guided: sets up the key if needed, confirms before uploading
 rowork assets --dry-run                        # what would be uploaded, nothing sent
 rowork assets --creator user:123456 --yes      # script / CI form (group:123456 for a group)
 ```
@@ -506,6 +506,25 @@ rowork assets --creator user:123456 --yes      # script / CI form (group:123456 
 **Not yet proved against Roblox itself.** The tests run against a fake local server (the real service needs a
 real key). To be confirmed with a real key: the pending-upload answers, real limits, and that the id of an
 uploaded image works in an `ImageLabel`.
+
+## `rowork assets:setup`
+
+Sets up what `rowork assets` needs: a Roblox API key and the owner of the uploads. Guided, done once.
+
+1. It lists what to click in the Creator Hub (create a key, API system `assets`, `asset:read` and `asset:write`
+   and nothing else, your IP address, an expiry date) and offers to open the page.
+2. You paste the key into a hidden field.
+3. Rowork asks Roblox whether it accepts the key (a read that creates nothing) and only then stores it in
+   `.env`. It first makes sure `.gitignore` lists `.env`, and keeps the other lines of the file.
+4. It asks who owns the uploads (your account or a group) and remembers it in `rowork.json`.
+
+```bash
+rowork assets:setup
+rowork assets:setup --check --creator user:123456   # script / CI: check the key from the environment
+```
+
+The key is never taken from an argument (it would end up in your shell history). Outside a terminal, set
+`ROWORK_ROBLOX_API_KEY` in the environment and use `--check`.
 
 ## `rowork dashboard`
 

@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { extname, join } from "node:path";
 
 import { RoworkError } from "../cli/errors.js";
@@ -254,6 +254,41 @@ export function readApiKey(projectRoot: string): { key: string; source: "environ
 		}
 	}
 	return { key: fromFile, source: ".env" };
+}
+
+/** A pasted key is one token: no spaces, no quotes, nothing that could break a `.env` line. */
+export function looksLikeApiKey(text: string): boolean {
+	return /^[A-Za-z0-9+/=_-]{16,}$/.test(text);
+}
+
+/**
+ * Stores the key in `.env`, in that order: first make sure git ignores `.env`, and only
+ * then write the key. Other lines of the file are kept. The file is readable by its owner only.
+ */
+export function saveApiKey(projectRoot: string, key: string): void {
+	const gitignore = join(projectRoot, ".gitignore");
+	const current = existsSync(gitignore) ? readFileSync(gitignore, "utf8") : "";
+	if (!current.split(/\r?\n/).some((line) => line.trim() === ".env")) {
+		const separator = current === "" || current.endsWith("\n") ? "" : "\n";
+		writeFileSync(gitignore, `${current}${separator}.env\n`, "utf8");
+	}
+
+	const file = join(projectRoot, ".env");
+	const lines = existsSync(file) ? readFileSync(file, "utf8").split(/\r?\n/) : [];
+	const entry = `${KEY_NAME}=${key}`;
+	const index = lines.findIndex((line) => new RegExp(`^\\s*(?:export\\s+)?${KEY_NAME}\\s*=`).test(line));
+	if (index >= 0) {
+		lines[index] = entry;
+	} else {
+		while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+		lines.push(entry);
+	}
+	writeFileSync(file, `${lines.join("\n")}\n`, "utf8");
+	try {
+		chmodSync(file, 0o600);
+	} catch {
+		// Not every file system has permissions (Windows): the .gitignore entry is what protects it there.
+	}
 }
 
 export function assetsFolder(config: { assets?: { folder?: string } }): string {

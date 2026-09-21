@@ -102,6 +102,24 @@ export class OpenCloud {
 		}
 	}
 
+	/**
+	 * Asks whether Roblox accepts the key, without creating anything: it reads an operation
+	 * that cannot exist. A valid key with the Assets permission gets "not found"; a bad key,
+	 * an expired one, a missing permission or a wrong IP address gets 401 or 403.
+	 * (Which answer a real key gets is still to be confirmed against the real service.)
+	 */
+	async verifyKey(): Promise<"accepted" | "refused" | "unreachable"> {
+		try {
+			const response = await fetch(`${this.base}/assets/v1/operations/rowork-key-check`, {
+				headers: { "x-api-key": this.apiKey },
+				signal: AbortSignal.timeout(20_000),
+			});
+			return response.status === 401 || response.status === 403 ? "refused" : "accepted";
+		} catch {
+			return "unreachable";
+		}
+	}
+
 	/** Starts an upload. Returns the operation to follow, e.g. `operations/abc`. */
 	async createAsset(input: {
 		file: Uint8Array;

@@ -24,61 +24,7 @@ import { OpenCloud, type Creator } from "../core/open-cloud.js";
 import { defineCommand, type CommandContext } from "../plugins/api.js";
 import { answered, isInteractive, prompts } from "../ui/prompt.js";
 import { requireProject } from "./make.js";
-
-const HOW_TO_GET_A_KEY = [
-	"Rowork needs a Roblox Open Cloud API key to upload. Create one in the Creator Hub (Open Cloud, API keys):",
-	"  - give it the Assets API permission, with read and write, and nothing else;",
-	"  - restrict it to your IP address if you can, and set an expiry date.",
-	"Then keep it out of your code, either in your environment:",
-	`  export ${KEY_NAME}=<your key>`,
-	"or in a `.env` file at the project root (git ignores it in a project created by Rowork):",
-	`  ${KEY_NAME}=<your key>`,
-	"Rowork never prints the key and never writes it anywhere else. Details: https://create.roblox.com/docs/cloud/guides/usage-assets",
-];
-
-function parseCreator(text: string): Creator {
-	const match = /^(?:(user|group):)?(\d+)$/.exec(text.trim());
-	if (match === null) {
-		throw new RoworkError(`\`${text}\` is not a creator.`, { hint: "Write user:123456 or group:123456 (a bare number means a user)." });
-	}
-	return { type: (match[1] as "user" | "group" | undefined) ?? "user", id: match[2] as string };
-}
-
-/** The creator from the flag, the project, or a question. The choice is saved for next time. */
-async function resolveCreator(context: CommandContext, root: string, configured: Creator | undefined): Promise<Creator> {
-	const flag = context.options["creator"];
-	if (typeof flag === "string") return parseCreator(flag);
-	if (configured !== undefined) return configured;
-
-	if (!isInteractive()) {
-		throw new RoworkError("Roblox needs to know who owns the assets.", {
-			hint: "Run once with --creator user:<your user id> (or group:<group id>). It is remembered in rowork.json.",
-		});
-	}
-	const type = answered(
-		await prompts.select({
-			message: "Who owns the assets you upload?",
-			options: [
-				{ value: "user", label: "Me (my Roblox account)" },
-				{ value: "group", label: "A group" },
-			],
-		}),
-	) as "user" | "group";
-	const id = answered(
-		await prompts.text({
-			message: type === "user" ? "Your Roblox user id (the number in your profile address)" : "The group id (the number in the group address)",
-			validate: (value) => (/^\d+$/.test((value ?? "").trim()) ? undefined : "Digits only."),
-		}),
-	).trim();
-	return { type, id };
-}
-
-function saveCreator(root: string, creator: Creator): void {
-	const file = join(root, CONFIG_FILENAME);
-	const config = JSON.parse(readFileSync(file, "utf8")) as { assets?: { creator?: Creator } };
-	config.assets = { ...config.assets, creator };
-	writeFileSync(file, `${JSON.stringify(config, undefined, 2)}\n`, "utf8");
-}
+import { KEY_HELP_URL, resolveCreator, saveCreator, setUpApiKey } from "./assets-setup.js";
 
 const LABEL: Record<PlannedAsset["action"], string> = { upload: "upload   ", resume: "resume   ", unchanged: "unchanged" };
 
@@ -138,11 +84,15 @@ export const assetsCommand = defineCommand({
 		}
 
 		// The key and the owner are needed before any question about confirming: fail early.
-		const found = readApiKey(root);
+		let found = readApiKey(root);
 		if (found === undefined) {
-			throw new RoworkError("No Roblox API key found.", { hint: HOW_TO_GET_A_KEY.join("\n      ") });
+			if (!isInteractive()) {
+				throw new RoworkError("No Roblox API key found.", { hint: `Run \`rowork assets:setup\` in a terminal, or set ${KEY_NAME} in the environment. ${KEY_HELP_URL}` });
+			}
+			logger.info("No Roblox API key yet: let's set it up, it takes a minute and is done once.");
+			found = await setUpApiKey(context, root);
 		}
-		const creator = await resolveCreator(context, root, config.assets?.creator);
+		const creator = await resolveCreator(context, config.assets?.creator);
 
 		if (context.options["yes"] !== true) {
 			if (!isInteractive()) {

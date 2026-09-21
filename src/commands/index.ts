@@ -2,6 +2,7 @@ import type { CommandDefinition } from "../plugins/api.js";
 import { coreModules } from "../modules/index.js";
 import { addCommand, moduleCommand } from "./add.js";
 import { assetsCommand } from "./assets.js";
+import { assetsSetupCommand } from "./assets-setup.js";
 import { consoleCommand } from "./console.js";
 import { agentsSyncCommand, infoCommand } from "./info.js";
 import { updateCommand } from "./update.js";
@@ -30,6 +31,7 @@ export const coreCommands: CommandDefinition[] = [
 	devStopCommand,
 	dashboardCommand,
 	assetsCommand,
+	assetsSetupCommand,
 	devLogsCommand,
 	makeCommand,
 	makeServiceCommand,

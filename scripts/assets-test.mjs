@@ -10,10 +10,10 @@
  */
 import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:http";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const cli = join(repositoryRoot, "bin", "rowork.js");
@@ -117,7 +117,7 @@ try {
 	let before = requests.length;
 	let result = await run(project, ["assets", "--creator", "user:42", "--yes"], { ROWORK_ROBLOX_API_KEY: "" });
 	check(result.status === 1, `no key: expected exit 1, got ${result.status}`);
-	check(/API key/i.test(result.output) && /Assets API/.test(result.output), "no key: the message does not explain how to create one");
+	check(/API key/i.test(result.output) && /assets:setup/.test(result.output), "no key: the message does not point to `rowork assets:setup`");
 	check(requests.length === before, "no key: something was sent anyway");
 	check(!existsSync(lockPath), "no key: a lock file was written");
 
@@ -205,6 +205,33 @@ try {
 	writeFileSync(join(assets, "far.png"), png(8));
 	result = await run(project, ["assets", "--yes"], { ROWORK_ROBLOX_API_KEY: KEY, ROWORK_OPEN_CLOUD_URL: "https://evil.example.com" });
 	check(result.status === 1 && /this computer/.test(result.output), "foreign address: not refused");
+
+	// 12. `assets:setup --check` asks the service, never prints the key, and needs no terminal.
+	before = requests.length;
+	result = await run(project, ["assets:setup", "--check"], { ROWORK_ROBLOX_API_KEY: KEY });
+	check(result.status === 0 && /accepted/.test(result.output), `setup --check: a good key was not accepted\n${result.output}`);
+	check(!result.output.includes(KEY), "setup --check: the key was printed");
+	check(requests.length === before + 1 && requests.at(-1).method === "GET", "setup --check: it should make exactly one read, and create nothing");
+	result = await run(project, ["assets:setup", "--check"], { ROWORK_ROBLOX_API_KEY: "some-other-key-0123456789" });
+	check(result.status === 1 && /refused/.test(result.output), "setup --check: a bad key was not refused");
+	check(!result.output.includes("some-other-key-0123456789"), "setup --check: a bad key was printed");
+	result = await run(project, ["assets:setup"], { ROWORK_ROBLOX_API_KEY: KEY });
+	check(result.status === 1 && /terminal/.test(result.output) && /--check/.test(result.output), "setup without a terminal: it should refuse and give the scripted form");
+
+	// 13. Storing the key: git must ignore `.env` before the key is written, other lines survive.
+	{
+		const { saveApiKey, looksLikeApiKey } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "assets.js")).href);
+		const folder = mkdtempSync(join(workspace, "keys-"));
+		writeFileSync(join(folder, ".env"), "OTHER=1\n\n");
+		saveApiKey(folder, KEY);
+		check(/^\.env$/m.test(readFileSync(join(folder, ".gitignore"), "utf8")), "saveApiKey: .env was not added to .gitignore");
+		check(readFileSync(join(folder, ".env"), "utf8") === `OTHER=1\nROWORK_ROBLOX_API_KEY=${KEY}\n`, "saveApiKey: the other lines were not kept, or the key was misplaced");
+		saveApiKey(folder, "replaced-key-0123456789");
+		const text = readFileSync(join(folder, ".env"), "utf8");
+		check(text.match(/ROWORK_ROBLOX_API_KEY/g)?.length === 1 && text.includes("replaced-key-0123456789") && !text.includes(KEY), "saveApiKey: a second key should replace the first");
+		if (process.platform !== "win32") check((statSync(join(folder, ".env")).mode & 0o077) === 0, "saveApiKey: .env is readable by other users");
+		check(!looksLikeApiKey("has space 0123456789abc") && !looksLikeApiKey('"quoted-0123456789abcdef"') && !looksLikeApiKey("short") && looksLikeApiKey(KEY), "looksLikeApiKey: wrong verdict");
+	}
 } finally {
 	server.close();
 	rmSync(workspace, { recursive: true, force: true });
