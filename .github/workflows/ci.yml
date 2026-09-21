@@ -44,6 +44,9 @@ jobs:
       - name: Verify no process survives rowork dev
         run: npm run test:orphan
 
+      - name: Upload assets against a fake Open Cloud
+        run: npm run test:assets
+
   # Scaffolds a project, installs its real dependencies and compiles it.
   #
   # The matrix above runs with --no-install, so it proves files are written but

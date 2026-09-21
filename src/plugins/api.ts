@@ -118,6 +118,13 @@ export interface RoworkConfig {
 	modules?: string[];
 	/** Names of the integrations between modules already applied. */
 	integrations?: string[];
+	/** Settings of `rowork assets`, the upload of files to Roblox. */
+	assets?: {
+		/** Folder holding the files to upload, relative to the project. Defaults to `assets`. */
+		folder?: string;
+		/** Who owns the uploaded assets. */
+		creator?: { type: "user" | "group"; id: string };
+	};
 }
 
 /** Type-inference helper for command authors. */

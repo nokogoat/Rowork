@@ -11,7 +11,7 @@
  * It needs the network and takes a minute, so CI runs it as a single job
  * rather than across the whole matrix.
  */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -136,6 +136,27 @@ try {
 	]) {
 		const made = run(process.execPath, [cli, ...args], project);
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
+	}
+
+	// `rowork assets` writes src/shared/assets.ts. It goes through the real generator here (the upload
+	// itself needs a Roblox key, see scripts/assets-test.mjs) so the compiler, the linter and the
+	// formatter judge it like any other generated file, along with code that uses it.
+	{
+		const { renderAssetsModule } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "assets.js")).href);
+		const lock = {
+			version: 1,
+			assets: {
+				"icons/sword.png": { sha256: "a", type: "Decal", assetId: "1001", moderation: "MODERATION_STATE_APPROVED" },
+				"sounds/hit-1.ogg": { sha256: "b", type: "Audio", assetId: "1002" },
+				"logo.png": { sha256: "c", type: "Decal", assetId: "1003" },
+			},
+		};
+		const { source } = renderAssetsModule(lock, new Set(Object.keys(lock.assets)));
+		writeFileSync(join(project, "src", "shared", "assets.ts"), source);
+		writeFileSync(
+			join(project, "src", "shared", "assetsUse.ts"),
+			'import { Assets } from "./assets";\n\nexport const swordIcon: string = Assets.icons.sword;\nexport const hitSound: string = Assets.sounds.hit1;\n',
+		);
 	}
 
 	// The linter comes with every new project: nobody has to go and add it.

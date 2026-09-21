@@ -37,6 +37,7 @@ installed.
 | `paths.shared` | shared code directory |
 | `plugins` | plugin module names to load explicitly. See [Plugins](plugins.md) |
 | `modules` | names of the [modules](modules.md) installed with `rowork add`. Written by Rowork; optional |
+| `assets` | settings of [`rowork assets`](commands.md#rowork-assets): `folder` (default `assets`) and `creator` (`{ "type": "user" \| "group", "id": "..." }`, remembered after the first upload). Never put an API key here. Optional |
 
 Paths are relative to the project root, or absolute.
 

@@ -464,6 +464,49 @@ rowork wire --dry-run   # what would be wired, nothing changed
 rowork wire
 ```
 
+## `rowork assets`
+
+Uploads the files of your `assets/` folder to Roblox and writes `src/shared/assets.ts`, so your code
+names an image or a sound instead of pasting a number.
+
+```ts
+import { Assets } from "../../shared/assets"; // the path depends on where your file is
+
+image.Image = Assets.icons.sword; // assets/icons/sword.png
+```
+
+Drop images (`png`, `jpg`, `bmp`, `tga`), sounds (`mp3`, `ogg`, `wav`, `flac`) or models (`fbx`, `gltf`, `glb`,
+`rbxm`) in `assets/`, then run `rowork assets`. Names come from the file path (`hit-1.ogg` becomes `hit1`).
+
+- **A file is uploaded once.** `assets.lock.json` (commit it) remembers the content hash and the asset id of
+  each file, so running the command again sends nothing that did not change. A changed image becomes a new
+  asset: Roblox cannot update an image in place.
+- **Roblox moderates every upload**, and answers later. A file still being checked, or refused, is left out of
+  `Assets` and reported; run the command again to pick it up.
+- **It needs an Open Cloud API key.** Create one in the Creator Hub (Open Cloud, API keys) with the Assets API
+  permission, read and write, and nothing else; restrict it to your IP address and set an expiry date. Give it
+  to Rowork through the `ROWORK_ROBLOX_API_KEY` environment variable, or in a `.env` file at the project root.
+  Rowork never prints the key, never writes it anywhere, and **refuses to use a `.env` that git would commit**.
+- **It needs to know who owns the assets** (your account or a group). It asks once and remembers the answer in
+  `rowork.json`.
+- Audio is limited by Roblox to 10 uploads a month until your identity is verified, 100 after.
+
+```bash
+rowork assets                                  # guided: asks who owns the assets, confirms before uploading
+rowork assets --dry-run                        # what would be uploaded, nothing sent
+rowork assets --creator user:123456 --yes      # script / CI form (group:123456 for a group)
+```
+
+| Option | Effect |
+| --- | --- |
+| `--creator <who>` | `user:<id>` or `group:<id>` (a bare number means a user); remembered |
+| `--dry-run` | show the plan and change nothing |
+| `--yes` | do not ask for confirmation (required outside a terminal) |
+
+**Not yet proved against Roblox itself.** The tests run against a fake local server (the real service needs a
+real key). To be confirmed with a real key: the pending-upload answers, real limits, and that the id of an
+uploaded image works in an `ImageLabel`.
+
 ## `rowork dashboard`
 
 Opens a local web page for the project: what is installed, every command, and the live output of
@@ -530,5 +573,4 @@ verified. Rokit, an executable, is stricter: it is refused without a checksum.
 ## Not there yet
 
 These do **not** exist (see the [roadmap](roadmap.md)): using Wally packages from TypeScript,
-`rowork add wally`, a preview of the interface outside Roblox, and uploading files to Roblox
-from the project.
+`rowork add wally`, and a preview of the interface outside Roblox.

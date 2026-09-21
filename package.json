@@ -37,10 +37,11 @@
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch",
     "test:smoke": "node scripts/smoke-test.mjs",
-    "test": "npm run build && npm run test:smoke && npm run test:orphan && npm run test:integration",
+    "test": "npm run build && npm run test:smoke && npm run test:orphan && npm run test:assets && npm run test:integration",
     "prepublishOnly": "npm run test",
     "rowork": "node bin/rowork.js",
     "test:orphan": "node scripts/dev-orphan-test.mjs",
+    "test:assets": "node scripts/assets-test.mjs",
     "test:integration": "node scripts/integration-test.mjs"
   },
   "keywords": [

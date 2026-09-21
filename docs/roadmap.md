@@ -45,6 +45,10 @@ something breaks.
 **The dashboard.** `rowork dashboard`: a local web page (only your computer, secret token) showing the
 project and the live output of `dev`. The base for the next two tools.
 
+**Uploading files.** `rowork assets` (see [commands](commands.md#rowork-assets)): drop files in `assets/`,
+Rowork uploads them through Open Cloud and generates `Assets` for your code. Tested against a fake
+server only; to be confirmed with a real API key.
+
 ## Next
 
 Both are planned as **tabs of the dashboard** (see [The dashboard](dashboard.md)).
@@ -52,9 +56,7 @@ Both are planned as **tabs of the dashboard** (see [The dashboard](dashboard.md)
 - **See the interface outside Roblox.** A preview you can open in a browser, without Studio
   (useful on Linux, where Studio needs Wine). Approximate by nature: it will not match Roblox
   pixel for pixel, and the docs will say so.
-- **Upload files to Roblox from the project.** Drop images, sounds or models in a folder;
-  Rowork uploads them to Roblox through its Open Cloud API and gives your code their asset IDs.
-  Needs an API key, which must never be committed.
+- **An "upload files" tab** for `rowork assets` (below), once the command is confirmed with a real key.
 
 ## Later
 
