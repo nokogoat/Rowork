@@ -51,7 +51,7 @@ git push --follow-tags
 2. Update the install instructions that currently say Rowork is not published:
    `README.md` (Quick start) and `docs/getting-started.md` (Install Rowork). The
    repository install stays documented under [Contributing](contributing.md).
-3. Note the release in the decision log of `CLAUDE.md`.
+3. Note the release in your own project notes.
 
 ## Later
 
@@ -63,6 +63,5 @@ laptop.
 ## Opening the repository
 
 Publishing to npm does not make the GitHub repository public; that is a separate
-step. The checklist is in `CLAUDE.md` (section "Distribution et Open Source"): the
-history becomes public with it, and the `main` ruleset (require a pull request and
+step. The history becomes public with it (check it for secrets and personal data first), and the `main` ruleset (require a pull request and
 the `ci-success` check) must be created at that moment.

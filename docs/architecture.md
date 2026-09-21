@@ -98,7 +98,7 @@ TypeScript is derived from what roblox-ts pins.
 **Tool lookup does not run the tool.** `toolchain.ts` scans PATH (with PATHEXT
 on Windows) so a check costs nothing and cannot have side effects.
 
-**Every input command has a guided version** (see CLAUDE.md, rule 5). A command
+**Every input command has a guided version.** A command
 that takes a name treats it as optional: given, it runs scripted; missing, it
 asks in a terminal or refuses with the scripted form otherwise. `rowork make` runs
 the chosen command with empty arguments, so it always lands in the guided path.
