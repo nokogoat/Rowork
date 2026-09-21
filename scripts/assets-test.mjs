@@ -173,6 +173,18 @@ try {
 	check(/REJECTED|waiting|refused/i.test(result.output), "moderation: the rejection was not reported");
 	behaviour.moderation = "MODERATION_STATE_APPROVED";
 
+	// 7b. The state as Roblox really writes it ("Approved", seen with a real upload) is approved too.
+	behaviour.moderation = "Approved";
+	writeFileSync(join(assets, "real.png"), png(6));
+	result = await run(project, ["assets", "--yes"], { ROWORK_ROBLOX_API_KEY: KEY });
+	check(/real: "rbxassetid/.test(readFileSync(modulePath, "utf8")), "moderation: `Approved` (the real spelling) was not accepted");
+	behaviour.moderation = "Rejected";
+	writeFileSync(join(assets, "no.png"), png(5));
+	await run(project, ["assets", "--yes"], { ROWORK_ROBLOX_API_KEY: KEY });
+	check(!/no: "rbxassetid/.test(readFileSync(modulePath, "utf8")), "moderation: `Rejected` reached assets.ts");
+	rmSync(join(assets, "no.png"));
+	rmSync(join(assets, "real.png"));
+
 	// 8. A file removed from the folder disappears from the generated module.
 	rmSync(join(assets, "bad.png"));
 	rmSync(join(assets, "logo.png"));

@@ -135,9 +135,17 @@ export function planAssets(files: AssetFile[], lock: Lock): PlannedAsset[] {
 	});
 }
 
-/** A moderation state that lets the asset be used. Unknown states are not assumed safe. */
+/**
+ * A moderation state that lets the asset be used. Unknown states are not assumed safe.
+ * Roblox writes it as `Approved` (seen with a real upload), its documentation as
+ * `MODERATION_STATE_APPROVED`: both are accepted, in any letter case.
+ */
+export function isApproved(moderation: string | undefined): boolean {
+	return moderation === undefined || /^(?:MODERATION_STATE_)?APPROVED$/i.test(moderation);
+}
+
 function usable(entry: LockEntry): boolean {
-	return entry.assetId !== undefined && (entry.moderation === undefined || /APPROVED/.test(entry.moderation));
+	return entry.assetId !== undefined && isApproved(entry.moderation);
 }
 
 interface Tree {
