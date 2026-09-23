@@ -1,6 +1,14 @@
 import { RoworkError } from "../cli/errors.js";
 import { generateFile, importPath } from "../core/generate.js";
-import { listEvents, listStats, pascal, statServiceClass, type EventInfo, type StatInfo } from "../core/project-index.js";
+import {
+	listEvents,
+	listStats,
+	pascal,
+	statServiceClass,
+	type DependencyInfo,
+	type EventInfo,
+	type StatInfo,
+} from "../core/project-index.js";
 import { toFieldName } from "../modules/player-data.js";
 import type { RoworkConfig } from "../plugins/api.js";
 import { answered, prompts } from "../ui/prompt.js";
@@ -149,10 +157,15 @@ export function createEventHandler(options: {
 	return { path: written ?? `${services}/${className}.ts`, className };
 }
 
-/** A constructor, laid out the way Prettier does: one parameter property per line as soon as there are several. */
-function constructorSource(params: string[]): string {
-	if (params.length <= 1) return `\tconstructor(${params.join("")}) {}`;
-	return `\tconstructor(\n${params.map((param) => `\t\t${param},`).join("\n")}\n\t) {}`;
+/**
+ * A constructor, laid out the way Prettier does: one parameter property per line as soon as there
+ * are several. `superCall` is needed for a class that extends another one (a component extends
+ * `BaseComponent`): TypeScript refuses a constructor in a derived class with no `super()` call.
+ */
+function constructorSource(params: string[], superCall?: string): string {
+	const opening = params.length <= 1 ? `\tconstructor(${params.join("")}) {` : `\tconstructor(\n${params.map((param) => `\t\t${param},`).join("\n")}\n\t) {`;
+	if (superCall === undefined) return params.length <= 1 ? `${opening}}` : `${opening}\n\t}`;
+	return `${opening}\n\t\t${superCall}\n\t}`;
 }
 
 /** Constructor injection for a service that uses saved values. */
@@ -171,5 +184,48 @@ export function serviceMembers(root: string, config: RoworkConfig, stats: StatIn
 		// A blank line after the imports, as in a file written by hand.
 		imports: `${access.imports.join("\n")}\n`,
 		members: `\t// Saved values this service works with:\n${howTo.join("\n")}\n${constructorSource(access.ctor)}\n\n`,
+	};
+}
+
+/** Turns typed names into the matching services or controllers, or explains what exists. */
+export function resolveDependencies(available: DependencyInfo[], typed: string, kind: "service" | "controller"): DependencyInfo[] {
+	const wanted = typed.split(",").map((part) => toFieldName(part)).filter((part) => part !== "");
+	const found = wanted.map((name) => available.find((dependency) => dependency.name === name));
+	const missing = wanted.filter((_, index) => found[index] === undefined);
+	if (missing.length > 0) {
+		throw new RoworkError(`No ${kind} called ${missing.map((name) => `\`${name}\``).join(", ")}.`, {
+			hint:
+				available.length === 0
+					? `There is no ${kind} yet: create one with \`rowork make:${kind}\`, then try again.`
+					: `${kind === "service" ? "Services" : "Controllers"}: ${available.map((dependency) => dependency.name).join(", ")}.`,
+		});
+	}
+	return found as DependencyInfo[];
+}
+
+export async function askDependencyLink(available: DependencyInfo[], message: string): Promise<string | undefined> {
+	if (available.length === 0) return undefined;
+	return askName(message, available.map((dependency) => dependency.name));
+}
+
+/**
+ * Constructor injection for a component or controller that uses existing services or controllers,
+ * the way `serviceMembers` does it for saved values: imported and injected, never wired by hand.
+ */
+export function dependencyMembers(
+	root: string,
+	fromDirectory: string,
+	sourceDirectory: string,
+	dependencies: DependencyInfo[],
+	options: { superCall?: string } = {},
+): { imports: string; members: string } {
+	if (dependencies.length === 0) return { imports: "", members: "" };
+	const imports = dependencies.map(
+		(dependency) => `import { ${dependency.className} } from "${importPath(root, fromDirectory, `${sourceDirectory}/${dependency.className}`)}";`,
+	);
+	const ctor = dependencies.map((dependency) => `private readonly ${dependency.name}: ${dependency.className}`);
+	return {
+		imports: `${imports.join("\n")}\n`,
+		members: `${constructorSource(ctor, options.superCall)}\n\n`,
 	};
 }

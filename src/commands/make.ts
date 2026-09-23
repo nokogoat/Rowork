@@ -10,9 +10,9 @@ import {
 	type CommandDefinition,
 	type RoworkConfig,
 } from "../plugins/api.js";
-import { listStats } from "../core/project-index.js";
+import { listControllers, listServices, listStats } from "../core/project-index.js";
 import { answered, prompts, requireInteractive } from "../ui/prompt.js";
-import { askStatLink, resolveStats, serviceMembers } from "./links.js";
+import { askDependencyLink, askStatLink, dependencyMembers, resolveDependencies, resolveStats, serviceMembers } from "./links.js";
 
 export type Side = "server" | "client";
 
@@ -145,10 +145,25 @@ export const makeControllerCommand: CommandDefinition = defineCommand({
 	guided: true,
 	description: "Create a controller file (client logic) in the right place and register it with Flamework.",
 	arguments: [NAME_ARGUMENT],
-	options: [FORCE_OPTION],
+	options: [
+		{ flags: "--uses <values>", description: "other controllers it needs, comma separated (e.g. camera,inputController): injected for you" },
+		FORCE_OPTION,
+	],
 	async run(context) {
-		requireProject(context, "make:controller");
-		const { name } = await nameOrAsk(context, "make:controller", "What is the controller called?", "Camera");
+		const { root, config } = requireProject(context, "make:controller");
+		const { name, guided } = await nameOrAsk(context, "make:controller", "What is the controller called?", "Camera");
+
+		// "Link it to...?": other controllers this one needs, injected for you.
+		const others = listControllers(root, config);
+		const typed =
+			typeof context.options["uses"] === "string"
+				? context.options["uses"]
+				: guided
+					? await askDependencyLink(others, "Does it need another controller? Type its name.")
+					: undefined;
+		const linked = typed === undefined ? [] : resolveDependencies(others, typed, "controller");
+		const injected = dependencyMembers(root, config.paths.controllers, config.paths.controllers, linked);
+
 		await generate({
 			context,
 			command: "make:controller",
@@ -157,8 +172,10 @@ export const makeControllerCommand: CommandDefinition = defineCommand({
 			suffix: "Controller",
 			template: "controller",
 			side: "client",
-			directory: (config) => config.paths.controllers,
+			directory: (cfg) => cfg.paths.controllers,
+			extraVariables: () => ({ imports: injected.imports, members: injected.members }),
 		});
+		if (linked.length > 0) context.logger.step(`linked to ${linked.map((dependency) => dependency.name).join(", ")}: injected in the constructor`);
 	},
 });
 
@@ -171,10 +188,11 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 		{ flags: "--side <side>", description: "server (default) or client" },
 		{ flags: "--tag <tag>", description: "CollectionService tag (default: the name)" },
 		{ flags: "--instance <class>", description: "Roblox class it attaches to, for typed access to `this.instance` (default: Instance)" },
+		{ flags: "--uses <values>", description: "services (server) or controllers (client) it needs, comma separated: injected for you" },
 		FORCE_OPTION,
 	],
 	async run(context) {
-		requireProject(context, "make:component");
+		const { root, config } = requireProject(context, "make:component");
 		const { name, guided } = await nameOrAsk(
 			context,
 			"make:component",
@@ -185,6 +203,7 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 		let side: unknown = context.options["side"] ?? "server";
 		let tag: unknown = context.options["tag"];
 		let instanceType: unknown = context.options["instance"] ?? "Instance";
+		let usesTyped: unknown = context.options["uses"];
 
 		if (guided) {
 			side = answered(
@@ -230,6 +249,11 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 					}),
 				);
 			}
+			// "Link it to...?": a service (server) or controller (client) this one needs, injected for you.
+			if (typeof usesTyped !== "string") {
+				const pool = side === "server" ? listServices(root, config) : listControllers(root, config);
+				usesTyped = await askDependencyLink(pool, side === "server" ? "Does it need a service? Type its name." : "Does it need another controller? Type its name.");
+			}
 		}
 
 		if (side !== "server" && side !== "client") {
@@ -250,6 +274,15 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 
 		const chosenSide: Side = side;
 		const chosenInstanceType = instanceType;
+		const componentDirectory = `${config.paths.source}/${chosenSide}/components`;
+
+		const pool = chosenSide === "server" ? listServices(root, config) : listControllers(root, config);
+		const linked = typeof usesTyped === "string" ? resolveDependencies(pool, usesTyped, chosenSide === "server" ? "service" : "controller") : [];
+		const injected = dependencyMembers(root, componentDirectory, chosenSide === "server" ? config.paths.services : config.paths.controllers, linked, {
+			// BaseComponent is a real base class: TypeScript refuses a constructor with no super() call.
+			superCall: "super();",
+		});
+
 		await generate({
 			context,
 			command: "make:component",
@@ -258,12 +291,15 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 			suffix: "Component",
 			template: "component",
 			side: chosenSide,
-			directory: (config) => `${config.paths.source}/${chosenSide}/components`,
+			directory: () => componentDirectory,
 			extraVariables: (base) => ({
 				tag: typeof tag === "string" && tag !== "" ? tag : base,
 				instanceType: chosenInstanceType,
 				generics: chosenInstanceType === "Instance" ? "" : `<{}, ${chosenInstanceType}>`,
+				imports: injected.imports,
+				members: injected.members,
 			}),
 		});
+		if (linked.length > 0) context.logger.step(`linked to ${linked.map((dependency) => dependency.name).join(", ")}: injected in the constructor`);
 	},
 });

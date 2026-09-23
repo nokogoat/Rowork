@@ -85,9 +85,29 @@ try {
 		["make:controller", "Camera"],
 		["make:component", "Door", "--side", "client", "--tag", "Openable"],
 		["make:component", "Spawner"],
+		// A component or a controller can need an existing service or controller, injected for you.
+		["make:component", "Guard", "--tag", "Guard", "--uses", "inventory"],
+		["make:controller", "Hud", "--uses", "camera"],
 	]) {
 		const made = run(process.execPath, [cli, ...args], project);
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
+	}
+
+	// The injected dependency is imported with the right relative path and constructed.
+	{
+		const guard = readFileSync(join(project, "src", "server", "components", "GuardComponent.ts"), "utf8");
+		check(guard.includes('import { InventoryService } from "../services/InventoryService";'), `make:component --uses did not import correctly:\n${guard}`);
+		check(guard.includes("private readonly inventory: InventoryService"), `make:component --uses did not inject the service:\n${guard}`);
+		const hud = readFileSync(join(project, "src", "client", "controllers", "HudController.ts"), "utf8");
+		check(hud.includes('import { CameraController } from "./CameraController";'), `make:controller --uses did not import correctly:\n${hud}`);
+		check(hud.includes("private readonly camera: CameraController"), `make:controller --uses did not inject the controller:\n${hud}`);
+	}
+
+	// A component cannot reach across sides: a server component only sees services, not controllers.
+	{
+		const crossSide = run(process.execPath, [cli, "make:component", "Oops2", "--tag", "Oops2", "--uses", "camera"], project);
+		check(crossSide.status === 1, "make:component --uses camera (a controller) on a server component should have been refused");
+		check(!existsSync(join(project, "src", "server", "components", "Oops2Component.ts")), "a refused make:component --uses still wrote a file");
 	}
 
 	// The Rojo plugin download and placement, against the real GitHub release,
@@ -238,7 +258,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService", "OpenChestHandler", "VaultService", "UiController", "AVeryLongServiceNameThatShouldStillFormatCorrectlyService", "AVeryLongControllerNameForTheFormatterToWrapAroundTooController", "AVeryLongComponentNameForTheFormatterToWrapAroundNowComponent", "AVeryLongStatNameForTheFormatterToWrapAroundIndeedService", "BuyLongyThingWithALongNameOkHandler", "ChestComponent"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService", "OpenChestHandler", "VaultService", "UiController", "AVeryLongServiceNameThatShouldStillFormatCorrectlyService", "AVeryLongControllerNameForTheFormatterToWrapAroundTooController", "AVeryLongComponentNameForTheFormatterToWrapAroundNowComponent", "AVeryLongStatNameForTheFormatterToWrapAroundIndeedService", "BuyLongyThingWithALongNameOkHandler", "ChestComponent", "GuardComponent", "HudController"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {

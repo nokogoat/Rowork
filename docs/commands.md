@@ -151,7 +151,7 @@ command refuses and prints its scripted form.
 | `rowork make:screen` | the name (adds the UI module first if it is missing) |
 | `rowork make:ui` | the name, the kind of element, the screen to put it in |
 | `rowork make:component` | name, server or client, tag, which Roblox class it attaches to |
-| `rowork make:service`, `make:controller` | name |
+| `rowork make:service`, `make:controller` | name, which existing services or controllers it needs |
 | `rowork add` | which module, then that module's own questions |
 | `rowork console` | not a question: it is a prompt where you run any of the above |
 
@@ -178,6 +178,7 @@ Flamework.
 ```bash
 rowork make:service Inventory       # src/server/services/InventoryService.ts
 rowork make:service player-stats    # PlayerStatsService
+rowork make:service Vault --uses kills,coins
 ```
 
 `<name>` can be typed as `Inventory`, `inventory`, `player-stats` or
@@ -186,6 +187,7 @@ added if missing. It must start with a letter.
 
 | Option | Effect |
 | --- | --- |
+| `--uses <values>` | saved values it needs, comma separated (see [Linking things](#linking-things-link-it-to)) |
 | `-f, --force` | overwrite the file if it already exists |
 
 Written to `paths.services` from [`rowork.json`](configuration.md). Without
@@ -195,6 +197,15 @@ Written to `paths.services` from [`rowork.json`](configuration.md). Without
 
 Same as `make:service`, for the client side: `CameraController` in
 `paths.controllers` (default `src/client/controllers`).
+
+```bash
+rowork make:controller Hud --uses camera   # injects the existing CameraController
+```
+
+| Option | Effect |
+| --- | --- |
+| `--uses <values>` | other controllers it needs, comma separated |
+| `-f, --force` | overwrite the file if it already exists |
 
 ## `rowork make:component [name]`
 
@@ -211,10 +222,13 @@ rowork make:component Spawner          # server side, tag "Spawner", untyped ins
 | `--side <side>` | `server` (default) or `client` |
 | `--tag <tag>` | the CollectionService tag (default: the name). Letters, digits, `_`, `-`, `.` |
 | `--instance <class>` | Roblox class it attaches to (default: `Instance`), e.g. `BasePart`, `Model`, `Tool`, `GuiButton` |
+| `--uses <values>` | services (server) or controllers (client) it needs, comma separated |
 | `-f, --force` | overwrite the file if it already exists |
 
 `--instance` types `this.instance` as that class instead of the generic `Instance`, which has no
 properties of its own (`extends BaseComponent<{}, BasePart>` rather than a bare `BaseComponent`).
+`--uses` only offers what matches the side: a server component injects services, a client one
+injects controllers (they cannot reach across sides).
 
 Written to `<paths.source>/<side>/components/`, for example
 `src/client/components/DoorComponent.ts`.
@@ -290,11 +304,13 @@ empty for no link. What exists is read from your files (the saved values from
 | an **event** (from the client) | which saved value the server changes | a handler on the server, wired to that value |
 | a **stat** | which existing event from the client changes it | the same handler |
 | a **service** | which saved values it uses | those values injected in its constructor, with a comment on how to use each |
+| a **controller** | which other controllers it needs | those controllers injected in its constructor |
+| a **component** | which service (server) or controller (client) it needs | that dependency injected in its constructor |
 
-In a script, the same links are `--link <value>` on `make:event`, `--link <event>` on
-`make:stat` and `--uses <values>` on `make:service`. A link is checked before anything is
-written: an unknown name, or an event that already has a handler, stops the command and
-changes nothing.
+In a script, the same links are `--link <value>` on `make:event`, `--link <event>` on `make:stat`,
+and `--uses <values>` on `make:service`, `make:controller` and `make:component`. A link is checked
+before anything is written: an unknown name, or an event that already has a handler, stops the
+command and changes nothing.
 
 **The server decides, never the client.** The handler Rowork generates changes the value
 by an amount fixed on the server (`add(player, 1)`), and its comments say why: everything

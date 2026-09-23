@@ -1,8 +1,8 @@
 import { BaseComponent, Component } from "@flamework/components";
 import { OnStart } from "@flamework/core";
-
+{{ imports }}
 /** Attached by Flamework to every {{ instanceType }} carrying the "{{ tag }}" CollectionService tag. */
 @Component({ tag: "{{ tag }}" })
 export class {{ className }} extends BaseComponent{{ generics }} implements OnStart {
-	onStart(): void {}
+{{ members }}	onStart(): void {}
 }

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import type { RoworkConfig } from "../plugins/api.js";
@@ -15,6 +15,12 @@ export interface EventInfo {
 	/** `server`: the client sends it to the server. `client`: the server sends it to clients. */
 	direction: "server" | "client";
 	parameters: string;
+}
+
+/** An existing service or controller a new one can inject: `name` is how it is reached (`this.<name>`). */
+export interface DependencyInfo {
+	name: string;
+	className: string;
 }
 
 function read(root: string, file: string): string | undefined {
@@ -65,6 +71,34 @@ export function listEvents(root: string, config: RoworkConfig): EventInfo[] {
 
 export function pascal(name: string): string {
 	return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+}
+
+/**
+ * Existing classes in a directory that end with `suffix` (a service or a controller), read from
+ * the files that are there rather than a registry: whatever is in the folder can be injected.
+ */
+function listBySuffix(root: string, directory: string, suffix: string): DependencyInfo[] {
+	const dirPath = resolveProjectPath(root, directory);
+	if (!existsSync(dirPath)) return [];
+	return readdirSync(dirPath)
+		.filter((file) => /\.tsx?$/.test(file))
+		.map((file) => file.replace(/\.tsx?$/, ""))
+		.filter((className) => className.endsWith(suffix) && className.length > suffix.length)
+		.map((className) => {
+			const base = className.slice(0, -suffix.length);
+			return { className, name: `${base.charAt(0).toLowerCase()}${base.slice(1)}` };
+		})
+		.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Existing services (server-side), injectable into another service or a server-side component. */
+export function listServices(root: string, config: RoworkConfig): DependencyInfo[] {
+	return listBySuffix(root, config.paths.services, "Service");
+}
+
+/** Existing controllers (client-side), injectable into another controller or a client-side component. */
+export function listControllers(root: string, config: RoworkConfig): DependencyInfo[] {
+	return listBySuffix(root, config.paths.controllers, "Controller");
 }
 
 /** The helper service `make:stat` creates for a value, if it is there. */

@@ -1,6 +1,6 @@
 import { Controller, OnStart } from "@flamework/core";
-
+{{ imports }}
 @Controller()
 export class {{ className }} implements OnStart {
-	onStart(): void {}
+{{ members }}	onStart(): void {}
 }
