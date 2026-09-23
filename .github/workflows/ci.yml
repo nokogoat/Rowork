@@ -10,6 +10,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Raises the GitHub API rate limit these jobs hit (Rojo release lookups) from the
+# anonymous 60/hour, shared by every runner in the world, to 1,000/hour for this run alone.
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   build:
     name: build (${{ matrix.os }}, node ${{ matrix.node }})

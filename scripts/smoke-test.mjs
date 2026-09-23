@@ -561,6 +561,29 @@ try {
 		check(/"@rbxts-js": \{\n\t*"\$path": "node_modules\/@rbxts-js"\n\t*\}\n\t\t\t\}/.test(rojoResult), `rojo edit: the mapping is not inside node_modules when a comment holds a brace:\n${rojoResult}`);
 	}
 
+	// GitHub API calls carry a token when the environment has one, without hitting the network
+	// (a stalled or absent GITHUB_TOKEN must never change what request is attempted).
+	{
+		const { getRelease } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "github-release.js")).href);
+		const originalFetch = globalThis.fetch;
+		let sentHeaders;
+		globalThis.fetch = (_url, options) => {
+			sentHeaders = options.headers;
+			return Promise.resolve(new Response(JSON.stringify({ tag_name: "v0.0.0" }), { status: 200 }));
+		};
+		try {
+			process.env["GITHUB_TOKEN"] = "test-token";
+			await getRelease("owner/repo");
+			check(sentHeaders.Authorization === "Bearer test-token", "github-release: a set GITHUB_TOKEN was not sent as a bearer token");
+
+			delete process.env["GITHUB_TOKEN"];
+			await getRelease("owner/repo");
+			check(sentHeaders.Authorization === undefined, "github-release: an Authorization header was sent with no token set");
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
+	}
+
 	// The interface commands: text edits that refuse instead of guessing, and a clear answer without the module.
 	{
 		const { addScreenToApp, addElementToScreen } = await import(pathToFileURL(join(repositoryRoot, "dist", "core", "ui-edit.js")).href);
