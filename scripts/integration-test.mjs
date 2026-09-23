@@ -145,6 +145,12 @@ try {
 		["make:screen", "aVeryLongScreenNameForTheFormatterToWrapAround"],
 		["make:ui", "anExtremelyLongElementNameForTheFormatterToWrapAround", "--kind", "button", "--in", "aVeryLongScreenNameForTheFormatterToWrapAround"],
 		["make:ui", "anotherExtremelyLongElementNameForTheFormatterToWrap", "--kind", "panel"],
+		// Same risk for the other generators, and for a constructor with several injected members.
+		["make:service", "aVeryLongServiceNameThatShouldStillFormatCorrectly", "--uses", "kills,coins,nickname"],
+		["make:controller", "aVeryLongControllerNameForTheFormatterToWrapAroundToo"],
+		["make:component", "aVeryLongComponentNameForTheFormatterToWrapAroundNow", "--tag", "AVeryLongTagNameThatIsAlsoQuiteLongIndeed"],
+		["make:event", "buyLongyThingWithALongNameOk", "--to", "server", "--args", "itemId: string"],
+		["make:stat", "aVeryLongStatNameForTheFormatterToWrapAroundIndeed", "--type", "number", "--default", "0", "--link", "buyLongyThingWithALongNameOk"],
 	]) {
 		const made = run(process.execPath, [cli, ...args], project);
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
@@ -216,7 +222,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService", "OpenChestHandler", "VaultService", "UiController"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService", "OpenChestHandler", "VaultService", "UiController", "AVeryLongServiceNameThatShouldStillFormatCorrectlyService", "AVeryLongControllerNameForTheFormatterToWrapAroundTooController", "AVeryLongComponentNameForTheFormatterToWrapAroundNowComponent", "AVeryLongStatNameForTheFormatterToWrapAroundIndeedService", "BuyLongyThingWithALongNameOkHandler"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {

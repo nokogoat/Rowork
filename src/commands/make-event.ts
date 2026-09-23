@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 import { RoworkError } from "../cli/errors.js";
+import { formatGenerated } from "../core/format-generated.js";
 import { resolveProjectPath } from "../core/config.js";
 import { addEventToNetworking, addRateLimit } from "../core/schema-edit.js";
 import { askEventParameters, checkParameters } from "../modules/networking.js";
@@ -99,9 +100,10 @@ export const makeEventCommand = defineCommand({
 				throw new RoworkError(`${handlerFile} already exists.`, { hint: "Pick another name for the event." });
 			}
 		}
-		const linkNow = (): void => {
+		const linkNow = async (): Promise<void> => {
 			if (linkStat === undefined) return;
 			const handler = createEventHandler({ root, config, event: { name }, stat: linkStat });
+			await formatGenerated(root, [resolveProjectPath(root, handler.path)], context.logger);
 			context.logger.step(`${handler.path}: runs on the server when \`${name}\` arrives, linked to \`${linkStat.name}\``);
 			context.logger.info("It decides the amount on the server: do not use a number the client sent.");
 		};
@@ -124,7 +126,7 @@ export const makeEventCommand = defineCommand({
 				root,
 				false,
 			);
-			linkNow();
+			await linkNow();
 			return;
 		}
 
@@ -162,7 +164,8 @@ export const makeEventCommand = defineCommand({
 		if (unprotected) {
 			context.logger.warn(`${serverFile} has no \`middleware\` list: \`${name}\` is NOT rate limited. Add \`${name}: [limit()]\` yourself, or a cheater can flood it.`);
 		}
-		linkNow();
+		await formatGenerated(root, [path, ...(newServer === undefined ? [] : [resolveProjectPath(root, serverFile)])], context.logger);
+		await linkNow();
 		context.logger.success(`Event \`${name}\` added (${side === "server" ? "client to server" : "server to client"}).`);
 		context.logger.blank();
 		const args = parameters === "" ? "" : "...";
