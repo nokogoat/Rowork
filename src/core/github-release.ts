@@ -14,12 +14,24 @@ export interface Release {
 
 const HEADERS = { "User-Agent": "rowork" };
 
+/**
+ * `api.github.com` allows 60 anonymous requests per hour, shared by every anonymous
+ * caller behind the same address — including every GitHub Actions runner in the world.
+ * A token (GitHub Actions gives every job one for free, no setup needed) raises that to
+ * 1,000 per hour, scoped to this run alone. Never required: without one, Rowork just
+ * falls back to the anonymous limit, same as always.
+ */
+function authHeader(): Record<string, string> {
+	const token = process.env["GITHUB_TOKEN"] ?? process.env["GH_TOKEN"];
+	return token === undefined || token === "" ? {} : { Authorization: `Bearer ${token}` };
+}
+
 /** Fetches a release of `owner/repo`: the latest one, or the one tagged `tag`. */
 export async function getRelease(repository: string, tag?: string): Promise<Release> {
 	const path = tag === undefined ? "latest" : `tags/${tag}`;
 	const url = `https://api.github.com/repos/${repository}/releases/${path}`;
 	// A stalled connection must not hang the CLI: the API answers in well under a second.
-	const response = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(20_000) });
+	const response = await fetch(url, { headers: { ...HEADERS, ...authHeader() }, signal: AbortSignal.timeout(20_000) });
 	if (!response.ok) throw new Error(`${url} answered ${response.status}`);
 	return (await response.json()) as Release;
 }
