@@ -150,7 +150,7 @@ command refuses and prints its scripted form.
 | `rowork make:event` | the message, who sends it, what it carries |
 | `rowork make:screen` | the name (adds the UI module first if it is missing) |
 | `rowork make:ui` | the name, the kind of element, the screen to put it in |
-| `rowork make:component` | name, server or client, tag |
+| `rowork make:component` | name, server or client, tag, which Roblox class it attaches to |
 | `rowork make:service`, `make:controller` | name |
 | `rowork add` | which module, then that module's own questions |
 | `rowork console` | not a question: it is a prompt where you run any of the above |
@@ -202,15 +202,19 @@ Creates a Flamework component: behaviour attached automatically to every
 instance carrying a CollectionService tag.
 
 ```bash
-rowork make:component Door --side client --tag Openable
-rowork make:component Spawner          # server side, tag "Spawner"
+rowork make:component Door --side client --tag Openable --instance BasePart
+rowork make:component Spawner          # server side, tag "Spawner", untyped instance
 ```
 
 | Option | Effect |
 | --- | --- |
 | `--side <side>` | `server` (default) or `client` |
 | `--tag <tag>` | the CollectionService tag (default: the name). Letters, digits, `_`, `-`, `.` |
+| `--instance <class>` | Roblox class it attaches to (default: `Instance`), e.g. `BasePart`, `Model`, `Tool`, `GuiButton` |
 | `-f, --force` | overwrite the file if it already exists |
+
+`--instance` types `this.instance` as that class instead of the generic `Instance`, which has no
+properties of its own (`extends BaseComponent<{}, BasePart>` rather than a bare `BaseComponent`).
 
 Written to `<paths.source>/<side>/components/`, for example
 `src/client/components/DoorComponent.ts`.

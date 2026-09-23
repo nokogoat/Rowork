@@ -151,9 +151,25 @@ try {
 		["make:component", "aVeryLongComponentNameForTheFormatterToWrapAroundNow", "--tag", "AVeryLongTagNameThatIsAlsoQuiteLongIndeed"],
 		["make:event", "buyLongyThingWithALongNameOk", "--to", "server", "--args", "itemId: string"],
 		["make:stat", "aVeryLongStatNameForTheFormatterToWrapAroundIndeed", "--type", "number", "--default", "0", "--link", "buyLongyThingWithALongNameOk"],
+		["make:component", "Chest", "--tag", "TreasureChest", "--instance", "BasePart"],
 	]) {
 		const made = run(process.execPath, [cli, ...args], project);
 		check(made.status === 0, `\`rowork ${args.join(" ")}\` failed\n${made.output}`);
+	}
+
+	// A component typed for the Roblox class it attaches to: `this.instance` gets real properties.
+	{
+		const chest = readFileSync(join(project, "src", "server", "components", "ChestComponent.ts"), "utf8");
+		check(chest.includes("extends BaseComponent<{}, BasePart>"), `make:component --instance did not type the component:\n${chest}`);
+		const door = readFileSync(join(project, "src", "client", "components", "DoorComponent.ts"), "utf8");
+		check(door.includes("extends BaseComponent implements") && !door.includes("BaseComponent<"), `make:component without --instance should not add generics:\n${door}`);
+	}
+
+	// An invalid Roblox class name is refused, not guessed at.
+	{
+		const bad = run(process.execPath, [cli, "make:component", "Oops", "--instance", "123NotAClass"], project);
+		check(bad.status === 1, "make:component --instance 123NotAClass should have been refused");
+		check(!existsSync(join(project, "src", "server", "components", "OopsComponent.ts")), "a refused make:component still wrote a file");
 	}
 
 	// `rowork assets` writes src/shared/assets.ts. It goes through the real generator here (the upload
@@ -222,7 +238,7 @@ try {
 	const buildFile = join(project, "flamework.build");
 	if (existsSync(buildFile)) {
 		const identifiers = readFileSync(buildFile, "utf8");
-		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService", "OpenChestHandler", "VaultService", "UiController", "AVeryLongServiceNameThatShouldStillFormatCorrectlyService", "AVeryLongControllerNameForTheFormatterToWrapAroundTooController", "AVeryLongComponentNameForTheFormatterToWrapAroundNowComponent", "AVeryLongStatNameForTheFormatterToWrapAroundIndeedService", "BuyLongyThingWithALongNameOkHandler"]) {
+		for (const name of ["InventoryService", "CameraController", "DoorComponent", "SpawnerComponent", "PlayerDataService", "LeaderstatsService", "DataReplicationService", "PlayerDataController", "KillsService", "OpenChestHandler", "VaultService", "UiController", "AVeryLongServiceNameThatShouldStillFormatCorrectlyService", "AVeryLongControllerNameForTheFormatterToWrapAroundTooController", "AVeryLongComponentNameForTheFormatterToWrapAroundNowComponent", "AVeryLongStatNameForTheFormatterToWrapAroundIndeedService", "BuyLongyThingWithALongNameOkHandler", "ChestComponent"]) {
 			check(identifiers.includes(name), `Flamework did not register ${name}`);
 		}
 	} else {
