@@ -18,6 +18,33 @@ so there is nothing left to set up.
 rowork dev           # compiler, Rojo server and sourcemap watcher, together
 ```
 
+Connect the Rojo plugin in Studio (see [Getting started](https://github.com/nokogoat/Rowork/blob/main/docs/getting-started.md))
+and your code shows up there. `rowork dev` also prints a local dashboard address: open it to see
+the project and the live logs.
+
+## Building your game
+
+Two kinds of commands, and it is worth knowing which is which before you reach for either:
+
+- **`rowork add`**: a whole feature, ready-made (saved player data, a leaderboard, typed
+  client/server messages, a React interface...). Run `rowork add` alone to see the list and pick
+  one; each one asks its own questions. Once per feature.
+- **`rowork make`**: one file of your own, in the right place, already wired in (a service, a
+  screen, a saved value...). Run `rowork make` alone to see the list. As many times as you like.
+
+A common order for a new game:
+
+```bash
+rowork add                 # player data, a leaderboard, typed networking, an interface...
+rowork make:stat kills     # a value saved per player, added everywhere it needs to be
+rowork make:screen Shop    # a screen of your interface
+rowork make:service Vault  # your own server-side logic
+```
+
+Every one of these has a guided version (run it with no arguments) and a scripted one (pass
+arguments and flags). `rowork info` lists everything installed and available, and
+`rowork console` is a prompt where you can try commands one after another.
+
 ## Layout
 
 ```
