@@ -170,6 +170,7 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 	options: [
 		{ flags: "--side <side>", description: "server (default) or client" },
 		{ flags: "--tag <tag>", description: "CollectionService tag (default: the name)" },
+		{ flags: "--instance <class>", description: "Roblox class it attaches to, for typed access to `this.instance` (default: Instance)" },
 		FORCE_OPTION,
 	],
 	async run(context) {
@@ -183,6 +184,7 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 
 		let side: unknown = context.options["side"] ?? "server";
 		let tag: unknown = context.options["tag"];
+		let instanceType: unknown = context.options["instance"] ?? "Instance";
 
 		if (guided) {
 			side = answered(
@@ -204,6 +206,30 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 						/^[A-Za-z0-9_.-]*$/.test(value ?? "") ? undefined : "Letters, digits, _ - . only.",
 				}),
 			);
+			// So `this.instance` is typed, instead of the generic `Instance` (no properties of its own).
+			instanceType = answered(
+				await prompts.select({
+					message: "What kind of object does it attach to?",
+					options: [
+						{ value: "BasePart", label: "A physical object", hint: "a door, a pickup, a chest" },
+						{ value: "Model", label: "A model", hint: "a group of parts" },
+						{ value: "Tool", label: "A tool", hint: "an item a player can hold" },
+						{ value: "GuiButton", label: "A UI button", hint: "TextButton or ImageButton" },
+						{ value: "Instance", label: "Anything", hint: "no particular type, works on any instance" },
+						{ value: "other", label: "Other...", hint: "type the Roblox class yourself" },
+					],
+					initialValue: "Instance",
+				}),
+			);
+			if (instanceType === "other") {
+				instanceType = answered(
+					await prompts.text({
+						message: "Which Roblox class? (e.g. Humanoid, SurfaceGui, BillboardGui)",
+						placeholder: "Instance",
+						validate: (value) => (/^[A-Za-z][A-Za-z0-9]*$/.test(value ?? "") ? undefined : "A class name: letters and digits, starting with a letter."),
+					}),
+				);
+			}
 		}
 
 		if (side !== "server" && side !== "client") {
@@ -216,8 +242,14 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 				hint: "Use letters, digits, `_`, `-` or `.`.",
 			});
 		}
+		if (typeof instanceType !== "string" || !/^[A-Za-z][A-Za-z0-9]*$/.test(instanceType)) {
+			throw new RoworkError(`\`${String(instanceType)}\` is not a Roblox class name.`, {
+				hint: "Use a class from the Roblox API, e.g. BasePart, Model, Tool, GuiButton.",
+			});
+		}
 
 		const chosenSide: Side = side;
+		const chosenInstanceType = instanceType;
 		await generate({
 			context,
 			command: "make:component",
@@ -227,7 +259,11 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 			template: "component",
 			side: chosenSide,
 			directory: (config) => `${config.paths.source}/${chosenSide}/components`,
-			extraVariables: (base) => ({ tag: typeof tag === "string" && tag !== "" ? tag : base }),
+			extraVariables: (base) => ({
+				tag: typeof tag === "string" && tag !== "" ? tag : base,
+				instanceType: chosenInstanceType,
+				generics: chosenInstanceType === "Instance" ? "" : `<{}, ${chosenInstanceType}>`,
+			}),
 		});
 	},
 });
