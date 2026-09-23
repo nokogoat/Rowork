@@ -1,6 +1,6 @@
 {
   "name": "rowork",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The meta-framework CLI for Roblox game development. Orchestrates Rojo, roblox-ts and Flamework, and scaffolds your game architecture.",
   "type": "module",
   "license": "MIT",
