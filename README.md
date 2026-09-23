@@ -12,7 +12,7 @@ toolchain, runs it, generates code and keeps your architecture coherent.
 > vision is not built yet.
 >
 > - **Expect missing features, bugs and breaking changes** without warning.
-> - **It is not on npm yet**, and it has been tried on very few games.
+> - **It has been tried on very few games so far**, and it is version 0.1.0.
 > - **Do not build a serious game on it yet.** Come and look, try it, and tell us what is wrong.
 >
 > The [roadmap](docs/roadmap.md) says what exists and what is missing, without promises.
@@ -57,12 +57,12 @@ editable files, and you can drop down to the bare tools at any time.
 
 ## Quick start
 
-Rowork is not on npm yet, so install it from the repository:
-
 ```bash
-git clone https://github.com/nokogoat/Rowork
-cd Rowork && npm install && npm run build && npm link
+npm install -g rowork
 ```
+
+Building it from the repository instead (for development or contributing) is documented under
+[Contributing](docs/contributing.md).
 
 Then:
 

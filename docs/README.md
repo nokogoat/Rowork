@@ -25,12 +25,13 @@ Flamework, Rojo and a pinned toolchain, behind one command.
 
 ## Status
 
-Rowork is in early development (v0.0.x) and not published on npm yet. `rowork info` lists every
-command and module of your version. What exists: project setup (`start`, `init`), `dev`, `update`,
-`eject`, `console`, Studio on Linux, ready-made features (`add`: player data, leaderstats, typed
-networking, linter, formatter, React interface), and file generators (`make`: service, controller,
-component, stat, event). The [roadmap](roadmap.md) says what is next. The plugin API is at v1 and
-may still change before a stable release.
+Rowork is in very early development (`npm install -g rowork`, currently 0.1.x). `rowork info` lists
+every command and module of your version. What exists: project setup (`start`, `init`), `dev`,
+`update`, `eject`, `console`, Studio on Linux, ready-made features (`add`: player data, leaderstats,
+typed networking, linter, formatter, React interface), and file generators (`make`: service,
+controller, component, stat, event, screen, UI element). The [roadmap](roadmap.md) says what is
+next, and what does not exist yet. The plugin API is at v1 and may still change before a stable
+release.
 
 ## Leaving
 

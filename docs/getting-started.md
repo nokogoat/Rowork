@@ -14,31 +14,18 @@ provides roblox-ts.
 
 ## Install Rowork
 
-Rowork is not published on npm yet. Until it is, install it from the
-repository:
-
-```bash
-git clone https://github.com/nokogoat/Rowork
-cd Rowork
-npm install
-npm run build
-npm link        # puts `rowork` on your PATH
-```
-
-`npm link` points at your working copy, so after a code change `npm run build`
-is enough. Remove it with `npm uninstall -g rowork`.
-
-Once Rowork is published, this becomes:
-
 ```bash
 npm install -g rowork
 # or, without installing anything permanently:
 npx rowork start
 ```
 
-If your shell says `rowork: command not found` after `npm link`, check that the
-directory printed by `npm prefix -g` followed by `/bin` is in your `PATH`. Fish
-sometimes needs `rehash` or a new terminal.
+If your shell says `rowork: command not found` afterwards, check that the directory printed by
+`npm prefix -g` followed by `/bin` is in your `PATH`. Fish sometimes needs `rehash` or a new
+terminal.
+
+To work on Rowork itself instead of using the published package, see [Contributing](contributing.md)
+(`git clone`, `npm install`, `npm run build`, `npm link`).
 
 ## Create a project
 
