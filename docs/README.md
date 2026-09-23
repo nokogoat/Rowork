@@ -3,7 +3,7 @@
 Rowork is a CLI that sets up and runs a modern Roblox project: roblox-ts,
 Flamework, Rojo and a pinned toolchain, behind one command.
 
-> **Rowork is at the very beginning (0.0.x).** These pages describe what exists today, and a lot is
+> **Rowork is at the very beginning (0.1.x).** These pages describe what exists today, and a lot is
 > still missing: the [roadmap](roadmap.md) lists it without promises.
 
 | Page | Read it when you want to... |
