@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { RoworkError } from "../cli/errors.js";
 import { resolveProjectPath } from "../core/config.js";
+import { formatGenerated } from "../core/format-generated.js";
 import { generateFile } from "../core/generate.js";
 import { addFieldToPlayerData, addToShownList, type StatType } from "../core/schema-edit.js";
 import { installModule } from "../core/modules.js";
@@ -125,9 +126,10 @@ export const makeStatCommand = defineCommand({
 
 		// A link is checked before anything is written.
 		const linkEvent = linkTyped === undefined ? undefined : resolveEvent(listEvents(root, config), linkTyped);
-		const linkNow = (): void => {
+		const linkNow = async (): Promise<void> => {
 			if (linkEvent === undefined) return;
 			const handler = createEventHandler({ root, config, event: { name: linkEvent.name }, stat: { name, type } });
+			await formatGenerated(root, [resolveProjectPath(root, handler.path)], context.logger);
 			context.logger.step(`${handler.path}: runs on the server when \`${linkEvent.name}\` arrives, linked to \`${name}\``);
 			context.logger.info("It decides the amount on the server: do not use a number the client sent.");
 		};
@@ -137,7 +139,7 @@ export const makeStatCommand = defineCommand({
 			});
 		}
 
-		const createService = (): void => {
+		const createService = async (): Promise<void> => {
 			const written = generateFile({
 				projectRoot: root,
 				directory: config.paths.services,
@@ -146,7 +148,10 @@ export const makeStatCommand = defineCommand({
 				variables: { name, type, className, extra: type === "number" ? ADD_METHOD.replaceAll("{{ name }}", name) : "" },
 				force: false,
 			});
-			if (written !== undefined) context.logger.step(written);
+			if (written !== undefined) {
+				await formatGenerated(root, [resolveProjectPath(root, written)], context.logger);
+				context.logger.step(written);
+			}
 		};
 
 		// Guided and nothing saves values yet: offer to install what does, starting with this value.
@@ -167,8 +172,8 @@ export const makeStatCommand = defineCommand({
 				root,
 				false,
 			);
-			if (service) createService();
-			linkNow();
+			if (service) await createService();
+			await linkNow();
 			return;
 		}
 
@@ -202,8 +207,9 @@ export const makeStatCommand = defineCommand({
 			writeFileSync(newShown.path, newShown.source, "utf8");
 			context.logger.step(`${config.paths.services}/LeaderstatsService.ts: added to the leaderboard`);
 		}
-		if (service) createService();
-		linkNow();
+		await formatGenerated(root, [dataPath, ...(newShown === undefined ? [] : [newShown.path])], context.logger);
+		if (service) await createService();
+		await linkNow();
 
 		context.logger.success(`Saved \`${name}\` for every player.`);
 		context.logger.blank();

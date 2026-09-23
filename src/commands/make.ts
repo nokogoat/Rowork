@@ -2,6 +2,7 @@ import { join } from "node:path";
 
 import { RoworkError } from "../cli/errors.js";
 import { resolveProjectPath } from "../core/config.js";
+import { formatGenerated } from "../core/format-generated.js";
 import { ensureFlameworkPath, generateFile, toClassBase, withSuffix } from "../core/generate.js";
 import {
 	defineCommand,
@@ -67,7 +68,7 @@ export async function nameOrAsk(
  * Generates one Flamework class, then makes sure the matching runtime entry
  * point scans its directory so the class is actually picked up.
  */
-function generate(options: {
+async function generate(options: {
 	context: CommandContext;
 	command: string;
 	name: string;
@@ -77,7 +78,7 @@ function generate(options: {
 	side: Side;
 	directory: (config: RoworkConfig) => string;
 	extraVariables?: (base: string) => Record<string, string>;
-}): void {
+}): Promise<void> {
 	const { context } = options;
 	const { root, config } = requireProject(context, options.command);
 	const base = toClassBase(options.name);
@@ -98,6 +99,7 @@ function generate(options: {
 	if (ensureFlameworkPath(runtime, directory, context.logger)) {
 		context.logger.step(`registered ${directory} in runtime.${options.side}.ts`);
 	}
+	if (written !== undefined) await formatGenerated(root, [resolveProjectPath(root, join(directory, `${className}.ts`))], context.logger);
 }
 
 export const makeServiceCommand: CommandDefinition = defineCommand({
@@ -123,7 +125,7 @@ export const makeServiceCommand: CommandDefinition = defineCommand({
 		const linked = typed === undefined ? [] : resolveStats(listStats(root, config), typed, "try again");
 		const injected = serviceMembers(root, config, linked);
 
-		generate({
+		await generate({
 			context,
 			command: "make:service",
 			name,
@@ -147,7 +149,7 @@ export const makeControllerCommand: CommandDefinition = defineCommand({
 	async run(context) {
 		requireProject(context, "make:controller");
 		const { name } = await nameOrAsk(context, "make:controller", "What is the controller called?", "Camera");
-		generate({
+		await generate({
 			context,
 			command: "make:controller",
 			name,
@@ -216,7 +218,7 @@ export const makeComponentCommand: CommandDefinition = defineCommand({
 		}
 
 		const chosenSide: Side = side;
-		generate({
+		await generate({
 			context,
 			command: "make:component",
 			name,
