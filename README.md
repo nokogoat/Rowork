@@ -7,7 +7,7 @@ toolchain, runs it, generates code and keeps your architecture coherent.
 
 > ## ⚠️ This is only the very beginning
 >
-> Rowork is at **version 0.1.0**. The goal is big: a real **meta-framework for Roblox**, from the first
+> Rowork is at **version 0.1.1**. The goal is big: a real **meta-framework for Roblox**, from the first
 > line of a project to a live game. **What exists today is a small first step towards it**, and most of the
 > vision is not built yet.
 >
